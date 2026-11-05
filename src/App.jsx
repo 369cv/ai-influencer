@@ -18,6 +18,7 @@ import Workflows from './pages/Workflows'
 import Import from './pages/Import'
 import Content from './pages/Content'
 import Plan from './pages/Plan'
+import Studio from './pages/Studio'
 import NewMenu from './components/NewMenu'
 import AuthCallback from './pages/AuthCallback'
 
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/influencers" element={<Influencers />} />
         <Route path="/content" element={<Content />} />
         <Route path="/plan" element={<Plan />} />
+        <Route path="/studio" element={<Studio />} />
         <Route path="/tracking" element={<Navigate to="/plan?view=creators" replace />} />
         <Route path="/library" element={<Navigate to="/content?view=media" replace />} />
         <Route path="/workflows" element={<Workflows />} />

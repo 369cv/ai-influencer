@@ -5,6 +5,8 @@ import { useWorkspaceStore } from '../context/workspace'
 import { collectLibrary } from '../utils/library'
 import { progress } from '../utils/planning'
 import { platformName } from '../utils/publishing'
+import { STUDIO_TEMPLATES, readJobs } from '../utils/studio'
+import { isHFConnected } from '../utils/higgsfieldAuth'
 
 // Home: one composer and one "Pick up where you left off" list.
 // The picker inside the composer decides where a typed prompt goes.
@@ -28,6 +30,8 @@ export default function Home() {
   const [posts] = useWorkspaceStore('muse_posts')
   const [target, setTarget] = useState(() => { try { return localStorage.getItem('muse_home_target') || 'influencer' } catch { return 'influencer' } })
   const [text, setText] = useState('')
+  const [accounts] = useWorkspaceStore('muse_accounts')
+  const [hideChecklist, setHideChecklist] = useState(() => { try { return localStorage.getItem('muse_checklist_hidden') === '1' } catch { return false } })
   const fileRef = useRef(null)
   const t = TARGETS.find(x => x.id === target) || TARGETS[0]
   const recentInfluencers = (influencers || []).slice(-6).reverse()
@@ -48,6 +52,16 @@ export default function Home() {
     }
     return rows.sort((a, b) => b.at - a.at).slice(0, 5)
   }, [posts, projects, influencers])
+
+  const checklist = [
+    { id: 'hf', label: 'Connect Higgsfield', done: isHFConnected(), to: '/settings?section=connections' },
+    { id: 'inf', label: 'Create an influencer', done: (influencers || []).some(i => !/-template$/.test(i.id)), to: '/create' },
+    { id: 'shoot', label: 'First photo shoot', done: readJobs().some(j => j.status === 'done') || collectLibrary(influencers || []).some(it => it.source === 'photo-studio'), to: '/studio' },
+    { id: 'acct', label: 'Add a social account', done: (accounts || []).length > 0, to: '/settings?section=accounts' },
+    { id: 'post', label: 'Schedule a post', done: (posts || []).some(p => ['planned', 'scheduled', 'posted'].includes(p.status)), to: '/content?compose=1' },
+  ]
+  const doneCount = checklist.filter(c => c.done).length
+  const showChecklist = !hideChecklist && doneCount < checklist.length
 
   function pick(id) {
     setTarget(id)
@@ -102,7 +116,28 @@ export default function Home() {
             </button>
           </div>
         </form>
+
+        <div className="muse-home-templates" aria-label="Templates">
+          {STUDIO_TEMPLATES.map(t => <Link key={t.id} to={`/studio?template=${t.id}`} className="muse-chip" title={t.hint}>{t.label}</Link>)}
+        </div>
       </section>
+
+      {showChecklist && (
+        <section className="muse-recent muse-checklist" aria-label="Getting started">
+          <div className="muse-section-head">
+            <h2>Getting started <span className="muse-checklist-count">{doneCount}/{checklist.length}</span></h2>
+            <button type="button" className="muse-text-btn" onClick={() => { setHideChecklist(true); try { localStorage.setItem('muse_checklist_hidden', '1') } catch {} }}>Hide</button>
+          </div>
+          <div className="muse-checklist-bar" aria-hidden>{checklist.map(c => <span key={c.id} className={c.done ? 'done' : ''} />)}</div>
+          <ol className="muse-checklist-list">
+            {checklist.map(c => (
+              <li key={c.id} className={c.done ? 'done' : ''}>
+                <Link to={c.to}><span className="muse-checklist-dot" aria-hidden>{c.done ? '✓' : ''}</span>{c.label}{c.done && <span className="sr-only"> (done)</span>}</Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {resume.length > 0 && (
         <section className="muse-recent muse-resume">

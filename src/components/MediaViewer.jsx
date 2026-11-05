@@ -81,7 +81,7 @@ export default function MediaViewer({ items, index, onIndex, onClose, onModify, 
   const date = item.date ? new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''
 
   const actions = [
-    isPhoto && { key: 'modify', label: 'Modify', icon: P.modify, run: () => onModify(item) },
+    isPhoto && { key: 'modify', label: 'Use as reference', icon: P.modify, run: () => onModify(item) },
     isPhoto && { key: 'video', label: 'Make video', icon: P.video, run: () => onMakeVideo(item) },
     isPhoto && { key: 'similar', label: 'More like this', icon: P.similar, run: () => onMoreLikeThis(item) },
     { key: 'download', label: 'Download', icon: P.download, run: () => downloadImage(item.url, fname) },
