@@ -25,8 +25,8 @@ const P = {
 export const NEW_GROUPS = [
   { label: 'Create', items: [
     { id: 'influencer', label: 'Influencer', hint: 'Name, niche, look, face anchor', to: '/create', icon: P.influencer },
-    { id: 'photo', label: 'Photo shoot', hint: 'Poses, outfits, locations', to: '/influencers', state: { studioTab: 'photo' }, icon: P.photo },
-    { id: 'video', label: 'Video', hint: 'Animate a photo or a script', to: '/influencers', state: { studioTab: 'content' }, icon: P.video },
+    { id: 'photo', label: 'Photo shoot', hint: 'Prompt, character, shot list', to: '/studio', icon: P.photo },
+    { id: 'video', label: 'Video', hint: 'Animate a photo or a script', to: '/studio?mode=video', icon: P.video },
     { id: 'product', label: 'Product sheet', hint: 'Brand product for a sponsored post', to: '/brand-deals', icon: P.product },
   ] },
   { label: 'Content', items: [
@@ -37,7 +37,7 @@ export const NEW_GROUPS = [
     { id: 'project', label: 'Project', hint: 'Content piece, series, brand deal, launch', to: '/plan?new=project', icon: P.project },
   ] },
   { label: null, items: [
-    { id: 'template', label: 'From a template', hint: 'Saved workflows', to: '/workflows', icon: P.template },
+    { id: 'template', label: 'From a template', hint: 'New poses, angles, try-on, UGC ad…', to: '/studio?templates=1', icon: P.template },
   ] },
 ]
 const ALL = NEW_GROUPS.flatMap(g => g.items)

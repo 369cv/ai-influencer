@@ -6201,6 +6201,7 @@ export default function Influencers() {
                 transition:'all 0.18s',
               }}>Videos</button>
             </div>
+            <button type="button" className="muse-btn muse-btn-tonal" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>navigate('/studio',{state:{influencerId:influencer.id}})}>Open in Studio</button>
           </div>
 
 

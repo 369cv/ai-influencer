@@ -882,7 +882,7 @@ export async function generateSingleImage({ prompt, aspectRatio = '16:9', resolu
 // ── Photo Studio batch generation ────────────────────────────────────────────
 // Uploads refs once, launches all N jobs in parallel, polls together, and streams
 // results via onResult(url) as each image completes.
-export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], onProgress, onResult, isCancelled, pendingKey = null }) {
+export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', model = 'gpt_image_2', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], onProgress, onResult, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -908,7 +908,8 @@ export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16',
   uploaded.filter(Boolean).forEach(m => medias.push(m))
   onProgress?.(18)
 
-  const baseParams = { ...modelBaseParams('gpt_image_2', aspectRatio), resolution }
+  // Soul sets its own quality in modelBaseParams; the other models take resolution.
+  const baseParams = model === 'soul_2' ? modelBaseParams(model, aspectRatio) : { ...modelBaseParams(model, aspectRatio), resolution }
   if (medias.length) baseParams.medias = medias
 
   // Launch jobs sequentially — parallel calls conflict over the shared MCP session

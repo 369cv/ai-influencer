@@ -44,6 +44,7 @@ The PRs are stacked; merge them in order.
 | #9 | `claude/muse-extension-hooks` | **Chrome extension hooks**: `/create?brief=&name=`, `/import?type=face\|style\|inspiration&url=&source=`, guarded `mode=import` in `/api/img-proxy` | Draft, stacked on #8 |
 | #10 | `claude/muse-influencers-restyle` | **Influencers.jsx token restyle** (styles only, no split) + **desktop sidebar rail** (≥1100px, collapsible, recents) | Draft, stacked on #9 |
 | #11 | `claude/muse-three-starters` | **Light mode only** + contrast tokens; **three starters** (Create · Manage content · Plan) behind every New/+ Create; **Plan** (`/plan` ideas + template projects), **Content** (`/content` queue, calendar, social accounts, composer), **Tracking** (`/tracking`); **workspace switcher**; **Settings → Connections** (Higgsfield, Claude, BYO posting API, your own API keys, MCP servers) and **Skills**; Create wizard no longer shows connect banners; `/api/publish` posting proxy | Draft, stacked on #10 |
+| #12 | `claude/muse-studio` | **Studio** at `/studio` (Photo · Video): prompt bar with chips (model, ratio, resolution, count, Enhance), Character slot, reference thumbnails, editable shot list, live credit estimate on Generate; job feed with Recreate / Edit / Use as reference / Make video / Post / Download. Home task templates + getting-started checklist. Media's Use as reference / Make video open the Studio | Draft, stacked on #11 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -82,6 +83,7 @@ at vercel.com/new.
 | `api/publish.js` | Posting proxy, user's own credentials per request: Ayrshare (`/api/post`, `/api/user` for the test) or a public https webhook (SSRF-guarded via `img-proxy` helpers, optional HMAC `X-Muse-Signature`) |
 | `src/pages/Tracking.jsx` | `TrackingView`: tracked creators with manual snapshots and 30-day growth (rendered inside Plan) |
 | `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting), skills (built-ins + imported SKILL.md), and `runSkill()` over `/api/claude` |
+| `src/pages/Studio.jsx` · `src/utils/studio.js` | Studio page and its data: `STUDIO_TEMPLATES` (one list for Home, New → From a template and the Studio empty state), model/ratio/resolution options, `estimate()`, the job feed (`muse_studio_jobs`, this browser only), `buildStudioPrompt()` (@image tags follow the upload order face → references → close-ups). Results are also written to `photo_studio_history` so Content → Media shows them. The old Photo/Video tabs in `Influencers.jsx` stay until each Studio flow is verified with a live Higgsfield account |
 | `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
 
 ## 4. Design system rules
