@@ -111,6 +111,10 @@ const imgProxyPlugin = {
       const url = qs.get('url')
       const name = qs.get('name') || 'image.jpg'
       if (!url) { res.writeHead(400); res.end('Missing url'); return }
+      if (qs.get('mode') === 'import') {
+        const { isSafeImportUrl } = await import('./api/img-proxy.js')
+        if (!isSafeImportUrl(url)) { res.writeHead(403); res.end('URL not allowed'); return }
+      }
       try {
         const r = await fetch(decodeURIComponent(url))
         const ct = r.headers.get('content-type') || 'image/jpeg'

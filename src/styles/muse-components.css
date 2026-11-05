@@ -266,3 +266,15 @@
   .muse-flow-card { padding: var(--space-3); }
 }
 @media (prefers-reduced-motion: reduce) { .muse-template { animation: none !important; transition: none !important; } }
+
+/* ── Import (Chrome extension entry) ─────────────────────── */
+.muse-import { max-width: 560px; }
+.muse-import-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); padding: var(--space-4); }
+.muse-import-preview { min-height: 240px; max-height: 60vh; border-radius: var(--radius-lg); background: var(--bg-tertiary); display: grid; place-items: center; overflow: hidden; }
+.muse-import-preview img { max-width: 100%; max-height: 60vh; object-fit: contain; display: block; }
+.muse-import-msg { padding: var(--space-5); color: var(--text-secondary); font-size: var(--font-size-label); text-align: center; display: inline-flex; align-items: center; gap: var(--space-2); }
+.muse-import-boards { margin-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.muse-import-boards .muse-filter-row { margin-bottom: 0; }
+.muse-spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: cs-spin .8s linear infinite; }
+.muse-empty code { font-size: var(--font-size-caption); background: var(--bg-tertiary); padding: 2px 6px; border-radius: var(--radius-sm); }
+@media (prefers-reduced-motion: reduce) { .muse-spinner { animation-duration: 2.4s; } }

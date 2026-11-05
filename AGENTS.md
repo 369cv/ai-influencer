@@ -41,6 +41,7 @@ The PRs are stacked; merge them in order.
 | #6 | `claude/muse-create-wizard` | **Create wizard restyle**: 6 one-task screens (Name, Niche, References, Story, Look, Generate), segmented progress, Back/Next pinned to the bottom, Look step with live preview + pull-up tabbed option grids | Draft, stacked on #5 |
 | #7 | `claude/muse-library` | **Library** at `/library`: media grid of every photo/video with filters, full-screen viewer with Modify, Make video, More like this, Download, Post | Draft, stacked on #6 |
 | #8 | `claude/muse-workflows` | **Workflow template gallery** at `/workflows` and trigger → steps view at `/workflows/:id`; unconnected apps show *Connect* steps | Draft, stacked on #7 |
+| #9 | `claude/muse-extension-hooks` | **Chrome extension hooks**: `/create?brief=&name=`, `/import?type=face\|style\|inspiration&url=&source=`, guarded `mode=import` in `/api/img-proxy` | Draft, stacked on #8 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -59,6 +60,8 @@ at vercel.com/new.
 | `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
 | `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
 | `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
+| `src/pages/Import.jsx` | `/import` entry for the Chrome extension (see §6) |
+| `api/img-proxy.js` | Image proxy. Default: Higgsfield/OpenAI host allowlist. `mode=import`: any public https image, with SSRF guards |
 | `src/pages/Workflows.jsx` | Template gallery + trigger → steps detail. UI only: *Run* stays disabled until a runner exists |
 | `src/utils/workflows.js` | `TEMPLATES`, `TRIGGERS`, `STEP_KINDS`, `INTEGRATIONS` (each with `isConnected()`; ElevenLabs/HeyGen/TikTok/Instagram are `available: false` until built) |
 | `src/pages/Library.jsx` | Library media grid (All/Photos/Videos + per-influencer filter) |
@@ -111,17 +114,23 @@ at vercel.com/new.
 
 The app keeps its data in **its own origin's `localStorage`**, which the extension can't
 read directly. Talk to the app through the routes below and keep the extension's own
-state in `chrome.storage`. Status: the **routes in this table are proposed and not built
-yet**, except `/create`, which exists. Build each one in the web app when the extension
-needs it, and update this table at the same time.
+state in `chrome.storage`. All routes in this table are **built** (#9). Open them with
+`chrome.tabs.create({ url })`.
 
-| Extension action | How it talks to the app | App side |
+| Extension action | URL | App side |
 |---|---|---|
-| "Create influencer from this page" | `chrome.tabs.create({ url: APP + '/create' })` | ✅ exists (no prefill via URL yet) |
-| Prefill a brief | `APP + '/create?brief=' + encodeURIComponent(text)` | ⏳ read `brief` from the query string → `prefillBackstory` |
-| Send an image as a face/style reference | `APP + '/import?type=face&url=' + encodeURIComponent(imgUrl)` | ⏳ new `/import` route: fetch through `/api/img-proxy`, then hand off to `/create` |
-| Save inspiration (image + source URL) | `APP + '/import?type=inspiration&url=…&source=…'` | ⏳ appends to the Inspiration store |
+| "Create influencer from this page" | `APP + '/create'` | ✅ |
+| Prefill a brief | `APP + '/create?brief=' + encodeURIComponent(text)` (optional `&name=`) | ✅ `brief` → backstory (max 4,000 chars), `name` → name (max 80). Navigation state wins over the query |
+| Send an image as a face reference | `APP + '/import?type=face&url=' + encodeURIComponent(imgUrl)` | ✅ `/import` fetches via `/api/img-proxy?mode=import`, shows a preview, then opens `/create` with `state.prefillFaceRef` |
+| Send an image as a style reference | `APP + '/import?type=style&url=…'` | ✅ same, with `state.prefillStyleRef` |
+| Save inspiration (image + source URL) | `APP + '/import?type=inspiration&url=…&source=' + encodeURIComponent(pageUrl)` | ✅ user picks a board (default board "From the web" is created if missing); the image is stored as a compressed data URL. `source` is shown, not stored yet |
 | Open an influencer | `APP + '/influencers'` with `state.selectId` (in-app only) | ✅ partial |
+| Open the Library | `APP + '/library'` | ✅ |
+
+**Import rules** (`api/img-proxy.js`, `mode=import`): https only, no credentials or
+non-443 ports, no IP literals or `localhost`/`.local`/`.internal` names, the hostname must
+resolve to public addresses only, no redirects, raster images only (no SVG), 15 MB cap.
+Errors come back as 403/413/400, and `/import` shows a plain message for each.
 
 **Recommended extension stack:** Manifest V3, a side panel UI built with Vite + React,
 the same `tokens.css`, and a context-menu item on images ("Send to Muse Studio").
@@ -137,7 +146,7 @@ permission for the app origin only.
 3. ✅ Create wizard restyle (#6). The bottom tab bar is hidden on `/create` because the wizard pins its own bar.
 4. ✅ Library (#7). Handoffs reuse keys the studios already read: `ps_restore_pending_<id>` (settings), `hf_start_frame_<id>` (video start frame), plus a new one-shot `ps_handoff_<id>` `{ ref, openPlan }` read by Photo Studio, and `state.studioTab` read by Influencers. Post shows *Connect* placeholders until integrations exist.
 5. ✅ Workflow template gallery (#8). Next: a step runner (Higgsfield photo + Claude caption are runnable today), then flip each integration's `available`/`isConnected` as it ships.
-6. `/import` and `?brief=` routes for the Chrome extension (section 6).
+6. ✅ `/import` and `?brief=` routes for the Chrome extension (#9). Next: build the extension itself (MV3 side panel) against §6.
 7. Integrations (HeyGen, ElevenLabs, social publishing, cloud sync): decisions still pending.
 
 **Blocked from the cloud session** (environment network allowlist): 21st.dev
