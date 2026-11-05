@@ -42,6 +42,9 @@ account (OAuth, PKCE).
 - Inline styles with CSS variables (`var(--bg)`, `var(--text-primary)`).
   Theme tokens are set on `<html data-theme="dark|light">` from
   `src/context/theme.jsx`.
+- Design tokens live in `src/design/tokens.json` (W3C DTCG). Edit there and run
+  `npm run tokens` (also runs before `build`) — never hand-edit `src/design/tokens.css`.
+  Brand: **Muse Studio**; see `docs/design/muse-studio-brand.md`.
 - IDs use `generateId()` from `store.jsx` (`Date.now() + random`).
 - Higgsfield models supported: `soul_2`, `gpt_image_2`, `nano_banana_2`,
   `nano_banana_flash`, `seedance_2_0`. Soul has its own simplified

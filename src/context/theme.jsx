@@ -25,12 +25,8 @@ let busy = false
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    if (!localStorage.getItem('theme_default_v2')) {
-      localStorage.setItem('theme_default_v2', '1')
-      localStorage.setItem('theme', 'dark')
-      return 'dark'
-    }
-    return localStorage.getItem('theme') || 'dark'
+    // Muse Studio is light-first; returning visitors keep whatever they chose.
+    return localStorage.getItem('theme') || 'light'
   })
 
   useEffect(() => {

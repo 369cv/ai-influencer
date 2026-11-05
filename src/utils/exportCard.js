@@ -436,7 +436,7 @@ export async function exportInfluencerCard(inf) {
   ctx.fillRect(CX, FY, W - CX, 30)
 
   ctx.fillStyle = '#9CA3AF'; ctx.font = '9px -apple-system, Arial, sans-serif'
-  ctx.fillText('AI Influencer Studio', cx, FY + 19)
+  ctx.fillText('Muse Studio', cx, FY + 19)
 
   const dateStr = inf.createdAt ? new Date(inf.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
   ctx.textAlign = 'right'

@@ -8,15 +8,15 @@ const pwa = VitePWA({
   registerType: 'autoUpdate',
   includeAssets: ['icon.svg', 'apple-touch-icon.png', 'hf-icon.png'],
   manifest: {
-    name: 'AI Influencer Studio',
-    short_name: 'Influencer Studio',
+    name: 'Muse Studio',
+    short_name: 'Muse Studio',
     description: 'Design, manage and generate AI influencers.',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#07070E',
-    theme_color: '#07070E',
+    background_color: '#F8F9FC',
+    theme_color: '#F8F9FC',
     icons: [
       { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' },
@@ -24,7 +24,7 @@ const pwa = VitePWA({
     ],
   },
   workbox: {
-    globPatterns: ['index.html', 'assets/**/*.{js,css}', 'assets/inter-latin-*.woff2', '*.{svg,png,ico,json}'],
+    globPatterns: ['index.html', 'assets/**/*.{js,css}', 'assets/figtree-latin-*.woff2', '*.{svg,png,ico,json}'],
     maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
