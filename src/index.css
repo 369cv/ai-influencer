@@ -144,3 +144,47 @@ a {
   .nav-link  { padding: 5px 8px !important; font-size: 12px !important; }
   .nav-brand-label { display: none !important; }
 }
+
+/* ── Muse Studio shell (home, chips, tab bar) — uses tokens only ─────────── */
+@keyframes muse-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes muse-breathe { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .muse-hero, .muse-glow, .muse-card { animation: none !important; } }
+
+.muse-home { position: relative; min-height: 100vh; padding: calc(var(--nav-h) + 12vh) var(--space-4) 120px; background: var(--bg); overflow: hidden; }
+.muse-glow { position: absolute; inset: 0; background: var(--glow); pointer-events: none; animation: muse-breathe 9s ease-in-out infinite; }
+.muse-hero { position: relative; max-width: 720px; margin: 0 auto; text-align: center; animation: muse-rise .5s ease-out both; }
+.muse-eyebrow { color: var(--text-secondary); font-size: var(--font-size-body); margin-bottom: var(--space-2); }
+.muse-display { font-size: clamp(30px, 5vw, var(--font-size-display)); font-weight: var(--font-weight-display); letter-spacing: -0.02em; margin-bottom: var(--space-5); }
+.muse-composer { display: flex; align-items: center; gap: var(--space-2); background: var(--surface); border-radius: var(--radius-pill); padding: 8px 8px 8px 10px; box-shadow: var(--shadow-md); border: 1px solid var(--border-subtle); }
+.muse-composer input { flex: 1; min-width: 0; border: none !important; box-shadow: none !important; background: transparent; color: var(--text-primary); font-size: 16px; padding: 10px 4px; }
+.muse-icon-btn { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-size: 22px; color: var(--text-secondary); }
+.muse-icon-btn:hover { background: var(--surface-hover); }
+.muse-send { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); transition: opacity .15s, transform .15s; }
+.muse-send:disabled { background: var(--bg-tertiary); color: var(--text-tertiary); cursor: default; }
+.muse-send:not(:disabled):active { transform: scale(.94); }
+.muse-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-4); }
+.muse-chip { padding: 9px 16px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); font-size: 14px; font-weight: var(--font-weight-medium); color: var(--text-primary); transition: background .15s; }
+.muse-chip:hover { background: var(--tonal); color: var(--on-tonal); border-color: transparent; }
+.muse-recent { position: relative; max-width: var(--content-max); margin: 12vh auto 0; }
+.muse-section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
+.muse-section-head h2 { font-size: var(--font-size-title); font-weight: var(--font-weight-medium); }
+.muse-text-btn { color: var(--accent); font-weight: var(--font-weight-semibold); font-size: 14px; }
+.muse-card-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-4); }
+.muse-card { background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s; animation: muse-rise .5s ease-out both; }
+.muse-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.muse-card-img { aspect-ratio: 4/5; background: var(--bg-tertiary) center/cover; }
+.muse-card-body { padding: var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+.muse-card-body span { color: var(--text-secondary); font-size: var(--font-size-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.muse-tabbar { display: none; }
+@media (max-width: 720px) {
+  .nav-links, .nav-brand-label { display: none !important; }
+  .muse-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 180; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+  .muse-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; color: var(--text-secondary); font-size: 11px; font-weight: var(--font-weight-medium); }
+  .muse-tab-icon { width: 56px; height: 30px; border-radius: var(--radius-pill); display: grid; place-items: center; transition: background .2s; }
+  .muse-tab.active { color: var(--text-primary); }
+  .muse-tab.active .muse-tab-icon { background: var(--nav-active); color: var(--on-tonal); }
+  .muse-tab.primary .muse-tab-icon { background: var(--accent); color: var(--on-accent); }
+  body { padding-bottom: 72px; }
+}
+@media (max-width: 720px) { .muse-feedback { display: none !important; } }
