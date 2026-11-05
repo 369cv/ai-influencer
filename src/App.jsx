@@ -15,6 +15,7 @@ import BrandDeals from './pages/BrandDeals'
 import Create from './pages/Create'
 import Settings from './pages/Settings'
 import Library from './pages/Library'
+import Workflows from './pages/Workflows'
 import AuthCallback from './pages/AuthCallback'
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/p5cBXw4sYaHPdcANA'
@@ -76,6 +77,8 @@ export default function App() {
         <Route path="/welcome" element={<Landing />} />
         <Route path="/influencers" element={<Influencers />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/workflows" element={<Workflows />} />
+        <Route path="/workflows/:id" element={<Workflows />} />
         <Route path="/inspiration" element={<Inspiration />} />
         <Route path="/brand-deals" element={<BrandDeals />} />
         <Route path="/create" element={<Create />} />
