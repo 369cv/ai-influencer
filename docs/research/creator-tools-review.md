@@ -59,7 +59,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
 | 8 | Post-generation rail with saved recipe + versions — **Details + Recreate built** | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
 | 9 | Approve → post pack on scheduled cards | Plan → Board | link.me, Google Workspace Studio | M |
-| 10 | Weekly ideas drop card | Home | Blueprint | M |
+| 10 | Weekly ideas drop card — **built** | Home | Blueprint | M |
 
 ### 1. Persona profile as single source of truth — Influencer profile
 Extend the existing character sheet into a portable persona object every generator reads:
@@ -144,6 +144,10 @@ A Home card: "This week's ideas", generated on demand from persona (1) + tracked
 saved inspiration; each idea goes to Plan in one click.
 - **Check:** Home shows the card with an empty state; Generate produces ideas; "Add to Plan"
   creates Board cards.
+- **Status: built** in `src/components/WeeklyIdeas.jsx` (on Home, above "Pick up where you left off").
+  Claude gets the chosen persona, the top 5 outlier posts from Plan → Creators and current Plan ideas (to
+  avoid repeats) and returns 3 ideas (format, title, hook). Saved per workspace with the week; marked
+  "from last week" once the week changes. Without an Anthropic key it shows a Connect link.
 
 ### Considered, not ranked
 - **Keyword → auto-DM → lead → product** (link.me, ManyChat): high value, but it's distribution
