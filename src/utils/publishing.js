@@ -18,6 +18,7 @@ export const platformName = id => PLATFORMS.find(p => p.id === id)?.name || id
 export const POST_STATUSES = {
   draft: 'Draft',
   planned: 'Planned',       // has a date, but not sent to a provider
+  approved: 'Approved',     // signed off; saving an edit moves it back to Draft/Planned
   scheduled: 'Scheduled',   // accepted by the provider for a future time
   posted: 'Posted',
   failed: 'Failed',

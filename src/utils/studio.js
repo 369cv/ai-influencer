@@ -54,11 +54,22 @@ export function writeJobs(list) {
 export const SESSION = `${Date.now().toString(36)}`
 
 // Results also go to the Photo Studio history so Content → Media shows them.
-export function addToMediaHistory({ url, influencer, ratio, jobId }) {
+// `recipe` is the exact Studio settings that produced this item, so the
+// viewer can show them and "Recreate" can reopen Studio with them.
+export const RECIPE_KEYS = ['mode', 'prompt', 'motion', 'model', 'ratio', 'resolution', 'seconds', 'count', 'influencerId', 'refs']
+export function toRecipe(settings, credits) {
+  const r = {}
+  RECIPE_KEYS.forEach(k => { if (settings?.[k] != null) r[k] = settings[k] })
+  if (Array.isArray(r.refs)) r.refs = r.refs.filter(x => typeof x === 'string' && !x.startsWith('data:'))
+  if (credits != null) r.credits = credits
+  return r
+}
+
+export function addToMediaHistory({ url, influencer, ratio, jobId, recipe }) {
   try {
     const key = 'photo_studio_history'
     const prev = JSON.parse(localStorage.getItem(key) || '[]')
-    const item = { histId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, url, batchId: jobId, influencerId: influencer?.id, influencerName: influencer?.name, aspectRatio: ratio, createdAt: Date.now(), settings: { aspectRatio: ratio, source: 'studio' } }
+    const item = { histId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, url, batchId: jobId, influencerId: influencer?.id, influencerName: influencer?.name, aspectRatio: ratio, createdAt: Date.now(), settings: { aspectRatio: ratio, source: 'studio', ...(recipe ? { recipe } : {}) } }
     localStorage.setItem(key, JSON.stringify([item, ...prev].slice(0, 200)))
     window.dispatchEvent(new CustomEvent('photo_studio_history_updated'))
   } catch {}

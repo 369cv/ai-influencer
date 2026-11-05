@@ -7,6 +7,7 @@ import { progress } from '../utils/planning'
 import { platformName } from '../utils/publishing'
 import { STUDIO_TEMPLATES, readJobs } from '../utils/studio'
 import { isHFConnected } from '../utils/higgsfieldAuth'
+import WeeklyIdeas from '../components/WeeklyIdeas'
 
 // Home: one composer and one "Pick up where you left off" list.
 // The picker inside the composer decides where a typed prompt goes.
@@ -138,6 +139,8 @@ export default function Home() {
           </ol>
         </section>
       )}
+
+      <WeeklyIdeas />
 
       {resume.length > 0 && (
         <section className="muse-recent muse-resume">
