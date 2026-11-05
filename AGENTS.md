@@ -36,6 +36,8 @@ The PRs are stacked; merge them in order.
 | #1 | `claude/offline-pwa-vercel` | Installable PWA, offline app shell, offline request queue, Vercel headers | Draft, mergeable |
 | #2 | `claude/muse-studio-brand` | Rebrand to Muse Studio, DTCG design tokens, logo/icons, Figtree font | Draft, stacked on #1 |
 | #3 | `claude/muse-app-shell` | Prompt-first Home at `/`, old landing moved to `/welcome`, phone bottom tab bar, nav restyled with tokens | Draft, stacked on #2 |
+| #4 | `claude/happy-heisenberg-7dihpd` | Remote MCP server at `/api/mcp` (separate session, based on `main`, not part of this stack) | Draft, independent |
+| #5 | `claude/affectionate-allen-lrw8js` | **Plan card** before every generation (Create → Generate, Photo Studio): poses, outfit, model, ratio, resolution, credit estimate, *Edit plan* / *Start* | Draft, stacked on #3 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -52,6 +54,9 @@ at vercel.com/new.
 | `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
 | `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
 | `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
+| `src/components/PlanCard.jsx` | `PlanCard` (inline) and `PlanSheet` (bottom sheet / dialog) shown before a generation starts |
+| `src/utils/creditEstimate.js` | The one table of **estimated** Higgsfield credits per model × resolution. Update numbers here only |
+| `src/styles/muse-components.css` | Shared token-only component classes: `.muse-btn-*`, `.muse-plan*`, `.muse-sheet*` |
 | `src/design/tokens.json` → `tokens.css` | Design tokens (W3C DTCG). `npm run tokens` regenerates the CSS |
 | `docs/design/muse-studio-brand.md` | Brand guide: identity, tokens, patterns |
 | `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
@@ -118,7 +123,7 @@ permission for the app origin only.
 ## 7. Roadmap
 
 1. Merge #1 → #2 → #3; import the repo into Vercel.
-2. Plan card before generation: poses, outfit, model and credit cost, with *Edit plan* / *Start*.
+2. ✅ Plan card before generation (#5). Next: use `PlanSheet` in Video Studio and the other `Influencers.jsx` generators during the dedicated restyle.
 3. Restyle the Create wizard: one task per screen, Back/Next pinned at the bottom; the Look step gets a live preview with a pull-up panel of tabbed options.
 4. Library and Content views: a media grid, a full-screen viewer, and per-image actions (Modify, Make video, More like this).
 5. A workflow template gallery for photo → caption → voice (ElevenLabs) → talking clip (HeyGen) → post (TikTok/IG).
