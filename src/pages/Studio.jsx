@@ -7,6 +7,7 @@ import { generateNImages, generateVideo } from '../utils/higgsfieldGenerate'
 import { downloadImage } from '../utils/imageUtils'
 import { hasClaude, runSkill } from '../utils/claudeAssist'
 import { MODEL_LABELS } from '../utils/creditEstimate'
+import RemixVideo from '../components/RemixVideo'
 import {
   PHOTO_MODELS, VIDEO_MODELS, PHOTO_RATIOS, VIDEO_RATIOS, PHOTO_RES, VIDEO_RES, VIDEO_SECONDS, MAX_SHOTS,
   DEFAULTS, STUDIO_TEMPLATES, estimate, readJobs, writeJobs, SESSION, addToMediaHistory, uploadable, buildStudioPrompt, toRecipe, RECIPE_KEYS,
@@ -44,6 +45,7 @@ export default function Studio() {
   const [hf, setHf] = useState(isHFConnected)
   const [enhance, setEnhance] = useState(false)
   const [showMotion, setShowMotion] = useState(false)
+  const [showRemix, setShowRemix] = useState(false)
   const [editingShots, setEditingShots] = useState(false)
   const [notice, setNotice] = useState('')
   const [showTemplates, setShowTemplates] = useState(params.get('templates') === '1')
@@ -212,11 +214,13 @@ export default function Studio() {
       <header className="muse-studio-head">
         <h1>Studio</h1>
         <Seg options={MODES} value={s.mode} onChange={switchMode} label="Mode" />
+        <button type="button" className="muse-btn muse-btn-text" onClick={() => setShowRemix(true)}>Remix a video</button>
         <button type="button" className="muse-btn muse-btn-text" onClick={() => setShowTemplates(v => !v)} aria-expanded={showTemplates}>Templates</button>
       </header>
 
       {(showTemplates || jobs.length === 0) && <TemplateGrid onPick={applyTemplate} />}
 
+      {showRemix && <RemixVideo onClose={() => setShowRemix(false)} defaultInfluencerId={s.influencerId} />}
       <section className="muse-feed" aria-label="Your generations">
         {jobs.map(j => (
           <JobRow key={j.id} job={j}

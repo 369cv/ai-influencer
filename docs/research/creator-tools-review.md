@@ -51,7 +51,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | # | Idea | Page | Sources | Effort |
 |---|---|---|---|---|
 | 1 | Persona profile as single source of truth — **Export built** | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
-| 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
+| 2 | Analyze, then remix from a reference URL — **text remix built** | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
 | 3 | Plan + cost before Generate — **mostly shipped** (cost on Generate exists; only the batch confirm is missing) | Studio | HeyGen, Higgsfield, Muzecast | S |
 | 4 | Paired image ↔ motion prompts, one-click Animate — **built** | Studio | MuzeBoard, Muzecast | M |
 | 5 | Outlier score on tracked creators — **built** | Plan → Creators | Blueprint | M |
@@ -84,6 +84,12 @@ persona sheet) or **Keep structure, new script** (drafted by Claude in the perso
 The blueprint is saved and linked to its source, persona and outputs.
 - **Check:** pasting a URL enables Analyze only; the blueprint renders as named sections; the
   two remix options appear after Analyze, each with a credit estimate.
+- **Status: "Keep structure, new script" built** (`src/components/RemixVideo.jsx`, Studio → **Remix a
+  video**). Link (optional) + pasted transcript/captions → **Analyze** (Claude) → blueprint: hook + type,
+  bridge, body beats, persuasion devices, CTA, visual style → **Write my version** in the chosen
+  persona's voice → editable script → **Add to Plan** (idea with script, structure and source). Text
+  only, no Higgsfield spend. Not built: automatic transcription (needs a provider) and "Swap in persona"
+  motion transfer.
 
 ### 3. Plan + cost before Generate — Studio
 Show model, settings, prompt summary and credit estimate on/near the Generate button; optional
