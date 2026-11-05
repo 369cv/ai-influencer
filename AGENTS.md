@@ -40,6 +40,7 @@ The PRs are stacked; merge them in order.
 | #5 | `claude/affectionate-allen-lrw8js` | **Plan card** before every generation (Create → Generate, Photo Studio): poses, outfit, model, ratio, resolution, credit estimate, *Edit plan* / *Start* | Draft, stacked on #3 |
 | #6 | `claude/muse-create-wizard` | **Create wizard restyle**: 6 one-task screens (Name, Niche, References, Story, Look, Generate), segmented progress, Back/Next pinned to the bottom, Look step with live preview + pull-up tabbed option grids | Draft, stacked on #5 |
 | #7 | `claude/muse-library` | **Library** at `/library`: media grid of every photo/video with filters, full-screen viewer with Modify, Make video, More like this, Download, Post | Draft, stacked on #6 |
+| #8 | `claude/muse-workflows` | **Workflow template gallery** at `/workflows` and trigger → steps view at `/workflows/:id`; unconnected apps show *Connect* steps | Draft, stacked on #7 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -58,6 +59,8 @@ at vercel.com/new.
 | `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
 | `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
 | `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
+| `src/pages/Workflows.jsx` | Template gallery + trigger → steps detail. UI only: *Run* stays disabled until a runner exists |
+| `src/utils/workflows.js` | `TEMPLATES`, `TRIGGERS`, `STEP_KINDS`, `INTEGRATIONS` (each with `isConnected()`; ElevenLabs/HeyGen/TikTok/Instagram are `available: false` until built) |
 | `src/pages/Library.jsx` | Library media grid (All/Photos/Videos + per-influencer filter) |
 | `src/components/MediaViewer.jsx` | Full-screen viewer: swipe/arrow keys, actions, Post sheet with *Connect* placeholders |
 | `src/utils/library.js` | `collectLibrary()` merges `photo_studio_history` + `influencer.generationHistory`; handoffs into the studios (see below) |
@@ -133,7 +136,7 @@ permission for the app origin only.
 2. ✅ Plan card before generation (#5). Next: use `PlanSheet` in Video Studio and the other `Influencers.jsx` generators during the dedicated restyle.
 3. ✅ Create wizard restyle (#6). The bottom tab bar is hidden on `/create` because the wizard pins its own bar.
 4. ✅ Library (#7). Handoffs reuse keys the studios already read: `ps_restore_pending_<id>` (settings), `hf_start_frame_<id>` (video start frame), plus a new one-shot `ps_handoff_<id>` `{ ref, openPlan }` read by Photo Studio, and `state.studioTab` read by Influencers. Post shows *Connect* placeholders until integrations exist.
-5. A workflow template gallery for photo → caption → voice (ElevenLabs) → talking clip (HeyGen) → post (TikTok/IG).
+5. ✅ Workflow template gallery (#8). Next: a step runner (Higgsfield photo + Claude caption are runnable today), then flip each integration's `available`/`isConnected` as it ships.
 6. `/import` and `?brief=` routes for the Chrome extension (section 6).
 7. Integrations (HeyGen, ElevenLabs, social publishing, cloud sync): decisions still pending.
 
