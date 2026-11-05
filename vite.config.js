@@ -1,5 +1,68 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
+
+// Installable, offline-capable app. Only the app shell is precached; the
+// ~500 MB of seed media in public/ is cached on first view instead.
+const pwa = VitePWA({
+  registerType: 'autoUpdate',
+  includeAssets: ['icon.svg', 'apple-touch-icon.png', 'hf-icon.png'],
+  manifest: {
+    name: 'Muse Studio',
+    short_name: 'Muse Studio',
+    description: 'Design, manage and generate AI influencers.',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#F8F9FC',
+    theme_color: '#F8F9FC',
+    icons: [
+      { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  },
+  workbox: {
+    globPatterns: ['index.html', 'assets/**/*.{js,css}', 'assets/figtree-latin-*.woff2', '*.{svg,png,ico,json}'],
+    maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+    navigateFallback: '/index.html',
+    navigateFallbackDenylist: [/^\/api\//],
+    cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        // API traffic (Higgsfield proxy, Claude, search) is never cached
+        urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: ({ url }) => url.pathname === '/seeds.json',
+        handler: 'StaleWhileRevalidate',
+        options: { cacheName: 'seed-data' },
+      },
+      {
+        // Seed images and generated images (same-origin + Higgsfield CDN)
+        urlPattern: ({ request }) => request.destination === 'image',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'images',
+          expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 60, purgeOnQuotaError: true },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
+      {
+        urlPattern: ({ request }) => request.destination === 'video',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'videos',
+          rangeRequests: true,
+          expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
+          cacheableResponse: { statuses: [200] },
+        },
+      },
+    ],
+  },
+})
 
 // Local dev search proxy — mirrors api/search.js for Vercel production
 const searchPlugin = {
@@ -48,6 +111,10 @@ const imgProxyPlugin = {
       const url = qs.get('url')
       const name = qs.get('name') || 'image.jpg'
       if (!url) { res.writeHead(400); res.end('Missing url'); return }
+      if (qs.get('mode') === 'import') {
+        const { isSafeImportUrl } = await import('./api/img-proxy.js')
+        if (!isSafeImportUrl(url)) { res.writeHead(403); res.end('URL not allowed'); return }
+      }
       try {
         const r = await fetch(decodeURIComponent(url))
         const ct = r.headers.get('content-type') || 'image/jpeg'
@@ -100,8 +167,27 @@ const claudePlugin = {
   },
 }
 
+// Local dev posting proxy — mirrors api/publish.js for Vercel production
+const publishPlugin = {
+  name: 'publish-proxy',
+  configureServer(server) {
+    server.middlewares.use('/api/publish', async (req, res) => {
+      if (req.method !== 'POST') { res.writeHead(405, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"POST only"}'); return }
+      const chunks = []
+      req.on('data', c => chunks.push(c))
+      await new Promise(r => req.on('end', r))
+      let body = {}
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch {}
+      const { handlePublish } = await import('./api/publish.js')
+      const { status, json } = await handlePublish(body)
+      res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      res.end(JSON.stringify(json))
+    })
+  },
+}
+
 export default defineConfig({
-  plugins: [react(), searchPlugin, imgProxyPlugin, claudePlugin],
+  plugins: [react(), pwa, searchPlugin, imgProxyPlugin, claudePlugin, publishPlugin],
   server: {
     proxy: {
       '/api/hf': {

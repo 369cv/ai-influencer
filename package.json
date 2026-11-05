@@ -9,9 +9,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tokens": "node scripts/build-tokens.mjs",
+    "prebuild": "node scripts/build-tokens.mjs"
   },
   "dependencies": {
+    "@fontsource/figtree": "^5.3.0",
     "@vercel/analytics": "^2.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.1"
+    "vite": "^5.4.1",
+    "vite-plugin-pwa": "^0.21.2"
   }
 }

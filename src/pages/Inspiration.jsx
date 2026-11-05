@@ -182,7 +182,7 @@ function BoardDetail({ board, onBack, onUpdate }) {
   )
 }
 
-export default function Inspiration() {
+export default function Inspiration({ embedded = false }) {
   const [boards, setBoards] = useInspirationBoards()
   const [selectedId, setSelectedId] = useState(null)
 
@@ -207,22 +207,14 @@ export default function Inspiration() {
   const selected = boards.find(b => b.id === selectedId)
 
   return (
-    <div style={{ paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={embedded ? undefined : { paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
       {selected ? (
         <BoardDetail board={selected} onBack={() => setSelectedId(null)} onUpdate={updateBoard} />
       ) : (
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.6px' }}>Inspiration</h1>
-            <button
-              onClick={createBoard}
-              style={{
-                padding: '9px 20px', borderRadius: 980,
-                background: 'linear-gradient(135deg,#EC4899,#8B5CF6)', color: '#fff',
-                fontSize: 14, fontWeight: 600,
-                boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
-              }}
-            >+ New Board</button>
+        <div style={embedded ? undefined : { maxWidth: 960, margin: '0 auto', padding: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: embedded ? 'flex-end' : 'space-between', marginBottom: embedded ? 16 : 28 }}>
+            {!embedded && <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.6px' }}>Inspiration</h1>}
+            <button type="button" className="muse-btn muse-btn-tonal" onClick={createBoard}>New board</button>
           </div>
 
           {boards.length === 0 ? (

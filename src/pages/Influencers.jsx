@@ -27,14 +27,15 @@ function useMobile() {
 
 // ─────────────────────────────────────────────
 // Dark sidebar palette
+// Influencer list sidebar — theme tokens (was a fixed dark palette)
 const SD = {
-  bg:      '#0d0d14',
-  border:  'rgba(255,255,255,0.07)',
-  text:    '#F4F4F5',
-  dim:     'rgba(255,255,255,0.38)',
-  active:  'rgba(255,255,255,0.1)',
-  hover:   'rgba(255,255,255,0.055)',
-  ring:    'rgba(255,255,255,0.12)',
+  bg:      'var(--bg-secondary)',
+  border:  'var(--border-subtle)',
+  text:    'var(--text-primary)',
+  dim:     'var(--text-tertiary)',
+  active:  'var(--nav-active)',
+  hover:   'var(--surface-hover)',
+  ring:    'var(--border)',
 }
 
 // ─────────────────────────────────────────────
@@ -273,15 +274,15 @@ function HeroBanner({ influencer, onDelete, pct, onUpdate }) {
                 onBlur={()=>{setEditingTag(false);onUpdate({tag:tagDraft.trim()})}}
                 onKeyDown={e=>{if(e.key==='Enter'||e.key==='Escape'){setEditingTag(false);onUpdate({tag:tagDraft.trim()})}}}
                 placeholder="Add title…"
-                style={{fontSize:12,fontWeight:600,padding:'3px 10px',borderRadius:20,border:'1.5px solid rgba(139,92,246,0.5)',background:'rgba(139,92,246,0.07)',color:'#8B5CF6',outline:'none',fontFamily:'inherit',width:140}}
+                style={{fontSize:12,fontWeight:600,padding:'3px 10px',borderRadius:20,border:'1.5px solid color-mix(in srgb, var(--accent) 50%, transparent)',background:'color-mix(in srgb, var(--accent) 7%, transparent)',color:'var(--accent)',outline:'none',fontFamily:'inherit',width:140}}
               />
             ) : (
               <button
                 onClick={()=>{setTagDraft(influencer.tag||'');setEditingTag(true)}}
                 style={{fontSize:12,fontWeight:600,padding:'3px 10px',borderRadius:20,
-                  border:`1.5px solid ${influencer.tag?'rgba(139,92,246,0.35)':'var(--border)'}`,
-                  background:influencer.tag?'rgba(139,92,246,0.07)':'transparent',
-                  color:influencer.tag?'#8B5CF6':'var(--text-tertiary)',
+                  border:`1.5px solid ${influencer.tag?'color-mix(in srgb, var(--accent) 35%, transparent)':'var(--border)'}`,
+                  background:influencer.tag?'color-mix(in srgb, var(--accent) 7%, transparent)':'transparent',
+                  color:influencer.tag?'var(--accent)':'var(--text-tertiary)',
                   cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',
                 }}
               >{influencer.tag || '+ Add title'}</button>
@@ -313,11 +314,11 @@ function HeroBanner({ influencer, onDelete, pct, onUpdate }) {
         <div style={{display:'flex',gap:8,flexShrink:0,marginLeft:isMobile?'auto':0}}>
           <button onClick={onDelete} style={{
             padding:'8px 14px',borderRadius:8,fontSize:12,fontWeight:600,
-            background:'rgba(255,59,48,0.08)',color:'#FF3B30',border:'1.5px solid rgba(255,59,48,0.2)',
+            background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',color:'var(--color-status-danger)',border:'1.5px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',
             transition:'background 0.15s',
           }}
-            onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,59,48,0.15)'}}
-            onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,59,48,0.08)'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--color-status-danger) 15%, transparent)'}}
+            onMouseLeave={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--color-status-danger) 8%, transparent)'}}
           >Delete</button>
         </div>
       </div>
@@ -339,7 +340,7 @@ function GenLoadingOverlay({ elapsed, onCancel, maxLabel = '5 min' }) {
     }}>
       <div style={{
         width:32, height:32, borderRadius:'50%',
-        border:'2.5px solid rgba(139,92,246,0.25)',
+        border:'2.5px solid color-mix(in srgb, var(--accent) 25%, transparent)',
         borderTopColor:'#A78BFA',
         animation:'spin 0.9s linear infinite',
       }}/>
@@ -441,7 +442,7 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
     <div>
       {/* Image slot */}
       <div style={{position:'relative',width:'100%',aspectRatio:'3/4',borderRadius:10,overflow:'hidden',
-        boxShadow: dragOver ? '0 0 0 2px #8B5CF6, 0 0 18px rgba(139,92,246,0.35)' : loading ? '0 0 0 1.5px rgba(139,92,246,0.5), 0 0 18px rgba(139,92,246,0.18)' : 'none',
+        boxShadow: dragOver ? '0 0 0 2px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent)' : loading ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent)' : 'none',
         transition:'box-shadow 0.3s',
       }}
         onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
@@ -474,7 +475,7 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
             }}>
               <button onClick={regenerate} disabled={loading} style={{
                 flex:1.4,padding:'6px 0',borderRadius:7,fontSize:11,fontWeight:700,
-                background:'linear-gradient(135deg,rgba(236,72,153,0.7),rgba(139,92,246,0.7))',color:'#fff',
+                background:'linear-gradient(135deg,rgba(236,72,153,0.7),color-mix(in srgb, var(--accent) 70%, transparent))',color:'#fff',
                 backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.18)',
                 transition:'opacity 0.15s',
               }}
@@ -506,8 +507,8 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
             <button onClick={e=>{e.stopPropagation();setOpen(o=>!o)}} style={{
               position:'absolute',bottom:10,left:10,right:10,
               padding:'7px 0',borderRadius:8,fontSize:11,fontWeight:700,
-              background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',
-              boxShadow:'0 2px 10px rgba(139,92,246,0.28)',transition:'opacity 0.15s',
+              background:'var(--color-brand-gradient)',color:'#fff',
+              boxShadow:'0 2px 10px color-mix(in srgb, var(--accent) 28%, transparent)',transition:'opacity 0.15s',
             }}
               onMouseEnter={e=>{e.currentTarget.style.opacity='0.85'}}
               onMouseLeave={e=>{e.currentTarget.style.opacity='1'}}>Generate Sheet</button>
@@ -517,7 +518,7 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
         {loading && (
           <div style={{
             position:'absolute', bottom:0, left:0, right:0, height:2, zIndex:10,
-            backgroundImage:'linear-gradient(90deg, transparent, #EC4899, #8B5CF6, transparent)',
+            backgroundImage:'linear-gradient(90deg, transparent, var(--color-brand-violet), var(--color-brand-blue), transparent)',
             backgroundSize:'300% 100%',
             animation:'progress-slide 1.6s linear infinite',
           }}/>
@@ -536,9 +537,9 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
               {SHEET_RATIOS.map(r=>(
                 <button key={r.id} onClick={()=>setRatio(r.id)} style={{
                   flex:1,padding:'6px 4px',borderRadius:7,fontSize:11,fontWeight:600,
-                  border:`1.5px solid ${ratio===r.id?'#8B5CF6':'var(--border)'}`,
-                  background:ratio===r.id?'rgba(139,92,246,0.1)':'var(--bg)',
-                  color:ratio===r.id?'#8B5CF6':'var(--text-secondary)',
+                  border:`1.5px solid ${ratio===r.id?'var(--accent)':'var(--border)'}`,
+                  background:ratio===r.id?'color-mix(in srgb, var(--accent) 10%, transparent)':'var(--bg)',
+                  color:ratio===r.id?'var(--accent)':'var(--text-secondary)',
                   display:'flex',flexDirection:'column',alignItems:'center',gap:1,
                 }}>
                   <span>{r.label}</span>
@@ -548,13 +549,13 @@ function CharacterSheetSlot({ influencer, onSave, onLightbox }) {
             </div>
           </div>}
 
-          {err && <div style={{fontSize:11,color:'#FF3B30',lineHeight:1.4}}>{err}</div>}
+          {err && <div style={{fontSize:11,color:'var(--color-status-danger)',lineHeight:1.4}}>{err}</div>}
 
           <button onClick={generate} disabled={loading} style={{
             padding:'9px 0',borderRadius:8,fontSize:13,fontWeight:700,
-            background:loading?'var(--bg-tertiary)':'linear-gradient(135deg,#EC4899,#8B5CF6)',
+            background:loading?'var(--bg-tertiary)':'var(--color-brand-gradient)',
             color:loading?'var(--text-tertiary)':'#fff',
-            boxShadow:loading?'none':'0 2px 12px rgba(139,92,246,0.3)',
+            boxShadow:loading?'none':'0 2px 12px color-mix(in srgb, var(--accent) 30%, transparent)',
             transition:'all 0.15s',
           }}>
             {loading ? 'Generating…' : 'Generate'}
@@ -646,7 +647,7 @@ function CloseUpSlot({ influencer, imageKey, label, onSave, onLightbox, promptFn
       <div
         style={{
           position:'relative', width:'100%', aspectRatio:'3/2', borderRadius:10, overflow:'hidden',
-          boxShadow: dragOver ? '0 0 0 2px #8B5CF6, 0 0 18px rgba(139,92,246,0.35)' : loading ? '0 0 0 1.5px rgba(139,92,246,0.5), 0 0 18px rgba(139,92,246,0.18)' : 'none',
+          boxShadow: dragOver ? '0 0 0 2px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent)' : loading ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent)' : 'none',
           transition:'box-shadow 0.3s',
         }}
         onMouseEnter={() => setHovered(true)}
@@ -674,7 +675,7 @@ function CloseUpSlot({ influencer, imageKey, label, onSave, onLightbox, promptFn
                 onClick={regenerate} disabled={loading}
                 style={{
                   flex:1.4, padding:'5px 0', borderRadius:6, fontSize:10, fontWeight:700,
-                  background: loading ? 'rgba(0,0,0,0.45)' : 'linear-gradient(135deg,rgba(236,72,153,0.7),rgba(139,92,246,0.7))',
+                  background: loading ? 'rgba(0,0,0,0.45)' : 'linear-gradient(135deg,rgba(236,72,153,0.7),color-mix(in srgb, var(--accent) 70%, transparent))',
                   color:'#fff', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)',
                   transition:'opacity 0.15s',
                 }}
@@ -721,9 +722,9 @@ function CloseUpSlot({ influencer, imageKey, label, onSave, onLightbox, promptFn
               style={{
                 position:'absolute', bottom:8, left:8, right:8,
                 padding:'6px 0', borderRadius:7, fontSize:11, fontWeight:700,
-                background: loading ? 'var(--bg-tertiary)' : 'linear-gradient(135deg,#EC4899,#8B5CF6)',
+                background: loading ? 'var(--bg-tertiary)' : 'var(--color-brand-gradient)',
                 color: loading ? 'var(--text-tertiary)' : '#fff',
-                boxShadow: loading ? 'none' : '0 2px 10px rgba(139,92,246,0.28)',
+                boxShadow: loading ? 'none' : '0 2px 10px color-mix(in srgb, var(--accent) 28%, transparent)',
                 transition:'opacity 0.15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
@@ -735,7 +736,7 @@ function CloseUpSlot({ influencer, imageKey, label, onSave, onLightbox, promptFn
         {loading && (
           <div style={{
             position:'absolute', bottom:0, left:0, right:0, height:2, zIndex:10,
-            backgroundImage:'linear-gradient(90deg, transparent, #EC4899, #8B5CF6, transparent)',
+            backgroundImage:'linear-gradient(90deg, transparent, var(--color-brand-violet), var(--color-brand-blue), transparent)',
             backgroundSize:'300% 100%',
             animation:'progress-slide 1.6s linear infinite',
           }}/>
@@ -748,7 +749,7 @@ function CloseUpSlot({ influencer, imageKey, label, onSave, onLightbox, promptFn
             r.readAsDataURL(f); e.target.value = ''
           }}/>
       </div>
-      {err && <div style={{ fontSize:11, color:'#FF3B30', marginTop:5, lineHeight:1.4 }}>{err}</div>}
+      {err && <div style={{ fontSize:11, color:'var(--color-status-danger)', marginTop:5, lineHeight:1.4 }}>{err}</div>}
     </div>
   )
 }
@@ -815,7 +816,7 @@ function MainImageSlot({ influencer, onChange, onLightbox }) {
       <div
         style={{
           position: 'relative', width: '100%', aspectRatio: '3/4', borderRadius: 10, overflow: 'hidden',
-          boxShadow: dragOver ? '0 0 0 2px #8B5CF6, 0 0 18px rgba(139,92,246,0.35)' : loading ? '0 0 0 1.5px rgba(139,92,246,0.5), 0 0 18px rgba(139,92,246,0.18)' : 'none',
+          boxShadow: dragOver ? '0 0 0 2px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent)' : loading ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent)' : 'none',
           transition: 'box-shadow 0.3s',
         }}
         onMouseEnter={() => setHovered(true)}
@@ -849,7 +850,7 @@ function MainImageSlot({ influencer, onChange, onLightbox }) {
             }}>
               <button onClick={regenerate} disabled={loading} style={{
                 flex: 1.4, padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 700,
-                background: 'linear-gradient(135deg,rgba(236,72,153,0.7),rgba(139,92,246,0.7))', color: '#fff',
+                background: 'linear-gradient(135deg,rgba(236,72,153,0.7),color-mix(in srgb, var(--accent) 70%, transparent))', color: '#fff',
                 backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.18)',
                 transition: 'opacity 0.15s',
               }}
@@ -875,7 +876,7 @@ function MainImageSlot({ influencer, onChange, onLightbox }) {
             {loading && (
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, zIndex: 10,
-                backgroundImage: 'linear-gradient(90deg, transparent, #EC4899, #8B5CF6, transparent)',
+                backgroundImage: 'linear-gradient(90deg, transparent, var(--color-brand-violet), var(--color-brand-blue), transparent)',
                 backgroundSize: '300% 100%',
                 animation: 'progress-slide 1.6s linear infinite',
               }} />
@@ -982,11 +983,11 @@ function domain(u){ try{return new URL(u).hostname.replace('www.','')}catch{retu
 const SCRIPT_STATUSES = ['Unposted','Posted']
 const SCRIPT_STATUS_STYLE = {
   Unposted: {bg:'rgba(174,174,178,0.15)',color:'#6E6E73'},
-  Posted:   {bg:'rgba(52,199,89,0.12)',  color:'#34C759'},
+  Posted:   {bg:'rgba(52,199,89,0.12)',  color:'var(--color-status-success)'},
   // legacy
   Planned:  {bg:'rgba(174,174,178,0.15)',color:'#6E6E73'},
   Shooting: {bg:'rgba(249,115,22,0.12)', color:'#F97316'},
-  Done:     {bg:'rgba(52,199,89,0.12)',  color:'#34C759'},
+  Done:     {bg:'rgba(52,199,89,0.12)',  color:'var(--color-status-success)'},
 }
 
 function SaveScriptModal({ onSave, onClose }) {
@@ -1015,7 +1016,7 @@ function SaveScriptModal({ onSave, onClose }) {
 
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'11px',borderRadius:10,border:'1.5px solid var(--border)',fontSize:14,fontWeight:500,color:'var(--text-secondary)',background:'transparent'}}>Cancel</button>
-          <button onClick={commit} style={{flex:2,padding:'11px',borderRadius:10,fontSize:14,fontWeight:700,background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',border:'none',boxShadow:'0 2px 12px rgba(139,92,246,0.3)'}}>Save Script</button>
+          <button onClick={commit} style={{flex:2,padding:'11px',borderRadius:10,fontSize:14,fontWeight:700,background:'var(--color-brand-gradient)',color:'#fff',border:'none',boxShadow:'0 2px 12px color-mix(in srgb, var(--accent) 30%, transparent)'}}>Save Script</button>
         </div>
       </div>
     </div>
@@ -1119,9 +1120,9 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
         </div>
         <button onClick={add} style={{
           padding:'7px 16px',borderRadius:980,
-          background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',
+          background:'var(--color-brand-gradient)',color:'#fff',
           fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:5,
-          boxShadow:'0 2px 10px rgba(139,92,246,0.3)',
+          boxShadow:'0 2px 10px color-mix(in srgb, var(--accent) 30%, transparent)',
         }}>+ New Script</button>
       </div>
 
@@ -1150,9 +1151,9 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                 padding:'14px 16px', borderRadius:12, cursor:'pointer',
                 background: isSelected ? 'var(--surface)' : 'var(--bg)',
                 border: isSelected
-                  ? '1.5px solid rgba(139,92,246,0.35)'
+                  ? '1.5px solid color-mix(in srgb, var(--accent) 35%, transparent)'
                   : '1.5px solid var(--border-subtle)',
-                boxShadow: isSelected ? '0 2px 12px rgba(139,92,246,0.1)' : '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: isSelected ? '0 2px 12px color-mix(in srgb, var(--accent) 10%, transparent)' : '0 1px 3px rgba(0,0,0,0.04)',
                 transition:'all 0.15s',
                 userSelect:'none',
               }}
@@ -1176,7 +1177,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
               {/* Right badges */}
               <div style={{display:'flex',alignItems:'center',gap:7,flexShrink:0}}>
                 {videoCount > 0 && (
-                  <span style={{fontSize:11,fontWeight:600,color:'#34C759',background:'rgba(52,199,89,0.1)',padding:'3px 8px',borderRadius:20}}>▶ {videoCount}</span>
+                  <span style={{fontSize:11,fontWeight:600,color:'var(--color-status-success)',background:'rgba(52,199,89,0.1)',padding:'3px 8px',borderRadius:20}}>▶ {videoCount}</span>
                 )}
                 {s.meta?.duration && (
                   <span style={{fontSize:11,color:'var(--text-tertiary)',background:'var(--bg-tertiary)',padding:'3px 8px',borderRadius:20}}>{s.meta.duration}s</span>
@@ -1221,7 +1222,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                 document.body.style.userSelect='none'
               }}
               onMouseEnter={e=>{
-                e.currentTarget.querySelector('span').style.background='rgba(139,92,246,0.7)'
+                e.currentTarget.querySelector('span').style.background='color-mix(in srgb, var(--accent) 70%, transparent)'
                 e.currentTarget.querySelector('span').style.width='3px'
               }}
               onMouseLeave={e=>{
@@ -1249,7 +1250,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                 <button
                   onClick={e=>{e.stopPropagation();del(s.id)}}
                   title="Delete script"
-                  style={{width:28,height:28,borderRadius:7,border:'1px solid rgba(255,59,48,0.2)',background:'rgba(255,59,48,0.07)',color:'#FF3B30',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}
+                  style={{width:28,height:28,borderRadius:7,border:'1px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',background:'color-mix(in srgb, var(--color-status-danger) 7%, transparent)',color:'var(--color-status-danger)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}
                 >🗑</button>
                 <button onClick={()=>setSelectedId(null)} style={{
                   width:28,height:28,borderRadius:7,border:'1.5px solid var(--border)',
@@ -1289,7 +1290,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                         <div style={{position:'relative',cursor:'pointer'}} onClick={()=>setVidLightbox(url)}>
                           <video src={url} preload="metadata" muted playsInline style={{width:'100%',height:90,objectFit:'cover',display:'block',pointerEvents:'none'}}/>
                           <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.18)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                            <div style={{width:22,height:22,borderRadius:'50%',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,paddingLeft:2,color:'#fff',boxShadow:'0 2px 8px rgba(139,92,246,0.45)'}}>▶</div>
+                            <div style={{width:22,height:22,borderRadius:'50%',background:'var(--color-brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,paddingLeft:2,color:'#fff',boxShadow:'0 2px 8px color-mix(in srgb, var(--accent) 45%, transparent)'}}>▶</div>
                           </div>
                         </div>
                         <div style={{display:'flex',gap:1,background:'var(--bg-tertiary)',padding:'3px'}}>
@@ -1299,12 +1300,12 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                               try{const r=await fetch(url);const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`video-${vi+1}.mp4`;a.click()}
                               catch{window.open(url,'_blank')}
                             }}
-                            style={{flex:1,padding:'3px 0',borderRadius:5,fontSize:11,border:'none',cursor:'pointer',background:'rgba(139,92,246,0.12)',color:'#8B5CF6',fontFamily:'inherit'}}
+                            style={{flex:1,padding:'3px 0',borderRadius:5,fontSize:11,border:'none',cursor:'pointer',background:'color-mix(in srgb, var(--accent) 12%, transparent)',color:'var(--accent)',fontFamily:'inherit'}}
                           >↓</button>
                           <button
                             title="Remove"
                             onClick={()=>upd(s.id,'videoUrls',(s.videoUrls||[]).filter(u=>u!==url))}
-                            style={{flex:1,padding:'3px 0',borderRadius:5,fontSize:11,border:'none',cursor:'pointer',background:'rgba(255,59,48,0.1)',color:'#FF3B30',fontFamily:'inherit'}}
+                            style={{flex:1,padding:'3px 0',borderRadius:5,fontSize:11,border:'none',cursor:'pointer',background:'color-mix(in srgb, var(--color-status-danger) 10%, transparent)',color:'var(--color-status-danger)',fontFamily:'inherit'}}
                           >×</button>
                         </div>
                       </div>
@@ -1317,7 +1318,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
               <div>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                   <div style={{fontSize:11,fontWeight:700,color:'var(--text-tertiary)',textTransform:'uppercase',letterSpacing:'0.5px'}}>Script</div>
-                  <button onClick={()=>copy(s.script||'',`s-${s.id}`)} style={{padding:'3px 9px',borderRadius:6,fontSize:11,fontWeight:600,border:'1px solid var(--border)',color:copied===`s-${s.id}`?'#34C759':'var(--text-secondary)',background:'var(--bg)',transition:'color 0.15s',cursor:'pointer'}}>{copied===`s-${s.id}`?'✓ Copied':'Copy'}</button>
+                  <button onClick={()=>copy(s.script||'',`s-${s.id}`)} style={{padding:'3px 9px',borderRadius:6,fontSize:11,fontWeight:600,border:'1px solid var(--border)',color:copied===`s-${s.id}`?'var(--color-status-success)':'var(--text-secondary)',background:'var(--bg)',transition:'color 0.15s',cursor:'pointer'}}>{copied===`s-${s.id}`?'✓ Copied':'Copy'}</button>
                 </div>
                 <textarea value={s.script||''} onChange={e=>upd(s.id,'script',e.target.value)}
                   placeholder="What does the influencer say?"
@@ -1333,7 +1334,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                       <div key={ri} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}
                         onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setHoveredRef({ref,rect:r})}}
                         onMouseLeave={()=>setHoveredRef(null)}>
-                        <div style={{width:54,height:70,borderRadius:9,overflow:'hidden',border:`1.5px solid ${hoveredRef?.ref===ref?'var(--accent,#8B5CF6)':'var(--border)'}`,background:'var(--bg-tertiary)',transition:'border-color 0.15s',cursor:'pointer'}}>
+                        <div style={{width:54,height:70,borderRadius:9,overflow:'hidden',border:`1.5px solid ${hoveredRef?.ref===ref?'var(--accent)':'var(--border)'}`,background:'var(--bg-tertiary)',transition:'border-color 0.15s',cursor:'pointer'}}>
                           <img src={ref.url} alt={ref.label} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'top',display:'block'}}/>
                         </div>
                         <span style={{fontSize:9,fontWeight:600,color:'var(--text-tertiary)',textAlign:'center',maxWidth:54,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ref.label}</span>
@@ -1375,7 +1376,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                     {influencerPrompt&&(
                       <button onClick={()=>upd(s.id,'prompt',influencerPrompt)} style={{padding:'3px 9px',borderRadius:6,fontSize:11,border:'1px solid var(--border)',color:'var(--text-secondary)',background:'var(--bg)',cursor:'pointer'}}>Use influencer</button>
                     )}
-                    <button onClick={()=>copy(s.prompt||'',`p-${s.id}`)} style={{padding:'3px 9px',borderRadius:6,fontSize:11,fontWeight:600,border:'1px solid var(--border)',color:copied===`p-${s.id}`?'#34C759':'var(--text-secondary)',background:'var(--bg)',transition:'color 0.15s',cursor:'pointer'}}>{copied===`p-${s.id}`?'✓ Copied':'Copy'}</button>
+                    <button onClick={()=>copy(s.prompt||'',`p-${s.id}`)} style={{padding:'3px 9px',borderRadius:6,fontSize:11,fontWeight:600,border:'1px solid var(--border)',color:copied===`p-${s.id}`?'var(--color-status-success)':'var(--text-secondary)',background:'var(--bg)',transition:'color 0.15s',cursor:'pointer'}}>{copied===`p-${s.id}`?'✓ Copied':'Copy'}</button>
                   </div>
                 </div>
                 <textarea value={s.prompt||''} onChange={e=>upd(s.id,'prompt',e.target.value)}
@@ -1810,8 +1811,8 @@ function WardrobeGenerator({ influencer, onAdd }) {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={saveToWardrobe} style={{
             flex: 1, padding: '10px', borderRadius: 9, fontSize: 13, fontWeight: 700,
-            background: 'linear-gradient(135deg,#EC4899,#8B5CF6)', color: '#fff',
-            boxShadow: '0 2px 10px rgba(139,92,246,0.3)',
+            background: 'var(--color-brand-gradient)', color: '#fff',
+            boxShadow: '0 2px 10px color-mix(in srgb, var(--accent) 30%, transparent)',
           }}>Save to Wardrobe</button>
           <button onClick={discardResult} style={{
             padding: '10px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600,
@@ -1840,10 +1841,10 @@ function WardrobeGenerator({ influencer, onAdd }) {
             <div style={{
               height: '100%',
               width: `${Math.max(3, progress)}%`,
-              background: 'linear-gradient(90deg,#EC4899,#8B5CF6)',
+              background: 'linear-gradient(90deg, var(--color-brand-violet), var(--color-brand-blue))',
               borderRadius: 980,
               transition: 'width 0.5s ease',
-              boxShadow: '0 0 10px rgba(139,92,246,0.5)',
+              boxShadow: '0 0 10px color-mix(in srgb, var(--accent) 50%, transparent)',
             }}/>
           </div>
         </div>
@@ -1878,14 +1879,14 @@ function WardrobeGenerator({ influencer, onAdd }) {
             No character sheet — generate one in the Overview tab first.
           </div>
         )}
-        {error && <div style={{ fontSize: 12, color: '#FF3B30', marginTop: 10 }}>{error}</div>}
+        {error && <div style={{ fontSize: 12, color: 'var(--color-status-danger)', marginTop: 10 }}>{error}</div>}
 
         <button onClick={generate} disabled={!canGenerate} style={{
           width: '100%', marginTop: 16, padding: '12px', borderRadius: 10, fontSize: 14, fontWeight: 700,
-          background: canGenerate ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : 'var(--bg-tertiary)',
+          background: canGenerate ? 'var(--color-brand-gradient)' : 'var(--bg-tertiary)',
           color: canGenerate ? '#fff' : 'var(--text-tertiary)',
           cursor: canGenerate ? 'pointer' : 'not-allowed',
-          boxShadow: canGenerate ? '0 2px 12px rgba(139,92,246,0.32)' : 'none',
+          boxShadow: canGenerate ? '0 2px 12px color-mix(in srgb, var(--accent) 32%, transparent)' : 'none',
           transition: 'all 0.15s',
         }}>Generate Look</button>
       </>)}
@@ -1909,13 +1910,13 @@ function WorldDropCard({ drop, editing, editName, onEditName, onStartEdit, onCom
 
   return (
     <div
-      style={{ background:'var(--bg)', borderRadius:12, border:`1.5px solid ${dragOver?'#8B5CF6':hovered?'var(--accent)':'var(--border)'}`, overflow:'hidden', boxShadow:hovered?'var(--shadow-md)':'none', transition:'border-color 0.15s, box-shadow 0.15s' }}
+      style={{ background:'var(--bg)', borderRadius:12, border:`1.5px solid ${dragOver?'var(--accent)':hovered?'var(--accent)':'var(--border)'}`, overflow:'hidden', boxShadow:hovered?'var(--shadow-md)':'none', transition:'border-color 0.15s, box-shadow 0.15s' }}
       onMouseEnter={()=>setHovered(true)}
       onMouseLeave={()=>setHovered(false)}
     >
       {/* Image slot */}
       <div
-        style={{ aspectRatio:'4/3', background: dragOver ? 'rgba(139,92,246,0.07)' : 'var(--bg-tertiary)', overflow:'hidden', cursor:'pointer', position:'relative', transition:'background 0.15s' }}
+        style={{ aspectRatio:'4/3', background: dragOver ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--bg-tertiary)', overflow:'hidden', cursor:'pointer', position:'relative', transition:'background 0.15s' }}
         onClick={() => drop.image ? onLightbox?.() : fileRef.current.click()}
         onDragOver={e=>{e.preventDefault();setDragOver(true)}}
         onDragLeave={()=>setDragOver(false)}
@@ -1969,7 +1970,7 @@ function WorldDropCard({ drop, editing, editName, onEditName, onStartEdit, onCom
           }}>✎</button>
           <button onClick={e=>{e.stopPropagation();onDelete()}} title="Delete" style={{
             width:26, height:26, borderRadius:7, border:'none', cursor:'pointer',
-            background:'rgba(255,59,48,0.08)', color:'#FF3B30',
+            background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)', color:'var(--color-status-danger)',
             display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, lineHeight:1,
           }}>×</button>
         </div>
@@ -2146,13 +2147,13 @@ function BrandDealCard({ deal, editingBrand, editBrand, onEditBrand, onStartEdit
 
   return (
     <div
-      style={{background:'var(--bg)',borderRadius:12,border:`1.5px solid ${dragOver?'#8B5CF6':hovered?'var(--accent)':'var(--border)'}`,overflow:'hidden',boxShadow:hovered?'var(--shadow-md)':'none',transition:'border-color 0.15s, box-shadow 0.15s'}}
+      style={{background:'var(--bg)',borderRadius:12,border:`1.5px solid ${dragOver?'var(--accent)':hovered?'var(--accent)':'var(--border)'}`,overflow:'hidden',boxShadow:hovered?'var(--shadow-md)':'none',transition:'border-color 0.15s, box-shadow 0.15s'}}
       onMouseEnter={()=>setHovered(true)}
       onMouseLeave={()=>setHovered(false)}
     >
       {/* Image slot */}
       <div
-        style={{aspectRatio:'4/3',background:dragOver?'rgba(139,92,246,0.07)':'var(--bg-tertiary)',overflow:'hidden',cursor:'pointer',position:'relative',transition:'background 0.15s'}}
+        style={{aspectRatio:'4/3',background:dragOver?'color-mix(in srgb, var(--accent) 7%, transparent)':'var(--bg-tertiary)',overflow:'hidden',cursor:'pointer',position:'relative',transition:'background 0.15s'}}
         onClick={()=>{ if(generating) return; if(displayImage){const imgs=hasBoth?[deal.image,deal.characterSheet]:[displayImage];onLightbox?.(imgs,hasBoth&&viewSheet?1:0)}else{fileRef.current.click()} }}
         onDragOver={e=>{e.preventDefault();setDragOver(true)}}
         onDragLeave={()=>setDragOver(false)}
@@ -2203,7 +2204,7 @@ function BrandDealCard({ deal, editingBrand, editBrand, onEditBrand, onStartEdit
         )}
         {!generating && claudeStatus && (
           <div style={{position:'absolute',bottom:6,right:6,fontSize:10,fontWeight:700,padding:'3px 7px',borderRadius:6,backdropFilter:'blur(6px)',
-            background: claudeStatus==='done' ? 'rgba(52,199,89,0.85)' : claudeStatus==='analyzing' ? 'rgba(139,92,246,0.85)' : 'rgba(255,59,48,0.85)',
+            background: claudeStatus==='done' ? 'rgba(52,199,89,0.85)' : claudeStatus==='analyzing' ? 'color-mix(in srgb, var(--accent) 85%, transparent)' : 'color-mix(in srgb, var(--color-status-danger) 85%, transparent)',
             color:'#fff',maxWidth:'90%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
           }}>
             {claudeStatus==='done' ? '✓ Claude analyzed' : claudeStatus==='analyzing' ? 'Claude analyzing…' : '✗ '+claudeStatus.replace('error:','')}
@@ -2237,7 +2238,7 @@ function BrandDealCard({ deal, editingBrand, editBrand, onEditBrand, onStartEdit
               <button onClick={e=>{e.stopPropagation();downloadImage(deal.characterSheet,`${deal.brand}-sheet.jpg`)}} title="Download sheet" style={{width:22,height:22,borderRadius:6,border:'none',cursor:'pointer',background:'var(--bg-tertiary)',color:'var(--text-secondary)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11}}>↓</button>
             )}
             <button onClick={e=>{e.stopPropagation();onStartEdit()}} title="Rename" style={{width:22,height:22,borderRadius:6,border:'none',cursor:'pointer',background:'var(--bg-tertiary)',color:'var(--text-secondary)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11}}>✎</button>
-            <button onClick={e=>{e.stopPropagation();onDelete()}} title="Delete" style={{width:22,height:22,borderRadius:6,border:'none',cursor:'pointer',background:'rgba(255,59,48,0.08)',color:'#FF3B30',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,lineHeight:1}}>×</button>
+            <button onClick={e=>{e.stopPropagation();onDelete()}} title="Delete" style={{width:22,height:22,borderRadius:6,border:'none',cursor:'pointer',background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',color:'var(--color-status-danger)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,lineHeight:1}}>×</button>
           </div>
         </div>
         <input
@@ -2250,7 +2251,7 @@ function BrandDealCard({ deal, editingBrand, editBrand, onEditBrand, onStartEdit
         {deal.image && !generating && (
           <button
             onClick={e=>{e.stopPropagation();onGenerate(deal)}}
-            style={{marginTop:8,width:'100%',padding:'5px 0',borderRadius:6,fontSize:11,fontWeight:600,background:hasSheet?'var(--bg-tertiary)':'linear-gradient(135deg,#EC4899,#8B5CF6)',color:hasSheet?'var(--text-secondary)':'#fff',boxShadow:hasSheet?'none':'0 1px 6px rgba(139,92,246,0.3)',transition:'all 0.15s',cursor:'pointer'}}
+            style={{marginTop:8,width:'100%',padding:'5px 0',borderRadius:6,fontSize:11,fontWeight:600,background:hasSheet?'var(--bg-tertiary)':'var(--color-brand-gradient)',color:hasSheet?'var(--text-secondary)':'#fff',boxShadow:hasSheet?'none':'0 1px 6px color-mix(in srgb, var(--accent) 30%, transparent)',transition:'all 0.15s',cursor:'pointer'}}
           >{hasSheet ? '↺ Regenerate Sheet' : 'Generate Sheet'}</button>
         )}
       </div>
@@ -2303,8 +2304,8 @@ function NewBrandModal({ onClose, onSave }) {
             onDrop={e=>{e.preventDefault();setDragging(false);handleFiles(e.dataTransfer.files)}}
             style={{
               borderRadius:10,padding:8,
-              border: dragging ? '1.5px dashed #8B5CF6' : '1.5px dashed transparent',
-              background: dragging ? 'rgba(139,92,246,0.07)' : 'transparent',
+              border: dragging ? '1.5px dashed var(--accent)' : '1.5px dashed transparent',
+              background: dragging ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'transparent',
               transition:'all 0.15s',
             }}
           >
@@ -2333,7 +2334,7 @@ function NewBrandModal({ onClose, onSave }) {
           <button
             disabled={!brand.trim()}
             onClick={()=>onSave({brand,category,image:images[0]||null,images})}
-            style={{flex:2,padding:'10px',borderRadius:10,fontSize:14,fontWeight:700,background:brand.trim()?'linear-gradient(135deg,#EC4899,#8B5CF6)':'var(--border)',color:brand.trim()?'#fff':'var(--text-tertiary)',boxShadow:brand.trim()?'0 2px 12px rgba(139,92,246,0.3)':'none',transition:'all 0.15s'}}
+            style={{flex:2,padding:'10px',borderRadius:10,fontSize:14,fontWeight:700,background:brand.trim()?'var(--color-brand-gradient)':'var(--border)',color:brand.trim()?'#fff':'var(--text-tertiary)',boxShadow:brand.trim()?'0 2px 12px color-mix(in srgb, var(--accent) 30%, transparent)':'none',transition:'all 0.15s'}}
           >Add Brand</button>
         </div>
       </div>
@@ -2367,8 +2368,8 @@ function ImportBrandDealsModal({ deals, existingBrands, onImport, onClose }) {
                   onClick={() => !already && toggle(deal.id)}
                   style={{
                     borderRadius:12,overflow:'hidden',cursor:already?'default':'pointer',
-                    border:`2px solid ${isSelected?'#8B5CF6':already?'var(--border-subtle)':'var(--border)'}`,
-                    background: isSelected ? 'rgba(139,92,246,0.08)' : 'var(--bg)',
+                    border:`2px solid ${isSelected?'var(--accent)':already?'var(--border-subtle)':'var(--border)'}`,
+                    background: isSelected ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--bg)',
                     opacity: already ? 0.5 : 1,
                     transition:'border-color 0.15s',
                   }}
@@ -2379,7 +2380,7 @@ function ImportBrandDealsModal({ deals, existingBrands, onImport, onClose }) {
                       : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'var(--text-tertiary)',opacity:0.25 }}>{deal.brand[0]}</div>
                     }
                     {isSelected && (
-                      <div style={{ position:'absolute',top:6,right:6,width:20,height:20,borderRadius:'50%',background:'#8B5CF6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:'#fff',fontWeight:700 }}>✓</div>
+                      <div style={{ position:'absolute',top:6,right:6,width:20,height:20,borderRadius:'50%',background:'var(--accent)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:'#fff',fontWeight:700 }}>✓</div>
                     )}
                     {already && (
                       <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.35)',fontSize:11,fontWeight:700,color:'#fff' }}>Already added</div>
@@ -2400,7 +2401,7 @@ function ImportBrandDealsModal({ deals, existingBrands, onImport, onClose }) {
           <button
             disabled={selected.size === 0}
             onClick={() => { onImport(deals.filter(d => selected.has(d.id))); onClose() }}
-            style={{ flex:2,padding:'11px',borderRadius:10,background:selected.size?'linear-gradient(135deg,#EC4899,#8B5CF6)':'var(--bg-tertiary)',color:selected.size?'#fff':'var(--text-tertiary)',fontSize:14,fontWeight:700,border:'none',cursor:selected.size?'pointer':'default',fontFamily:'inherit' }}
+            style={{ flex:2,padding:'11px',borderRadius:10,background:selected.size?'var(--color-brand-gradient)':'var(--bg-tertiary)',color:selected.size?'#fff':'var(--text-tertiary)',fontSize:14,fontWeight:700,border:'none',cursor:selected.size?'pointer':'default',fontFamily:'inherit' }}
           >Import {selected.size > 0 ? `${selected.size} Deal${selected.size>1?'s':''}` : 'Selected'}</button>
         </div>
       </div>
@@ -2529,13 +2530,13 @@ function BrandDealSection({ deals=[], onChange }) {
           <button onClick={()=>setShowImport(true)} style={{
             display:'flex',alignItems:'center',gap:6,
             padding:'8px 16px',borderRadius:8,
-            border:'1.5px solid rgba(139,92,246,0.35)',
-            background:'rgba(139,92,246,0.07)',color:'#8B5CF6',
+            border:'1.5px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+            background:'color-mix(in srgb, var(--accent) 7%, transparent)',color:'var(--accent)',
             fontSize:13,fontWeight:600,cursor:'pointer',
             transition:'border-color 0.15s, background 0.15s',
           }}
-            onMouseEnter={e=>{e.currentTarget.style.background='rgba(139,92,246,0.14)';e.currentTarget.style.borderColor='#8B5CF6'}}
-            onMouseLeave={e=>{e.currentTarget.style.background='rgba(139,92,246,0.07)';e.currentTarget.style.borderColor='rgba(139,92,246,0.35)'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--accent) 14%, transparent)';e.currentTarget.style.borderColor='var(--accent)'}}
+            onMouseLeave={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--accent) 7%, transparent)';e.currentTarget.style.borderColor='color-mix(in srgb, var(--accent) 35%, transparent)'}}
           >↓ Import from Brand Deals</button>
         )}
       </div>
@@ -2557,7 +2558,7 @@ function NewModal({ onClose, onSave }) {
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:10,borderRadius:8,border:'1.5px solid var(--border)',fontSize:14,fontWeight:500,color:'var(--text-secondary)',background:'transparent'}}>Cancel</button>
           <button disabled={!name.trim()} onClick={()=>onSave(name.trim(),gender)}
-            style={{flex:1,padding:10,borderRadius:8,background:name.trim()?'linear-gradient(135deg,#EC4899,#8B5CF6)':'var(--border)',color:name.trim()?'#fff':'var(--text-tertiary)',fontSize:14,fontWeight:600,boxShadow:name.trim()?'0 2px 12px rgba(139,92,246,0.3)':'none',transition:'all 0.15s'}}>Create</button>
+            style={{flex:1,padding:10,borderRadius:8,background:name.trim()?'var(--color-brand-gradient)':'var(--border)',color:name.trim()?'#fff':'var(--text-tertiary)',fontSize:14,fontWeight:600,boxShadow:name.trim()?'0 2px 12px color-mix(in srgb, var(--accent) 30%, transparent)':'none',transition:'all 0.15s'}}>Create</button>
         </div>
       </div>
     </div>
@@ -2740,7 +2741,7 @@ function CSStepHeader({ n, title, sub }) {
     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
       <div style={{
         width:22,height:22,borderRadius:'50%',flexShrink:0,
-        background:'linear-gradient(135deg,#EC4899,#8B5CF6)',
+        background:'var(--color-brand-gradient)',
         color:'#fff',fontSize:11,fontWeight:800,
         display:'flex',alignItems:'center',justifyContent:'center',
       }}>{n}</div>
@@ -2762,9 +2763,9 @@ function CSChips({ options, value, onChange }) {
         return (
           <button key={key} onClick={()=>onChange(on ? '' : key)} style={{
             padding:'7px 14px',borderRadius:980,fontSize:12,fontWeight:600,
-            background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-            color: on ? '#8B5CF6' : 'var(--text-secondary)',
-            border: on ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+            background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+            color: on ? 'var(--accent)' : 'var(--text-secondary)',
+            border: on ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
             transition:'all 0.15s',
           }}>{label}</button>
         )
@@ -2804,8 +2805,8 @@ function CSProductSlot({ value, onChange, dragOver, setDragOver, fileRef, label 
           onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFile(f)}}
           style={{
             width:size,height:size,borderRadius:14,cursor:'pointer',
-            border: dragOver ? '2px solid #8B5CF6' : '1.5px dashed var(--border)',
-            background: dragOver ? 'rgba(139,92,246,0.07)' : 'var(--bg-tertiary)',
+            border: dragOver ? '2px solid var(--accent)' : '1.5px dashed var(--border)',
+            background: dragOver ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--bg-tertiary)',
             display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,
             transition:'all 0.15s',
           }}
@@ -3114,8 +3115,8 @@ function WardrobeChipWithHover({ slot, active, onClick }) {
       >
         <div style={{
           width: 64, height: 86, borderRadius: 10, overflow: 'hidden',
-          border: `2px solid ${active ? '#8B5CF6' : 'var(--border)'}`,
-          boxShadow: active ? '0 0 0 2px rgba(139,92,246,0.25)' : 'none',
+          border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+          boxShadow: active ? '0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
           background: slot.image ? 'transparent' : 'var(--bg-tertiary)',
           transition: 'border-color 0.15s, box-shadow 0.15s',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -3125,7 +3126,7 @@ function WardrobeChipWithHover({ slot, active, onClick }) {
             : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" opacity="0.5"><circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
           }
         </div>
-        <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? '#8B5CF6' : 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.2, minHeight: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.2, minHeight: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
           {slot.name}
         </span>
       </button>
@@ -3266,21 +3267,21 @@ function MediaLightbox({ entry, onClose, onDownload, onReuse, onDelete, initialT
             <button onClick={e=>{e.stopPropagation(); onDownload()}} style={{
               flex:1, padding:'9px', borderRadius:10, fontSize:12, fontWeight:700,
               border:'none', cursor:'pointer', fontFamily:'inherit',
-              background:'linear-gradient(135deg,#EC4899,#8B5CF6)', color:'#fff',
+              background:'var(--color-brand-gradient)', color:'#fff',
             }}>Download</button>
           )}
           {onReuse && (
             <button onClick={e=>{e.stopPropagation(); onReuse()}} style={{
               flex:1, padding:'9px', borderRadius:10, fontSize:12, fontWeight:700,
               border:'none', cursor:'pointer', fontFamily:'inherit',
-              background:'rgba(139,92,246,0.12)', color:'#8B5CF6',
+              background:'color-mix(in srgb, var(--accent) 12%, transparent)', color:'var(--accent)',
             }}>↺ Reuse</button>
           )}
           {onDelete && (
             <button onClick={e=>{e.stopPropagation(); onDelete(); onClose()}} style={{
               flex:1, padding:'9px', borderRadius:10, fontSize:12, fontWeight:600,
               border:'none', cursor:'pointer', fontFamily:'inherit',
-              background:'rgba(255,59,48,0.08)', color:'#FF3B30',
+              background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)', color:'var(--color-status-danger)',
             }}>Delete</button>
           )}
         </div>
@@ -3349,13 +3350,13 @@ function HistoryCard({ entry, onDelete, onDownload, isSelected, onSelect, showSe
           }
           {isVideo && !hovered && (
             <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.22)', pointerEvents:'none'}}>
-              <div style={{width:34, height:34, borderRadius:'50%', background:'linear-gradient(135deg,#EC4899,#8B5CF6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, paddingLeft:3, color:'#fff', boxShadow:'0 2px 10px rgba(139,92,246,0.5)'}}>▶</div>
+              <div style={{width:34, height:34, borderRadius:'50%', background:'var(--color-brand-gradient)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, paddingLeft:3, color:'#fff', boxShadow:'0 2px 10px color-mix(in srgb, var(--accent) 50%, transparent)'}}>▶</div>
             </div>
           )}
           {!isVideo && hovered && (
             <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.28)',pointerEvents:'none',transition:'opacity 0.15s'}}>
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
-                <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 10px rgba(139,92,246,0.5)'}}>
+                <div style={{width:36,height:36,borderRadius:'50%',background:'var(--color-brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 10px color-mix(in srgb, var(--accent) 50%, transparent)'}}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
                 </div>
                 <button
@@ -3561,7 +3562,7 @@ function HistoryTab({ influencer, onUpdate, onReuseSettings }) {
           }}>↓ Download</button>
           <button onClick={deleteSelected} style={{
             padding:'5px 12px',borderRadius:8,fontSize:12,fontWeight:600,border:'none',cursor:'pointer',fontFamily:'inherit',
-            background:'rgba(255,59,48,0.1)',color:'#FF3B30',
+            background:'color-mix(in srgb, var(--color-status-danger) 10%, transparent)',color:'var(--color-status-danger)',
           }}>Delete</button>
           <button onClick={()=>setSelected(new Set())} style={{
             padding:'5px 8px',borderRadius:8,fontSize:12,fontWeight:500,border:'none',cursor:'pointer',fontFamily:'inherit',
@@ -3685,16 +3686,16 @@ function VideoStripThumb({ entry, onReuse, onDelete, isSelected, onToggle }) {
         onClick={e => { if (onToggle) { onToggle(); } else { openLightbox() } }}
         onDoubleClick={() => openLightbox()}
         style={{ flexShrink:0, width:60, borderRadius:9, overflow:'hidden', cursor:'pointer', position:'relative',
-          outline: isSelected ? '2.5px solid #8B5CF6' : hovered ? '2px solid rgba(139,92,246,0.4)' : '2px solid transparent',
+          outline: isSelected ? '2.5px solid var(--accent)' : hovered ? '2px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '2px solid transparent',
         }}>
         {isSelected && (
-          <div style={{position:'absolute',top:4,left:4,zIndex:2,width:16,height:16,borderRadius:'50%',background:'#8B5CF6',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
+          <div style={{position:'absolute',top:4,left:4,zIndex:2,width:16,height:16,borderRadius:'50%',background:'var(--accent)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
             <svg width="9" height="9" viewBox="0 0 10 8" fill="none"><polyline points="1,4 4,7 9,1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
         )}
         <video src={entry.url} preload="metadata" muted playsInline style={{width:'100%',height:90,objectFit:'cover',display:'block'}}/>
-        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background: isSelected ? 'rgba(139,92,246,0.18)' : 'rgba(0,0,0,0.18)'}}>
-          <div style={{width:22,height:22,borderRadius:'50%',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,paddingLeft:2,color:'#fff',boxShadow:'0 2px 8px rgba(139,92,246,0.45)'}}>▶</div>
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background: isSelected ? 'color-mix(in srgb, var(--accent) 18%, transparent)' : 'rgba(0,0,0,0.18)'}}>
+          <div style={{width:22,height:22,borderRadius:'50%',background:'var(--color-brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,paddingLeft:2,color:'#fff',boxShadow:'0 2px 8px color-mix(in srgb, var(--accent) 45%, transparent)'}}>▶</div>
         </div>
         <div style={{padding:'4px 6px',fontSize:9,color:'var(--text-tertiary)',fontWeight:500,background:'var(--surface)'}}>
           {new Date(entry.date).toLocaleDateString([],{month:'short',day:'numeric'})}
@@ -3727,12 +3728,12 @@ function VideoStripThumb({ entry, onReuse, onDelete, isSelected, onToggle }) {
           }</button>
           </div>
           <div style={{padding:'7px 8px', display:'flex', gap:5}}>
-            <button onClick={download} title="Download" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff'}}>↓</button>
+            <button onClick={download} title="Download" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'var(--color-brand-gradient)',color:'#fff'}}>↓</button>
             {onReuse && (
-              <button onClick={e=>{e.stopPropagation(); onReuse(entry); clearPopup(); if(_clearActiveStripPopup===clearPopup) _clearActiveStripPopup=null}} title="Reuse settings" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'rgba(139,92,246,0.12)',color:'#8B5CF6'}}>↺</button>
+              <button onClick={e=>{e.stopPropagation(); onReuse(entry); clearPopup(); if(_clearActiveStripPopup===clearPopup) _clearActiveStripPopup=null}} title="Reuse settings" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'color-mix(in srgb, var(--accent) 12%, transparent)',color:'var(--accent)'}}>↺</button>
             )}
             {onDelete && (
-              <button onClick={e=>{e.stopPropagation(); onDelete(); clearPopup(); if(_clearActiveStripPopup===clearPopup) _clearActiveStripPopup=null}} title="Delete" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'rgba(255,59,48,0.08)',color:'#FF3B30'}}>×</button>
+              <button onClick={e=>{e.stopPropagation(); onDelete(); clearPopup(); if(_clearActiveStripPopup===clearPopup) _clearActiveStripPopup=null}} title="Delete" style={{flex:1,padding:'6px 0',borderRadius:8,fontSize:13,border:'none',cursor:'pointer',fontFamily:'inherit',background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',color:'var(--color-status-danger)'}}>×</button>
             )}
           </div>
         </div>
@@ -4544,7 +4545,7 @@ ${shotsWithBeats.join('\n\n')}`
       {allImages.length > 0 && !startFrameUrl ? (
         <div style={{
           display:'flex',alignItems:'center',gap:10,padding:'9px 13px',borderRadius:10,
-          background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',
+          background:'color-mix(in srgb, var(--accent) 6%, transparent)',border:'1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
         }}>
           <div style={{display:'flex'}}>
             {allImages.slice(0,3).map((img,i)=>(
@@ -4666,7 +4667,7 @@ ${shotsWithBeats.join('\n\n')}`
                 {[h.camera, h.vibe, `${h.duration}s`, h.aspect, h.shotMode==='oner'?'1 shot':'multi'].filter(Boolean).map(tag=>(
                   <span key={tag} style={{
                     padding:'2px 8px',borderRadius:980,fontSize:10,fontWeight:600,
-                    background:'rgba(139,92,246,0.08)',color:'var(--text-secondary)',
+                    background:'color-mix(in srgb, var(--accent) 8%, transparent)',color:'var(--text-secondary)',
                   }}>{tag}</span>
                 ))}
               </div>
@@ -4699,7 +4700,7 @@ ${shotsWithBeats.join('\n\n')}`
             <div style={{
               display:'flex',justifyContent:'flex-end',marginTop:5,
               fontSize:11,fontWeight:600,
-              color: over ? '#FF3B30' : approaching ? '#F59E0B' : 'var(--text-tertiary)',
+              color: over ? 'var(--color-status-danger)' : approaching ? '#F59E0B' : 'var(--text-tertiary)',
             }}>
               {words} words
             </div>
@@ -4723,9 +4724,9 @@ ${shotsWithBeats.join('\n\n')}`
               return (
                 <button key={opt} onClick={()=>{const w=opt==='Worn';setProductWorn(w);localStorage.setItem('hf_product_worn',w?'1':'0')}} style={{
                   padding:'5px 13px',borderRadius:8,fontSize:11,fontWeight:600,cursor:'pointer',
-                  background: active ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                  color: active ? '#8B5CF6' : 'var(--text-secondary)',
-                  border: active ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                  background: active ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                  border: active ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                   transition:'all 0.15s',
                 }}>{opt}</button>
               )
@@ -4769,8 +4770,8 @@ ${shotsWithBeats.join('\n\n')}`
                           return (
                             <button key={label} onClick={()=>setDealViewSheet(p=>({...p,[deal.id]:val}))} style={{
                               padding:'3px 7px',border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:9,lineHeight:1.4,
-                              background: active ? 'linear-gradient(135deg,rgba(236,72,153,0.18),rgba(139,92,246,0.18))' : 'var(--bg-tertiary)',
-                              color: active ? '#8B5CF6' : 'var(--text-secondary)',
+                              background: active ? 'linear-gradient(135deg,rgba(236,72,153,0.18),color-mix(in srgb, var(--accent) 18%, transparent))' : 'var(--bg-tertiary)',
+                              color: active ? 'var(--accent)' : 'var(--text-secondary)',
                               transition:'all 0.12s',
                             }}>{label}</button>
                           )
@@ -4810,9 +4811,9 @@ ${shotsWithBeats.join('\n\n')}`
         style={{
           display:'flex',alignItems:'center',justifyContent:'center',gap:8,
           padding:'10px',borderRadius:10,fontSize:12,fontWeight:600,
-          background: advanced ? 'rgba(139,92,246,0.07)' : 'var(--bg-tertiary)',
-          color: advanced ? '#8B5CF6' : 'var(--text-secondary)',
-          border: advanced ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid var(--border)',
+          background: advanced ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--bg-tertiary)',
+          color: advanced ? 'var(--accent)' : 'var(--text-secondary)',
+          border: advanced ? '1.5px solid color-mix(in srgb, var(--accent) 30%, transparent)' : '1.5px solid var(--border)',
           cursor:'pointer',transition:'all 0.15s',
         }}
       >
@@ -4832,9 +4833,9 @@ ${shotsWithBeats.join('\n\n')}`
               return (
                 <button key={val} onClick={() => setVideoTimeOfDay(val)} style={{
                   padding:'7px 14px', borderRadius:980, fontSize:12, fontWeight:600,
-                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                  color: on ? '#8B5CF6' : 'var(--text-secondary)',
-                  border: on ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                  color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                  border: on ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                   transition:'all 0.15s', cursor:'pointer', fontFamily:'inherit',
                 }}>{icon} {val.charAt(0).toUpperCase() + val.slice(1)}</button>
               )
@@ -4845,7 +4846,7 @@ ${shotsWithBeats.join('\n\n')}`
         {/* Wardrobe */}
         <Sec>
           <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:14}}>
-            <div style={{width:22,height:22,borderRadius:'50%',flexShrink:0,background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',marginTop:1}}>4</div>
+            <div style={{width:22,height:22,borderRadius:'50%',flexShrink:0,background:'var(--color-brand-gradient)',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',marginTop:1}}>4</div>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{fontSize:13,fontWeight:700,color:'var(--text-primary)',lineHeight:1.2}}>Wardrobe</div>
@@ -4854,8 +4855,8 @@ ${shotsWithBeats.join('\n\n')}`
                   style={{
                     display:'flex',alignItems:'center',gap:4,flexShrink:0,
                     padding:'3px 9px',borderRadius:980,fontSize:11,fontWeight:600,
-                    border:'1px solid rgba(139,92,246,0.35)',background:'rgba(139,92,246,0.08)',
-                    color:'#8B5CF6',cursor:'pointer',fontFamily:'inherit',
+                    border:'1px solid color-mix(in srgb, var(--accent) 35%, transparent)',background:'color-mix(in srgb, var(--accent) 8%, transparent)',
+                    color:'var(--accent)',cursor:'pointer',fontFamily:'inherit',
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -4906,9 +4907,9 @@ ${shotsWithBeats.join('\n\n')}`
                   onClick={() => { setSelectedHomeId(''); localStorage.setItem(`hf_home_id_${influencer.id}`, '') }}
                   style={{
                     padding:'7px 14px',borderRadius:980,fontSize:12,fontWeight:600,
-                    background: !selectedHomeId ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                    color: !selectedHomeId ? '#8B5CF6' : 'var(--text-secondary)',
-                    border: !selectedHomeId ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                    background: !selectedHomeId ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                    color: !selectedHomeId ? 'var(--accent)' : 'var(--text-secondary)',
+                    border: !selectedHomeId ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                     transition:'all 0.15s',
                   }}
                 >None</button>
@@ -4919,9 +4920,9 @@ ${shotsWithBeats.join('\n\n')}`
                       onClick={() => { setSelectedHomeId(s.id); localStorage.setItem(`hf_home_id_${influencer.id}`, s.id) }}
                       style={{
                         padding:'7px 14px',borderRadius:980,fontSize:12,fontWeight:600,
-                        background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                        color: on ? '#8B5CF6' : 'var(--text-secondary)',
-                        border: on ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                        background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                        color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                        border: on ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                         transition:'all 0.15s',
                       }}
                     >{s.name}</button>
@@ -4978,9 +4979,9 @@ ${shotsWithBeats.join('\n\n')}`
               return (
                 <button key={c} onClick={() => {setCamera(c);localStorage.setItem('hf_camera',c)}} style={{
                   padding:'7px 14px',borderRadius:980,fontSize:12,fontWeight:600,
-                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                  color: on ? '#8B5CF6' : 'var(--text-secondary)',
-                  border: on ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                  color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                  border: on ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                   transition:'all 0.15s',
                 }}>{meta.label}</button>
               )
@@ -5024,12 +5025,12 @@ ${shotsWithBeats.join('\n\n')}`
           {audioDataUrl ? (
             <div style={{
               display:'flex',alignItems:'center',gap:12,padding:'14px 16px',marginBottom:14,
-              borderRadius:12,background:'rgba(139,92,246,0.08)',border:'1.5px solid rgba(139,92,246,0.3)',
+              borderRadius:12,background:'color-mix(in srgb, var(--accent) 8%, transparent)',border:'1.5px solid color-mix(in srgb, var(--accent) 30%, transparent)',
             }}>
               <div style={{
                 width:40,height:40,borderRadius:10,flexShrink:0,
-                background:'linear-gradient(135deg,rgba(236,72,153,0.2),rgba(139,92,246,0.2))',
-                border:'1px solid rgba(139,92,246,0.3)',
+                background:'linear-gradient(135deg,rgba(236,72,153,0.2),color-mix(in srgb, var(--accent) 20%, transparent))',
+                border:'1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
                 display:'flex',alignItems:'center',justifyContent:'center',
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -5039,8 +5040,8 @@ ${shotsWithBeats.join('\n\n')}`
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:700,color:'var(--text-primary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{audioFileName}</div>
                 {audioDuration != null && audioDuration > 13.5
-                  ? <div style={{fontSize:11,fontWeight:600,color:'#FF3B30',marginTop:2}}>⚠ {audioDuration.toFixed(1)}s — max 13s. Trim your audio before uploading.</div>
-                  : <div style={{fontSize:11,color:'rgba(139,92,246,0.8)',marginTop:2}}>{audioDuration != null ? `${audioDuration.toFixed(1)}s · ` : ''}Lip-sync via @audio_1 — voice presets ignored</div>
+                  ? <div style={{fontSize:11,fontWeight:600,color:'var(--color-status-danger)',marginTop:2}}>⚠ {audioDuration.toFixed(1)}s — max 13s. Trim your audio before uploading.</div>
+                  : <div style={{fontSize:11,color:'color-mix(in srgb, var(--accent) 80%, transparent)',marginTop:2}}>{audioDuration != null ? `${audioDuration.toFixed(1)}s · ` : ''}Lip-sync via @audio_1 — voice presets ignored</div>
                 }
               </div>
               <button onClick={() => { setAudioDataUrl(null); setAudioFileName(''); setAudioDuration(null) }} style={{
@@ -5051,14 +5052,14 @@ ${shotsWithBeats.join('\n\n')}`
           ) : (
             <button onClick={() => audioFileRef.current?.click()} style={{
               width:'100%',marginBottom:14,padding:'16px',borderRadius:12,
-              border:'2px dashed rgba(139,92,246,0.35)',background:'rgba(139,92,246,0.04)',
+              border:'2px dashed color-mix(in srgb, var(--accent) 35%, transparent)',background:'color-mix(in srgb, var(--accent) 4%, transparent)',
               cursor:'pointer',transition:'all 0.15s',display:'flex',alignItems:'center',gap:14,
               boxSizing:'border-box',
             }}>
               <div style={{
                 width:40,height:40,borderRadius:10,flexShrink:0,
-                background:'linear-gradient(135deg,rgba(236,72,153,0.12),rgba(139,92,246,0.12))',
-                border:'1px solid rgba(139,92,246,0.2)',
+                background:'linear-gradient(135deg,rgba(236,72,153,0.12),color-mix(in srgb, var(--accent) 12%, transparent))',
+                border:'1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
                 display:'flex',alignItems:'center',justifyContent:'center',
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -5067,7 +5068,7 @@ ${shotsWithBeats.join('\n\n')}`
                 </svg>
               </div>
               <div style={{textAlign:'left'}}>
-                <div style={{fontSize:13,fontWeight:700,color:'#8B5CF6'}}>Upload your own audio</div>
+                <div style={{fontSize:13,fontWeight:700,color:'var(--accent)'}}>Upload your own audio</div>
                 <div style={{fontSize:11,color:'var(--text-tertiary)',marginTop:2}}>mp3, wav, m4a — your voice drives the lip-sync</div>
               </div>
             </button>
@@ -5130,15 +5131,15 @@ ${shotsWithBeats.join('\n\n')}`
               return (
                 <button key={m.id} onClick={()=>{setShotMode(m.id);localStorage.setItem('hf_shot_mode',m.id)}} style={{
                   padding:'12px 14px',borderRadius:12,textAlign:'left',
-                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.12),rgba(139,92,246,0.12))' : 'var(--bg-tertiary)',
-                  border: on ? '1.5px solid rgba(139,92,246,0.45)' : '1.5px solid transparent',
+                  background: on ? 'linear-gradient(135deg,rgba(236,72,153,0.12),color-mix(in srgb, var(--accent) 12%, transparent))' : 'var(--bg-tertiary)',
+                  border: on ? '1.5px solid color-mix(in srgb, var(--accent) 45%, transparent)' : '1.5px solid transparent',
                   transition:'all 0.15s',
                 }}>
                   <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
                     <div style={{
                       width:8,height:8,borderRadius:'50%',flexShrink:0,
-                      background: on ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : 'var(--border)',
-                      boxShadow: on ? '0 0 6px rgba(139,92,246,0.5)' : 'none',
+                      background: on ? 'var(--color-brand-gradient)' : 'var(--border)',
+                      boxShadow: on ? '0 0 6px color-mix(in srgb, var(--accent) 50%, transparent)' : 'none',
                       transition:'all 0.15s',
                     }}/>
                     <span style={{fontSize:13,fontWeight:700,color: on ? 'var(--text-primary)' : 'var(--text-secondary)'}}>{m.label}</span>
@@ -5182,7 +5183,7 @@ ${shotsWithBeats.join('\n\n')}`
                 <div style={{fontSize:16,fontWeight:700,color:'var(--text-primary)',fontVariantNumeric:'tabular-nums'}}>{duration}s</div>
               </div>
               <input type="range" min={4} max={15} step={1} value={duration} onChange={e=>{const v=Number(e.target.value);setDuration(v);localStorage.setItem('hf_duration',v)}}
-                style={{width:'100%',accentColor:'#8B5CF6',cursor:'pointer',height:4}}/>
+                style={{width:'100%',accentColor:'var(--accent)',cursor:'pointer',height:4}}/>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
                 <span style={{fontSize:10,color:'var(--text-tertiary)'}}>4s</span>
                 <span style={{fontSize:10,color:'var(--text-tertiary)'}}>15s</span>
@@ -5198,9 +5199,9 @@ ${shotsWithBeats.join('\n\n')}`
                 ].map(({r, label}) => (
                   <button key={r} onClick={()=>{setAspect(r);localStorage.setItem('hf_aspect',r)}} style={{
                     padding:'7px 12px',borderRadius:9,fontSize:11,fontWeight:600,
-                    background: aspect===r ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                    color: aspect===r ? '#8B5CF6' : 'var(--text-secondary)',
-                    border: aspect===r ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                    background: aspect===r ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                    color: aspect===r ? 'var(--accent)' : 'var(--text-secondary)',
+                    border: aspect===r ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                     transition:'all 0.15s',whiteSpace:'nowrap',
                   }}>{label}</button>
                 ))}
@@ -5213,9 +5214,9 @@ ${shotsWithBeats.join('\n\n')}`
                 {['480p','720p','1080p'].map(r => (
                   <button key={r} onClick={()=>{setResolution(r);localStorage.setItem('hf_resolution',r)}} style={{
                     padding:'7px 12px',borderRadius:9,fontSize:11,fontWeight:600,
-                    background: resolution===r ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                    color: resolution===r ? '#8B5CF6' : 'var(--text-secondary)',
-                    border: resolution===r ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                    background: resolution===r ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                    color: resolution===r ? 'var(--accent)' : 'var(--text-secondary)',
+                    border: resolution===r ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                     transition:'all 0.15s',whiteSpace:'nowrap',
                   }}>{r}</button>
                 ))}
@@ -5228,9 +5229,9 @@ ${shotsWithBeats.join('\n\n')}`
                 {[1,2,3].map(n=>(
                   <button key={n} onClick={()=>{setOutputs(n);localStorage.setItem('hf_outputs',n)}} style={{
                     width:40,height:40,borderRadius:9,fontSize:14,fontWeight:700,
-                    background: outputs===n ? 'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(139,92,246,0.15))' : 'var(--bg-tertiary)',
-                    color: outputs===n ? '#8B5CF6' : 'var(--text-secondary)',
-                    border: outputs===n ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid transparent',
+                    background: outputs===n ? 'linear-gradient(135deg,rgba(236,72,153,0.15),color-mix(in srgb, var(--accent) 15%, transparent))' : 'var(--bg-tertiary)',
+                    color: outputs===n ? 'var(--accent)' : 'var(--text-secondary)',
+                    border: outputs===n ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                     transition:'all 0.15s',display:'flex',alignItems:'center',justifyContent:'center',
                   }}>{n}</button>
                 ))}
@@ -5246,8 +5247,8 @@ ${shotsWithBeats.join('\n\n')}`
       {genError && (
         <div style={{
           padding:'12px 14px',borderRadius:10,
-          background:'rgba(255,59,48,0.06)',border:'1px solid rgba(255,59,48,0.2)',
-          fontSize:13,color:'#FF3B30',lineHeight:1.5,
+          background:'color-mix(in srgb, var(--color-status-danger) 6%, transparent)',border:'1px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',
+          fontSize:13,color:'var(--color-status-danger)',lineHeight:1.5,
         }}>
           <strong>Generation failed:</strong> {genError}
           {/session|expired|reconnect|timed out|copyrighted|protected likeness/i.test(genError) && (
@@ -5265,15 +5266,15 @@ ${shotsWithBeats.join('\n\n')}`
               {/* Main status card */}
               <div style={{
                 padding:'14px 16px',borderRadius:14,marginBottom:8,
-                background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',
+                background:'color-mix(in srgb, var(--accent) 6%, transparent)',border:'1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
               }}>
                 {/* Top row: pulse dot + stage label + timer + cancel */}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <div style={{
                       width:7,height:7,borderRadius:'50%',flexShrink:0,
-                      background:'linear-gradient(135deg,#EC4899,#8B5CF6)',
-                      boxShadow:'0 0 8px rgba(139,92,246,0.7)',
+                      background:'var(--color-brand-gradient)',
+                      boxShadow:'0 0 8px color-mix(in srgb, var(--accent) 70%, transparent)',
                       animation:'cs-pulse 1.4s ease-in-out infinite',
                     }}/>
                     <span style={{fontSize:12,fontWeight:600,color:'var(--text-secondary)'}}>
@@ -5288,13 +5289,13 @@ ${shotsWithBeats.join('\n\n')}`
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:10}}>
                     <div style={{display:'flex',alignItems:'baseline',gap:3}}>
-                      <span style={{fontSize:16,fontWeight:800,color:'#8B5CF6',fontVariantNumeric:'tabular-nums'}}>{fmtElapsed(elapsed)}</span>
+                      <span style={{fontSize:16,fontWeight:800,color:'var(--accent)',fontVariantNumeric:'tabular-nums'}}>{fmtElapsed(elapsed)}</span>
                       <span style={{fontSize:10,color:'var(--text-tertiary)'}}>/ ~8 min</span>
                     </div>
                     <button onClick={cancelGeneration} style={{
                       padding:'4px 10px',borderRadius:7,fontSize:11,fontWeight:600,
-                      background:'rgba(255,59,48,0.08)',color:'#FF3B30',
-                      border:'1px solid rgba(255,59,48,0.2)',cursor:'pointer',
+                      background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',color:'var(--color-status-danger)',
+                      border:'1px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',cursor:'pointer',
                     }}>Cancel</button>
                   </div>
                 </div>
@@ -5303,7 +5304,7 @@ ${shotsWithBeats.join('\n\n')}`
                 <div style={{height:4,borderRadius:4,background:'var(--bg-tertiary)',overflow:'hidden',marginBottom:10}}>
                   <div style={{
                     height:'100%',borderRadius:4,
-                    background:'linear-gradient(90deg,#EC4899,#8B5CF6)',
+                    background:'linear-gradient(90deg, var(--color-brand-violet), var(--color-brand-blue))',
                     width:`${Math.round(displayProgress)}%`,
                     transition:'width 1.2s ease',
                   }}/>
@@ -5378,8 +5379,8 @@ ${shotsWithBeats.join('\n\n')}`
                         {!generating && (
                           <button onClick={()=>regenerateSlot(i)} disabled={regenSlot!==null} style={{
                             padding:'8px 10px',borderRadius:8,fontSize:12,fontWeight:600,
-                            background: regenSlot===i ? 'rgba(139,92,246,0.1)' : 'var(--bg-tertiary)',
-                            color: regenSlot===i ? '#8B5CF6' : 'var(--text-tertiary)',
+                            background: regenSlot===i ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'var(--bg-tertiary)',
+                            color: regenSlot===i ? 'var(--accent)' : 'var(--text-tertiary)',
                             border:'1.5px solid var(--border)',flexShrink:0,
                           }}>
                             {regenSlot===i ? '...' : '↺'}
@@ -5405,7 +5406,7 @@ ${shotsWithBeats.join('\n\n')}`
                         <div style={{
                           height:'100%',
                           width:`${Math.round(displayProgress)}%`,
-                          background:'linear-gradient(90deg,#EC4899,#8B5CF6)',
+                          background:'linear-gradient(90deg, var(--color-brand-violet), var(--color-brand-blue))',
                           borderRadius:2,
                           transition:'width 0.4s linear',
                         }}/>
@@ -5494,8 +5495,8 @@ ${shotsWithBeats.join('\n\n')}`
               }}
               style={{
                 padding:'12px 18px', borderRadius:12, fontSize:13, fontWeight:600,
-                border:'1.5px solid rgba(255,59,48,0.35)', background:'rgba(255,59,48,0.08)',
-                color:'#FF3B30', cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit',
+                border:'1.5px solid color-mix(in srgb, var(--color-status-danger) 35%, transparent)', background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',
+                color:'var(--color-status-danger)', cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit',
               }}
             >Cancel</button>
           ) : (
@@ -5511,12 +5512,12 @@ ${shotsWithBeats.join('\n\n')}`
             disabled={!canAct || generating}
             style={{
               flex:1, padding:'12px 18px', borderRadius:12, fontSize:14, fontWeight:700,
-              background: generating ? 'rgba(139,92,246,0.12)' : (canAct ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : 'var(--bg-tertiary)'),
-              color: generating ? '#8B5CF6' : (canAct ? '#fff' : 'var(--text-tertiary)'),
-              border: generating ? '1.5px solid rgba(139,92,246,0.3)' : 'none',
+              background: generating ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : (canAct ? 'var(--color-brand-gradient)' : 'var(--bg-tertiary)'),
+              color: generating ? 'var(--accent)' : (canAct ? '#fff' : 'var(--text-tertiary)'),
+              border: generating ? '1.5px solid color-mix(in srgb, var(--accent) 30%, transparent)' : 'none',
               cursor: (generating || !canAct) ? 'default' : 'pointer',
               transition:'all 0.2s', letterSpacing:'-0.2px', fontFamily:'inherit',
-              boxShadow: (!generating && canAct) ? '0 4px 24px rgba(139,92,246,0.35)' : 'none',
+              boxShadow: (!generating && canAct) ? '0 4px 24px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
             }}
           >
             {generating
@@ -5533,7 +5534,7 @@ ${shotsWithBeats.join('\n\n')}`
                 flexShrink:0, width:44, height:44, borderRadius:12, cursor:'pointer',
                 background: saved ? 'rgba(52,199,89,0.12)' : 'var(--bg-tertiary)',
                 border: saved ? '1.5px solid rgba(52,199,89,0.35)' : '1.5px solid var(--border)',
-                color: saved ? '#34C759' : 'var(--text-secondary)',
+                color: saved ? 'var(--color-status-success)' : 'var(--text-secondary)',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 transition:'all 0.2s',
               }}
@@ -5551,9 +5552,9 @@ ${shotsWithBeats.join('\n\n')}`
               title="Inspect prompt"
               style={{
                 flexShrink:0, width:44, height:44, borderRadius:12, cursor:'pointer',
-                background: showPrompt ? 'rgba(139,92,246,0.12)' : 'var(--bg-tertiary)',
-                border: showPrompt ? '1.5px solid rgba(139,92,246,0.4)' : '1.5px solid var(--border)',
-                color: showPrompt ? '#8B5CF6' : 'var(--text-tertiary)',
+                background: showPrompt ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--bg-tertiary)',
+                border: showPrompt ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
+                color: showPrompt ? 'var(--accent)' : 'var(--text-tertiary)',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 transition:'all 0.15s', position:'relative',
               }}
@@ -5562,7 +5563,7 @@ ${shotsWithBeats.join('\n\n')}`
                 <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
               </svg>
               {lastGeneratedPrompt && !showPrompt && (
-                <div style={{position:'absolute',top:7,right:7,width:5,height:5,borderRadius:'50%',background:'#8B5CF6'}}/>
+                <div style={{position:'absolute',top:7,right:7,width:5,height:5,borderRadius:'50%',background:'var(--accent)'}}/>
               )}
             </button>
           )}
@@ -5578,7 +5579,7 @@ ${shotsWithBeats.join('\n\n')}`
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ flexShrink: 0 }}>History · {vids.length}</span>
                 {generating && (
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#8B5CF6', background: 'rgba(139,92,246,0.1)', padding: '2px 8px', borderRadius: 6, textTransform: 'none', letterSpacing: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 10%, transparent)', padding: '2px 8px', borderRadius: 6, textTransform: 'none', letterSpacing: 0 }}>
                     {genResults.length > 0 ? `${genResults.length}/${lockedOutputs} ready` : `Generating${lockedOutputs > 1 ? ` ${lockedOutputs} videos` : ''}…`}
                   </span>
                 )}
@@ -5588,9 +5589,9 @@ ${shotsWithBeats.join('\n\n')}`
                       onClick={() => setSelectedVidIds(selectedVidIds.size === vids.length ? new Set() : new Set(vids.map(v => v.id)))}
                       style={{
                         padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
-                        background: selectedVidIds.size === vids.length ? 'rgba(139,92,246,0.1)' : 'var(--bg-tertiary)',
-                        color: selectedVidIds.size === vids.length ? '#8B5CF6' : 'var(--text-tertiary)',
-                        border: selectedVidIds.size === vids.length ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--border)',
+                        background: selectedVidIds.size === vids.length ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'var(--bg-tertiary)',
+                        color: selectedVidIds.size === vids.length ? 'var(--accent)' : 'var(--text-tertiary)',
+                        border: selectedVidIds.size === vids.length ? '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' : '1px solid var(--border)',
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >{selectedVidIds.size === vids.length ? 'Deselect all' : 'Select all'}</button>
@@ -5629,9 +5630,9 @@ ${shotsWithBeats.join('\n\n')}`
                       }}
                       style={{
                         padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
-                        background: selectedVidIds.size > 0 ? 'rgba(255,59,48,0.08)' : 'var(--bg-tertiary)',
-                        color: selectedVidIds.size > 0 ? '#FF3B30' : 'var(--text-tertiary)',
-                        border: selectedVidIds.size > 0 ? '1px solid rgba(255,59,48,0.2)' : '1px solid var(--border)',
+                        background: selectedVidIds.size > 0 ? 'color-mix(in srgb, var(--color-status-danger) 8%, transparent)' : 'var(--bg-tertiary)',
+                        color: selectedVidIds.size > 0 ? 'var(--color-status-danger)' : 'var(--text-tertiary)',
+                        border: selectedVidIds.size > 0 ? '1px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)' : '1px solid var(--border)',
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >{selectedVidIds.size > 0 ? `Delete (${selectedVidIds.size})` : 'Clear all'}</button>
@@ -5640,11 +5641,11 @@ ${shotsWithBeats.join('\n\n')}`
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {Array.from({ length: skeletons }).map((_, i) => (
-                  <div key={`skel-${i}`} style={{ width: 60, borderRadius: 9, overflow: 'hidden', outline: '2px solid rgba(139,92,246,0.28)', outlineOffset: -2 }}>
-                    <div style={{ width: '100%', height: 90, background: 'rgba(139,92,246,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'hf-pulse 1.6s ease-in-out infinite' }}>
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.2)', borderTopColor: '#8B5CF6', animation: 'hf-spin 0.75s linear infinite' }}/>
+                  <div key={`skel-${i}`} style={{ width: 60, borderRadius: 9, overflow: 'hidden', outline: '2px solid color-mix(in srgb, var(--accent) 28%, transparent)', outlineOffset: -2 }}>
+                    <div style={{ width: '100%', height: 90, background: 'color-mix(in srgb, var(--accent) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'hf-pulse 1.6s ease-in-out infinite' }}>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderTopColor: 'var(--accent)', animation: 'hf-spin 0.75s linear infinite' }}/>
                     </div>
-                    <div style={{ padding: '4px 6px', fontSize: 9, color: 'rgba(139,92,246,0.5)', fontWeight: 700, background: 'var(--surface)', letterSpacing: 1 }}>···</div>
+                    <div style={{ padding: '4px 6px', fontSize: 9, color: 'color-mix(in srgb, var(--accent) 50%, transparent)', fontWeight: 700, background: 'var(--surface)', letterSpacing: 1 }}>···</div>
                   </div>
                 ))}
                 {vids.map((entry, i) => (
@@ -5682,7 +5683,7 @@ ${shotsWithBeats.join('\n\n')}`
                   <img src={`https://img.youtube.com/vi/${ytId(v.videoUrl)}/mqdefault.jpg`} alt=""
                     style={{width:100,height:60,objectFit:'cover',borderRadius:8,flexShrink:0}}/>
                 ) : (
-                  <div style={{width:100,height:60,borderRadius:8,background:'rgba(139,92,246,0.1)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <div style={{width:100,height:60,borderRadius:8,background:'color-mix(in srgb, var(--accent) 10%, transparent)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <span style={{fontSize:22,opacity:0.4}}>▶</span>
                   </div>
                 )}
@@ -5758,7 +5759,7 @@ ${shotsWithBeats.join('\n\n')}`
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24 }}>This cannot be undone.</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button onClick={() => setConfirmVidClear(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-              <button onClick={confirmVidClear.onConfirm} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#FF3B30', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Delete</button>
+              <button onClick={confirmVidClear.onConfirm} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700, background: 'var(--color-status-danger)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Delete</button>
             </div>
           </div>
         </div>,
@@ -5857,6 +5858,16 @@ export default function Influencers() {
     hasNavigatedToScripts.current = false
   }, [influencer?.id]) // eslint-disable-line
 
+  // Library handoff: open a specific studio tab. Declared after the reset-on-switch effect so it wins. (state.studioTab = 'photo' | 'content')
+  useEffect(() => {
+    const t = location.state?.studioTab
+    if (t !== 'photo' && t !== 'content') return
+    setStudioTab(t)
+    setMobileView('detail')
+    localStorage.setItem('inf_studio_tab', t)
+    if (t === 'photo') setPhotoRestoreKey(k => k + 1)
+  }, [location.state?.studioTab, location.state?.selectId]) // eslint-disable-line
+
   const topImages=influencer?[influencer.mainImage,influencer.characterSheetImage,influencer.closeUpImage1,influencer.closeUpImage2].filter(Boolean):[]
 
   function create(name,gender) {
@@ -5922,7 +5933,7 @@ export default function Influencers() {
   }
 
   return (
-    <div style={{display:'flex',position:'fixed',top:'var(--nav-h)',left:0,right:0,bottom:0,background:'var(--bg)'}}>
+    <div style={{display:'flex',position:'fixed',top:'var(--nav-h)',left:'var(--rail-offset, 0px)',right:0,bottom:0,background:'var(--bg)',transition:'left .25s ease-out'}}>
       {showNew&&<NewModal onClose={()=>setShowNew(false)} onSave={create}/>}
       {lightbox&&<Lightbox images={lightbox.images} startIndex={lightbox.index} onClose={()=>setLightbox(null)}/>}
       {ctxMenu&&(
@@ -6093,7 +6104,7 @@ export default function Influencers() {
                       ):(
                         <div style={{fontSize:13,fontWeight:600,color:SD.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{inf.name}</div>
                       )}
-                      <div style={{fontSize:11,color:inf.tag?'rgba(139,92,246,0.75)':inf.gender?gc:SD.dim,marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                      <div style={{fontSize:11,color:inf.tag?'color-mix(in srgb, var(--accent) 75%, transparent)':inf.gender?gc:SD.dim,marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                         {inf.tag || inf.gender || 'Influencer'}
                       </div>
                     </div>
@@ -6119,7 +6130,7 @@ export default function Influencers() {
             document.body.style.userSelect='none'
           }}
           onMouseEnter={e=>{
-            e.currentTarget.querySelector('span').style.background='rgba(139,92,246,0.7)'
+            e.currentTarget.querySelector('span').style.background='color-mix(in srgb, var(--accent) 70%, transparent)'
             e.currentTarget.querySelector('span').style.width='3px'
           }}
           onMouseLeave={e=>{
@@ -6184,12 +6195,13 @@ export default function Influencers() {
               }}>Photos</button>
               <button onClick={()=>{ setStudioTab('content'); localStorage.setItem('inf_studio_tab','content') }} style={{
                 padding:'9px 22px',borderRadius:10,fontSize:13,fontWeight:600,border:'none',
-                background: studioTab==='content' ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : 'transparent',
+                background: studioTab==='content' ? 'var(--color-brand-gradient)' : 'transparent',
                 color: studioTab==='content' ? '#fff' : 'var(--text-tertiary)',
-                boxShadow: studioTab==='content' ? '0 2px 14px rgba(139,92,246,0.35)' : 'none',
+                boxShadow: studioTab==='content' ? '0 2px 14px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
                 transition:'all 0.18s',
               }}>Videos</button>
             </div>
+            <button type="button" className="muse-btn muse-btn-tonal" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>navigate('/studio',{state:{influencerId:influencer.id}})}>Open in Studio</button>
           </div>
 
 
@@ -6233,8 +6245,8 @@ export default function Influencers() {
           {!influencer.mainImage && (
             <div style={{
               borderRadius:18,padding:'36px 28px',textAlign:'center',
-              background:'linear-gradient(135deg,rgba(236,72,153,0.06),rgba(139,92,246,0.08))',
-              border:'1.5px dashed rgba(139,92,246,0.3)',
+              background:'linear-gradient(135deg,rgba(236,72,153,0.06),color-mix(in srgb, var(--accent) 8%, transparent))',
+              border:'1.5px dashed color-mix(in srgb, var(--accent) 30%, transparent)',
             }}>
               <div style={{fontSize:38,marginBottom:12,lineHeight:1}}>✦</div>
               <div style={{fontSize:20,fontWeight:700,color:'var(--text-primary)',marginBottom:6,letterSpacing:'-0.3px'}}>
@@ -6248,13 +6260,13 @@ export default function Influencers() {
                 style={{
                   display:'inline-flex',alignItems:'center',gap:10,
                   padding:'13px 28px',borderRadius:12,fontSize:15,fontWeight:700,
-                  background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',
+                  background:'var(--color-brand-gradient)',color:'#fff',
                   border:'none',cursor:'pointer',
-                  boxShadow:'0 4px 20px rgba(139,92,246,0.4)',
+                  boxShadow:'0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent)',
                   transition:'transform 0.15s,box-shadow 0.15s',
                 }}
-                onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 6px 28px rgba(139,92,246,0.5)'}}
-                onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 4px 20px rgba(139,92,246,0.4)'}}
+                onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 6px 28px color-mix(in srgb, var(--accent) 50%, transparent)'}}
+                onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent)'}}
               >
                 ✦ Generate your influencer
               </button>
@@ -6353,18 +6365,18 @@ export default function Influencers() {
         <main style={{flex:1,position:'relative',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',background:'#07070E'}}>
           <div style={{position:'absolute',width:700,height:700,top:'-20%',left:'-15%',borderRadius:'50%',pointerEvents:'none',background:'radial-gradient(circle, rgba(236,72,153,0.22) 0%, transparent 65%)',animation:'orb1 14s ease-in-out infinite'}}/>
           <div style={{position:'absolute',width:580,height:580,top:'-12%',right:'-10%',borderRadius:'50%',pointerEvents:'none',background:'radial-gradient(circle, rgba(0,113,227,0.18) 0%, transparent 65%)',animation:'orb2 19s ease-in-out infinite'}}/>
-          <div style={{position:'absolute',width:700,height:700,bottom:'-28%',left:'20%',borderRadius:'50%',pointerEvents:'none',background:'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 65%)',animation:'orb3 23s ease-in-out infinite'}}/>
+          <div style={{position:'absolute',width:700,height:700,bottom:'-28%',left:'20%',borderRadius:'50%',pointerEvents:'none',background:'radial-gradient(circle, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 65%)',animation:'orb3 23s ease-in-out infinite'}}/>
           <div style={{position:'absolute',inset:0,pointerEvents:'none',backgroundImage:'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',backgroundSize:'32px 32px'}}/>
           <div style={{position:'absolute',inset:0,pointerEvents:'none',background:'radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(7,7,14,0.75) 100%)'}}/>
           <div style={{position:'relative',zIndex:1,textAlign:'center'}}>
-            <div style={{width:72,height:72,borderRadius:20,margin:'0 auto 24px',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 40px rgba(139,92,246,0.45)'}}>
+            <div style={{width:72,height:72,borderRadius:20,margin:'0 auto 24px',background:'var(--color-brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 40px color-mix(in srgb, var(--accent) 45%, transparent)'}}>
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="5.5" stroke="white" strokeWidth="2"/><path d="M4 28c0-6.6 5.4-12 12-12s12 5.4 12 12" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
             <h2 style={{fontSize:26,fontWeight:800,letterSpacing:'-0.6px',color:'#fff',marginBottom:10,lineHeight:1.2}}>Build your first influencer</h2>
             <p style={{fontSize:14,color:'rgba(255,255,255,0.38)',marginBottom:28}}>Design a unique AI persona in minutes.</p>
-            <button onClick={()=>navigate('/create')} style={{padding:'13px 36px',borderRadius:980,background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',fontSize:15,fontWeight:700,letterSpacing:'-0.2px',boxShadow:'0 0 32px rgba(139,92,246,0.4),0 4px 16px rgba(0,0,0,0.3)',transition:'transform 0.18s,box-shadow 0.18s'}}
-              onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04) translateY(-1px)';e.currentTarget.style.boxShadow='0 0 52px rgba(139,92,246,0.55),0 8px 24px rgba(0,0,0,0.4)'}}
-              onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 0 32px rgba(139,92,246,0.4),0 4px 16px rgba(0,0,0,0.3)'}}>+ Create Influencer</button>
+            <button onClick={()=>navigate('/create')} style={{padding:'13px 36px',borderRadius:980,background:'var(--color-brand-gradient)',color:'#fff',fontSize:15,fontWeight:700,letterSpacing:'-0.2px',boxShadow:'0 0 32px color-mix(in srgb, var(--accent) 40%, transparent),0 4px 16px rgba(0,0,0,0.3)',transition:'transform 0.18s,box-shadow 0.18s'}}
+              onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04) translateY(-1px)';e.currentTarget.style.boxShadow='0 0 52px color-mix(in srgb, var(--accent) 55%, transparent),0 8px 24px rgba(0,0,0,0.4)'}}
+              onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 0 32px color-mix(in srgb, var(--accent) 40%, transparent),0 4px 16px rgba(0,0,0,0.3)'}}>+ Create Influencer</button>
           </div>
         </main>
       ) : (
@@ -6376,13 +6388,13 @@ export default function Influencers() {
           </div>
           <div style={{position:'absolute',inset:0,backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',background:'rgba(255,255,255,0.82)',pointerEvents:'none'}}/>
           <div style={{position:'relative',zIndex:1,textAlign:'center'}}>
-            <div style={{width:72,height:72,borderRadius:20,margin:'0 auto 24px',background:'linear-gradient(135deg,#EC4899,#8B5CF6)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(139,92,246,0.4)'}}>
+            <div style={{width:72,height:72,borderRadius:20,margin:'0 auto 24px',background:'var(--color-brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px color-mix(in srgb, var(--accent) 40%, transparent)'}}>
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="5.5" stroke="white" strokeWidth="2"/><path d="M4 28c0-6.6 5.4-12 12-12s12 5.4 12 12" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
             <h2 style={{fontSize:26,fontWeight:800,letterSpacing:'-0.6px',color:'var(--text-primary)',marginBottom:24}}>Build your first influencer</h2>
-            <button onClick={()=>navigate('/create')} style={{padding:'13px 36px',borderRadius:980,background:'linear-gradient(135deg,#EC4899,#8B5CF6)',color:'#fff',fontSize:15,fontWeight:700,letterSpacing:'-0.2px',boxShadow:'0 0 28px rgba(139,92,246,0.35),0 4px 16px rgba(0,0,0,0.12)',transition:'transform 0.18s,box-shadow 0.18s'}}
-              onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04) translateY(-1px)';e.currentTarget.style.boxShadow='0 0 48px rgba(139,92,246,0.5),0 8px 24px rgba(0,0,0,0.14)'}}
-              onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 0 28px rgba(139,92,246,0.35),0 4px 16px rgba(0,0,0,0.12)'}}>+ Create Influencer</button>
+            <button onClick={()=>navigate('/create')} style={{padding:'13px 36px',borderRadius:980,background:'var(--color-brand-gradient)',color:'#fff',fontSize:15,fontWeight:700,letterSpacing:'-0.2px',boxShadow:'0 0 28px color-mix(in srgb, var(--accent) 35%, transparent),0 4px 16px rgba(0,0,0,0.12)',transition:'transform 0.18s,box-shadow 0.18s'}}
+              onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.04) translateY(-1px)';e.currentTarget.style.boxShadow='0 0 48px color-mix(in srgb, var(--accent) 50%, transparent),0 8px 24px rgba(0,0,0,0.14)'}}
+              onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 0 28px color-mix(in srgb, var(--accent) 35%, transparent),0 4px 16px rgba(0,0,0,0.12)'}}>+ Create Influencer</button>
           </div>
         </main>
       ))}
