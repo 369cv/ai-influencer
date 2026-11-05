@@ -1267,13 +1267,20 @@ export default function Create() {
   const location = useLocation()
   const [, setInfluencers] = useInfluencers()
   const [step, setStep] = useState(1)
-  const prefill = location.state || {}
+  // Prefill sources: in-app navigation state, or the query string for the Chrome
+  // extension (/create?brief=…&name=…). See AGENTS.md §6.
+  const query = new URLSearchParams(location.search)
+  const prefill = {
+    ...(query.get('brief') ? { prefillBackstory: query.get('brief').slice(0, 4000) } : {}),
+    ...(query.get('name') ? { prefillName: query.get('name').slice(0, 80) } : {}),
+    ...(location.state || {}),
+  }
   const [data, setData] = useState({
     name: prefill.prefillName || '', gender: prefill.prefillGender || '', age: '', niches: [], nicheCustom: '',
     backstory: prefill.prefillBackstory || '', personality: 50,
     ethnicity: '', skinTone: '', hairColor: '', hairLength: 'Long', hairTexture: 'Straight',
     eyeColor: '', build: '', uniqueFeatures: '',
-    vibeWords: [], faceRef: null, styleRef: null,
+    vibeWords: [], faceRef: prefill.prefillFaceRef || null, styleRef: prefill.prefillStyleRef || null,
     faceRefNote: '', styleRefNote: '',
   })
 
