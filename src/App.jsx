@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
-import { ThemeProvider, useTheme } from './context/theme'
+import { ThemeProvider } from './context/theme'
+import { WorkspaceProvider } from './context/workspace'
 import { StoreProvider } from './store'
 import { silentRefreshHFToken } from './utils/higgsfieldAuth'
 import Nav from './components/Nav'
@@ -18,12 +19,15 @@ import Settings from './pages/Settings'
 import Library from './pages/Library'
 import Workflows from './pages/Workflows'
 import Import from './pages/Import'
+import Content from './pages/Content'
+import Plan from './pages/Plan'
+import Tracking from './pages/Tracking'
+import StarterSheet from './components/StarterSheet'
 import AuthCallback from './pages/AuthCallback'
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/p5cBXw4sYaHPdcANA'
 
 function FeedbackButton() {
-  const { isDark } = useTheme()
   const [hover, setHover] = useState(false)
 
   return (
@@ -39,13 +43,13 @@ function FeedbackButton() {
         position: 'fixed', bottom: 24, right: 24, zIndex: 200,
         display: 'flex', alignItems: 'center', gap: 8,
         height: 44, padding: '0 16px', borderRadius: 22,
-        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-        border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         backdropFilter: 'blur(12px)',
-        color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)',
+        color: 'var(--text-primary)',
         fontSize: 14, fontWeight: 600, textDecoration: 'none',
         cursor: 'pointer',
-        boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 12px rgba(0,0,0,0.10)',
+        boxShadow: 'var(--shadow-md)',
         transform: hover ? 'translateY(-2px)' : 'none',
         transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), background 0.18s',
       }}
@@ -71,6 +75,7 @@ export default function App() {
   return (
     <ThemeProvider>
     <StoreProvider>
+    <WorkspaceProvider>
     <BrowserRouter>
       <AppSidebar />
       <Nav />
@@ -79,6 +84,9 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/welcome" element={<Landing />} />
         <Route path="/influencers" element={<Influencers />} />
+        <Route path="/content" element={<Content />} />
+        <Route path="/plan" element={<Plan />} />
+        <Route path="/tracking" element={<Tracking />} />
         <Route path="/library" element={<Library />} />
         <Route path="/workflows" element={<Workflows />} />
         <Route path="/import" element={<Import />} />
@@ -90,10 +98,12 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <StarterSheet />
       <FeedbackButton />
       <MobileTabBar />
       <Analytics />
     </BrowserRouter>
+    </WorkspaceProvider>
     </StoreProvider>
     </ThemeProvider>
   )

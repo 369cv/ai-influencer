@@ -43,6 +43,7 @@ The PRs are stacked; merge them in order.
 | #8 | `claude/muse-workflows` | **Workflow template gallery** at `/workflows` and trigger → steps view at `/workflows/:id`; unconnected apps show *Connect* steps | Draft, stacked on #7 |
 | #9 | `claude/muse-extension-hooks` | **Chrome extension hooks**: `/create?brief=&name=`, `/import?type=face\|style\|inspiration&url=&source=`, guarded `mode=import` in `/api/img-proxy` | Draft, stacked on #8 |
 | #10 | `claude/muse-influencers-restyle` | **Influencers.jsx token restyle** (styles only, no split) + **desktop sidebar rail** (≥1100px, collapsible, recents) | Draft, stacked on #9 |
+| #11 | `claude/muse-three-starters` | **Light mode only** + contrast tokens; **three starters** (Create · Manage content · Plan) behind every New/+ Create; **Plan** (`/plan` ideas + template projects), **Content** (`/content` queue, calendar, social accounts, composer), **Tracking** (`/tracking`); **workspace switcher**; **Settings → Connections** (Higgsfield, Claude, BYO posting API, your own API keys, MCP servers) and **Skills**; Create wizard no longer shows connect banners; `/api/publish` posting proxy | Draft, stacked on #10 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -74,6 +75,13 @@ at vercel.com/new.
 | `src/styles/muse-components.css` | Shared token-only component classes: `.muse-btn-*`, `.muse-plan*`, `.muse-sheet*` |
 | `src/design/tokens.json` → `tokens.css` | Design tokens (W3C DTCG). `npm run tokens` regenerates the CSS |
 | `docs/design/muse-studio-brand.md` | Brand guide: identity, tokens, patterns |
+| `src/components/StarterSheet.jsx` | The three starters. `openStarters(mode?)` opens it from anywhere (nav, rail, tab bar, Home "+") |
+| `src/context/workspace.jsx` | Workspaces + `useWorkspaceStore(base)`: localStorage key `${base}__${workspaceId}` for `muse_ideas`, `muse_projects`, `muse_posts`, `muse_accounts`, `muse_tracked` |
+| `src/pages/Plan.jsx` · `src/utils/planning.js` | Ideas (statuses, brainstorm with a skill) and projects built from `PROJECT_TEMPLATES` (content piece, series, brand deal, launch); each step can link to where it's done or run a skill |
+| `src/pages/Content.jsx` · `src/utils/publishing.js` | Queue, month calendar, social accounts, composer (Library media picker, caption skill). `publishPost()` → `/api/publish` |
+| `api/publish.js` | Posting proxy, user's own credentials per request: Ayrshare (`/api/post`, `/api/user` for the test) or a public https webhook (SSRF-guarded via `img-proxy` helpers, optional HMAC `X-Muse-Signature`) |
+| `src/pages/Tracking.jsx` | Tracked creators with manual snapshots and 30-day growth |
+| `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting), skills (built-ins + imported SKILL.md), and `runSkill()` over `/api/claude` |
 | `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
 
 ## 4. Design system rules

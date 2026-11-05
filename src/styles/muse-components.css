@@ -7,7 +7,10 @@
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
   transition: background .15s, transform .15s, opacity .15s;
 }
-.muse-btn:disabled { opacity: .5; cursor: default; }
+.muse-btn:disabled { cursor: default; }
+/* Disabled = neutral fill + readable text (a faded accent with white text fails contrast). */
+.muse-btn-filled:disabled, .muse-btn-tonal:disabled { background: var(--bg-tertiary); color: var(--text-tertiary); }
+.muse-btn-text:disabled { color: var(--text-tertiary); }
 .muse-btn:not(:disabled):active { transform: scale(.98); }
 .muse-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
 .muse-btn-filled { background: var(--accent); color: var(--on-accent); }
@@ -119,7 +122,9 @@
 .muse-tile.on .muse-tile-sub { color: var(--on-tonal); opacity: .75; }
 .muse-look-foot { display: flex; justify-content: flex-end; padding: 0 var(--space-3) var(--space-3); }
 .muse-field { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--font-size-label); color: var(--text-secondary); }
-.muse-field input, .muse-field textarea { width: 100%; padding: 12px 14px; border-radius: var(--radius-md); border: 1.5px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 16px; }
+.muse-field input, .muse-field textarea, .muse-field select { width: 100%; padding: 12px 14px; border-radius: var(--radius-md); border: 1.5px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 16px; }
+.muse-field input::placeholder, .muse-field textarea::placeholder { color: var(--text-tertiary); }
+.muse-field input[type=checkbox] { width: 18px; padding: 0; }
 
 @media (max-width: 720px) {
   .muse-wizard-body.wide { padding-left: 0; padding-right: 0; }

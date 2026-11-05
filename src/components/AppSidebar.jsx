@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useInfluencers } from '../store'
+import { openStarters } from './StarterSheet'
 
 // Desktop sidebar (≥1100px): a collapsible rail with New, the main sections and
 // recent influencers. Phones use MobileTabBar; mid widths keep the top nav links.
@@ -16,10 +17,16 @@ const I = {
   flow: 'M6 4v6a2 2 0 0 0 2 2h8a2 2 0 0 1 2 2v6M6 4a2 2 0 1 0 0 .01M18 20a2 2 0 1 0 0 .01',
   spark: 'M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z',
   deal: 'M20 7H4v12h16zM16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2',
+  content: 'M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5',
+  plan: 'M9 4h6M5 8h14v12H5zM9 12h6M9 16h4',
+  track: 'M3 17l6-6 4 4 8-8M15 7h6v6',
 }
 const LINKS = [
   { to: '/', label: 'Home', icon: I.home, end: true },
   { to: '/influencers', label: 'Influencers', icon: I.people },
+  { to: '/content', label: 'Content', icon: I.content },
+  { to: '/plan', label: 'Plan', icon: I.plan },
+  { to: '/tracking', label: 'Tracking', icon: I.track },
   { to: '/library', label: 'Library', icon: I.library },
   { to: '/workflows', label: 'Workflows', icon: I.flow },
   { to: '/inspiration', label: 'Inspiration', icon: I.spark },
@@ -50,9 +57,9 @@ export default function AppSidebar() {
         <Icon d={I.menu} />
       </button>
 
-      <Link to="/create" className="muse-rail-new" title="New influencer">
-        <Icon d={I.plus} /><span className="muse-rail-label">New influencer</span>
-      </Link>
+      <button type="button" className="muse-rail-new" title="Create, manage content or plan" onClick={() => openStarters()}>
+        <Icon d={I.plus} /><span className="muse-rail-label">New</span>
+      </button>
 
       <nav className="muse-rail-nav">
         {LINKS.map(l => (
