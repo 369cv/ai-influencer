@@ -7,13 +7,14 @@ const I = {
   plus: 'M12 5v14M5 12h14',
   spark: 'M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z',
   deal: 'M20 7H4v12h16zM16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2',
+  library: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
 }
 const TABS = [
   { to: '/', label: 'Home', icon: I.home, end: true },
   { to: '/influencers', label: 'Influencers', icon: I.people },
   { to: '/create', label: 'Create', icon: I.plus, primary: true },
   { to: '/inspiration', label: 'Ideas', icon: I.spark },
-  { to: '/brand-deals', label: 'Deals', icon: I.deal },
+  { to: '/library', label: 'Library', icon: I.library },
 ]
 
 export default function MobileTabBar() {

@@ -5857,6 +5857,16 @@ export default function Influencers() {
     hasNavigatedToScripts.current = false
   }, [influencer?.id]) // eslint-disable-line
 
+  // Library handoff: open a specific studio tab. Declared after the reset-on-switch effect so it wins. (state.studioTab = 'photo' | 'content')
+  useEffect(() => {
+    const t = location.state?.studioTab
+    if (t !== 'photo' && t !== 'content') return
+    setStudioTab(t)
+    setMobileView('detail')
+    localStorage.setItem('inf_studio_tab', t)
+    if (t === 'photo') setPhotoRestoreKey(k => k + 1)
+  }, [location.state?.studioTab, location.state?.selectId]) // eslint-disable-line
+
   const topImages=influencer?[influencer.mainImage,influencer.characterSheetImage,influencer.closeUpImage1,influencer.closeUpImage2].filter(Boolean):[]
 
   function create(name,gender) {
