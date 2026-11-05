@@ -31,7 +31,7 @@ const ENHANCE_SKILL = {
 }
 
 function blankSettings(mode = 'photo') {
-  return { mode, prompt: '', influencerId: null, refs: [], shots: [], ...DEFAULTS[mode] }
+  return { mode, prompt: '', motion: '', influencerId: null, refs: [], shots: [], ...DEFAULTS[mode] }
 }
 
 export default function Studio() {
@@ -43,6 +43,7 @@ export default function Studio() {
   const [s, setS] = useState(() => blankSettings(params.get('mode') === 'video' ? 'video' : 'photo'))
   const [hf, setHf] = useState(isHFConnected)
   const [enhance, setEnhance] = useState(false)
+  const [showMotion, setShowMotion] = useState(false)
   const [editingShots, setEditingShots] = useState(false)
   const [notice, setNotice] = useState('')
   const [showTemplates, setShowTemplates] = useState(params.get('templates') === '1')
@@ -77,6 +78,7 @@ export default function Studio() {
         let next = mode && mode !== x.mode ? { ...blankSettings(mode), influencerId: x.influencerId } : { ...x }
         if (st.influencerId) next.influencerId = st.influencerId
         if (st.ref) next.refs = [...new Set([st.ref, ...next.refs])].slice(0, 4)
+        if (st.motion && (mode || next.mode) === 'video') next.prompt = st.motion
         return next
       })
       if (st.template) applyTemplate(STUDIO_TEMPLATES.find(t => t.id === st.template))
@@ -196,7 +198,7 @@ export default function Studio() {
     setTimeout(() => promptRef.current?.focus(), 50)
   }
   const useAsRef = url => { set({ refs: [...new Set([url, ...s.refs])].slice(0, 4) }); setNotice('Added as a reference.') }
-  const makeVideo = (url, j) => { setS({ ...blankSettings('video'), influencerId: j?.settings?.influencerId || s.influencerId, prompt: j?.settings?.prompt || '', refs: [url] }); setParams(p => { p.set('mode', 'video'); return p }, { replace: true }); setNotice('The photo is the start frame. Describe the motion.') }
+  const makeVideo = (url, j) => { const motion = j?.settings?.motion || ''; setS({ ...blankSettings('video'), influencerId: j?.settings?.influencerId || s.influencerId, prompt: motion, refs: [url] }); setParams(p => { p.set('mode', 'video'); return p }, { replace: true }); setNotice(motion ? 'The photo is the start frame, and its motion prompt is filled in.' : 'The photo is the start frame. Describe the motion.') }
   const post = (url, j) => navigate('/content?compose=1', { state: { prefillMedia: url, influencerId: j?.settings?.influencerId } })
 
   const models = s.mode === 'video' ? VIDEO_MODELS : PHOTO_MODELS
@@ -258,6 +260,17 @@ export default function Studio() {
           aria-label="Prompt"
         />
 
+        {s.mode === 'photo' && (showMotion || s.motion) && (
+          <input
+            className="muse-input muse-input-sm"
+            value={s.motion}
+            onChange={e => set({ motion: e.target.value })}
+            placeholder="Motion for when you animate it: slow turn to camera, hair in the wind…"
+            aria-label="Motion prompt"
+            style={{ marginTop: 2 }}
+          />
+        )}
+
         {editingShots && s.mode === 'photo' && (
           <div className="muse-shots" aria-label="Shot list">
             {s.shots.map((shot, i) => (
@@ -299,6 +312,7 @@ export default function Studio() {
             )}
           {s.mode === 'photo' && !s.shots.length && <button type="button" className="muse-pchip" onClick={() => { set({ shots: Array.from({ length: s.count }, () => '') }); setEditingShots(true) }} title="Write a different shot for each image">Shot list</button>}
 
+          {s.mode === 'photo' && <button type="button" className={`muse-pchip${showMotion || s.motion ? ' on' : ''}`} aria-pressed={showMotion || !!s.motion} onClick={() => { if (showMotion || s.motion) { setShowMotion(false); set({ motion: '' }) } else setShowMotion(true) }} title="Save a motion prompt with these photos, used when you animate them">Motion</button>}
           <button type="button" className={`muse-pchip${enhance ? ' on' : ''}`} aria-pressed={enhance} disabled={!hasClaude()} onClick={() => setEnhance(v => !v)} title={hasClaude() ? 'Rewrite the prompt with Claude before generating' : 'Add your Anthropic key in Settings → Connections to use this'}>✦ Enhance</button>
 
           <button type="submit" className="muse-pbar-go" disabled={!hf}>

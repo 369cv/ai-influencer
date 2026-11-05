@@ -53,7 +53,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 1 | Persona profile as single source of truth — **Export built** | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
 | 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
 | 3 | Plan + cost before Generate — **mostly shipped** (cost on Generate exists; only the batch confirm is missing) | Studio | HeyGen, Higgsfield, Muzecast | S |
-| 4 | Paired image ↔ motion prompts, one-click Animate | Studio | MuzeBoard, Muzecast | M |
+| 4 | Paired image ↔ motion prompts, one-click Animate — **built** | Studio | MuzeBoard, Muzecast | M |
 | 5 | Outlier score on tracked creators — **built** | Plan → Creators | Blueprint | M |
 | 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
@@ -96,6 +96,10 @@ Each saved image prompt can carry a linked motion prompt; **Animate** on a still
 mode (Seedance) with that motion text and the still as first frame.
 - **Check:** a saved prompt shows Image / Motion tabs; Animate switches Studio to Video with
   both filled.
+- **Status: built** without a separate saved-prompt library: Studio's Photo mode has a **Motion** chip
+  that opens a one-line motion prompt, saved with each photo's settings (`settings.recipe.motion`).
+  **Make video** (Studio feed and Content viewer) now opens Video mode with the photo as start frame and
+  that motion prompt filled in, instead of reusing the still's prompt. Details shows it too.
 
 ### 5. Outlier score on tracked creators — Plan → Creators
 Rank posts by views ÷ that creator's own baseline (e.g. "208×"), not raw views; **Save to

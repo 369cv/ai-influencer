@@ -85,7 +85,7 @@ export default function Library({ embedded = false }) {
           onMoreLikeThis={it => it.settings?.source === 'studio'
             ? (setOpen(null), navigate('/studio', { state: { ref: it.url, influencerId: it.influencerId } }))
             : go(handoffToPhotoStudio(it, { openPlan: true }))}
-          onMakeVideo={it => { setOpen(null); navigate('/studio?mode=video', { state: { ref: it.url, influencerId: it.influencerId, mode: 'video' } }) }}
+          onMakeVideo={it => { setOpen(null); navigate('/studio?mode=video', { state: { ref: it.url, influencerId: it.influencerId, mode: 'video', motion: it.settings?.recipe?.motion || undefined } }) }}
           onRecreate={it => { const r = it.settings?.recipe; if (!r) return; setOpen(null); navigate(r.mode === 'video' ? '/studio?mode=video' : '/studio', { state: { recipe: r } }) }}
         />
       )}

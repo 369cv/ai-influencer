@@ -63,6 +63,7 @@ function DetailsSheet({ item, date, onRecreate }) {
   const [copied, setCopied] = useState(false)
   const r = item.settings?.recipe || null
   const rows = [
+    r?.motion && ['Motion prompt', r.motion],
     r?.model && ['Model', MODEL_LABELS[r.model] || r.model],
     ['Aspect', r?.ratio || item.aspectRatio],
     r?.resolution && ['Resolution', String(r.resolution).toUpperCase()],
