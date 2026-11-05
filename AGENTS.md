@@ -1,0 +1,144 @@
+# AGENTS.md — handoff for coding agents (Antigravity, Claude Code, Cursor, …)
+
+This is the context a coding agent needs to work on **Muse Studio** or to build the
+companion **Chrome extension** without stepping on the web app. Read it before
+changing anything. The deeper project notes are in `CLAUDE.md`.
+
+Tags: `muse-studio` · `web-app` · `pwa` · `chrome-extension` · `design-system` · `handoff`
+
+## Index
+
+| # | Section | Read it when |
+|---|---|---|
+| 1 | [What the product is](#1-what-the-product-is) | Always |
+| 2 | [Current state & open PRs](#2-current-state--open-prs) | Before branching |
+| 3 | [Architecture map](#3-architecture-map) | Before touching code |
+| 4 | [Design system rules](#4-design-system-rules) | Any UI work, extension UI included |
+| 5 | [Rules — do / don't](#5-rules--do--dont) | Always |
+| 6 | [Chrome extension: integration contract](#6-chrome-extension-integration-contract) | Building the extension |
+| 7 | [Roadmap](#7-roadmap) | Picking up the next task |
+| 8 | [Reference library](#8-reference-library) | Designing a screen |
+
+## 1. What the product is
+
+Muse Studio is a local-first React + Vite web app (and installable PWA) for designing
+AI influencers and generating their photos and videos. Generation runs through the
+**user's own Higgsfield account** (OAuth PKCE). All user data lives in the browser's
+`localStorage`; there is no backend database. Hosting is on Vercel: `api/*.js` are
+serverless proxies.
+
+## 2. Current state & open PRs
+
+The PRs are stacked; merge them in order.
+
+| PR | Branch | What it does | Status |
+|---|---|---|---|
+| #1 | `claude/offline-pwa-vercel` | Installable PWA, offline app shell, offline request queue, Vercel headers | Draft, mergeable |
+| #2 | `claude/muse-studio-brand` | Rebrand to Muse Studio, DTCG design tokens, logo/icons, Figtree font | Draft, stacked on #1 |
+| #3 | `claude/muse-app-shell` | Prompt-first Home at `/`, old landing moved to `/welcome`, phone bottom tab bar, nav restyled with tokens | Draft, stacked on #2 |
+
+**Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
+`main` is production and every PR gets a preview URL. The repo must be imported once
+at vercel.com/new.
+
+## 3. Architecture map
+
+| Path | Role |
+|---|---|
+| `src/App.jsx` | Routes, providers, global chrome (Nav, OfflineBanner, MobileTabBar) |
+| `src/pages/Home.jsx` | Prompt-first home; a typed brief opens `/create` with `state.prefillBackstory` |
+| `src/pages/Create.jsx` | Creation wizard; accepts `location.state` `{ prefillName, prefillGender, prefillBackstory, replaceId }` |
+| `src/pages/Influencers.jsx` | Profile + Content Studio + Video Studio (6k+ lines; **don't refactor casually**) |
+| `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
+| `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
+| `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
+| `src/design/tokens.json` → `tokens.css` | Design tokens (W3C DTCG). `npm run tokens` regenerates the CSS |
+| `docs/design/muse-studio-brand.md` | Brand guide: identity, tokens, patterns |
+| `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
+
+## 4. Design system rules
+
+- **Use the tokens only.** Write `var(--accent)`, `var(--tonal)`, `var(--surface)`,
+  `var(--radius-pill)`, `var(--space-4)` and so on, never raw hex. To change a value,
+  edit `src/design/tokens.json` and run `npm run tokens`; never hand-edit `tokens.css`.
+- **Look:** a calm AI studio. Light canvas, a soft `--glow` behind the primary action,
+  pill controls, tonal buttons for secondary actions, a solid `--accent` for the one
+  primary action, large light headings (Figtree 400).
+- **Motion:** short and calm (≤500ms ease-out, small rise or fade); hover lifts cards
+  by 2px. Always honor `prefers-reduced-motion`.
+- **Phone first:** below 720px, the nav links hide and `.muse-tabbar` takes over. Keep
+  tap targets at least 40px.
+- **Brand:** the name is "Muse Studio" and the logo is `public/icon.svg`. Never use
+  Google, Gemini or Workspace names, logos, colors or the Google Sans font. The style
+  is inspired by them, but the brand is original.
+- **Chrome extension:** reuse the same `tokens.css` (copy it, or import it from the
+  repo) so the extension looks native to the app.
+
+## 5. Rules — do / don't
+
+**Do**
+- Run `npm run build` before every push. It also regenerates the tokens.
+- Keep new UI in small components; put shared ones in `src/components/`.
+- Keep the app working offline: don't add runtime CDN fonts or scripts, and bundle
+  assets instead.
+- Open one PR per concern and include phone and desktop screenshots.
+
+**Don't**
+- Don't kill the dev server on port 5173; the owner keeps it running.
+- Don't commit API keys or secrets. That includes `.mcp.json` files with keys in them;
+  use environment variables or secrets.
+- Don't change the Higgsfield OAuth `client_name` or the prompt strings that still
+  say "AI Influencer Studio"; existing connections depend on them.
+- Don't split `Influencers.jsx` without a dedicated session that verifies every flow
+  in the browser.
+
+## 6. Chrome extension: integration contract
+
+The app keeps its data in **its own origin's `localStorage`**, which the extension can't
+read directly. Talk to the app through the routes below and keep the extension's own
+state in `chrome.storage`. Status: the **routes in this table are proposed and not built
+yet**, except `/create`, which exists. Build each one in the web app when the extension
+needs it, and update this table at the same time.
+
+| Extension action | How it talks to the app | App side |
+|---|---|---|
+| "Create influencer from this page" | `chrome.tabs.create({ url: APP + '/create' })` | ✅ exists (no prefill via URL yet) |
+| Prefill a brief | `APP + '/create?brief=' + encodeURIComponent(text)` | ⏳ read `brief` from the query string → `prefillBackstory` |
+| Send an image as a face/style reference | `APP + '/import?type=face&url=' + encodeURIComponent(imgUrl)` | ⏳ new `/import` route: fetch through `/api/img-proxy`, then hand off to `/create` |
+| Save inspiration (image + source URL) | `APP + '/import?type=inspiration&url=…&source=…'` | ⏳ appends to the Inspiration store |
+| Open an influencer | `APP + '/influencers'` with `state.selectId` (in-app only) | ✅ partial |
+
+**Recommended extension stack:** Manifest V3, a side panel UI built with Vite + React,
+the same `tokens.css`, and a context-menu item on images ("Send to Muse Studio").
+The minimal permissions are `contextMenus`, `sidePanel`, `storage`, and host
+permission for the app origin only.
+
+`APP` = the Vercel production URL (or `http://localhost:5173` in development).
+
+## 7. Roadmap
+
+1. Merge #1 → #2 → #3; import the repo into Vercel.
+2. Plan card before generation: poses, outfit, model and credit cost, with *Edit plan* / *Start*.
+3. Restyle the Create wizard: one task per screen, Back/Next pinned at the bottom; the Look step gets a live preview with a pull-up panel of tabbed options.
+4. Library and Content views: a media grid, a full-screen viewer, and per-image actions (Modify, Make video, More like this).
+5. A workflow template gallery for photo → caption → voice (ElevenLabs) → talking clip (HeyGen) → post (TikTok/IG).
+6. `/import` and `?brief=` routes for the Chrome extension (section 6).
+7. Integrations (HeyGen, ElevenLabs, social publishing, cloud sync): decisions still pending.
+
+**Blocked from the cloud session** (environment network allowlist): 21st.dev
+components, urltoany.com, studio.workspace.google.com and motionsites.ai. Add those
+domains, plus a `TWENTY_FIRST_API_KEY` secret, to use them.
+
+## 8. Reference library
+
+Mobbin collection **Muse Studio – Redesign** (private; teammates only):
+https://mobbin.com/collections/4d67ec64-2c83-4904-9f30-cc90e820aca3/mobile/screens
+
+| Pattern | References |
+|---|---|
+| Prompt-first home, plan card | Google Gemini (web) |
+| Character / avatar creation | Instagram avatar, Character AI create-a-character |
+| Image generation | Luma, Magnific (tool panel + templates), X/Grok |
+| Video generation | CapCut AI video (credit confirm), Grok imagine (A/B pick), TikTok create video |
+| Workflow builder / templates | Remote automation canvas, Base44 workflows, Gumloop list, Square trigger→action |
+| Marketing site hero | Runway, Luma AI, FLORA, VEED |

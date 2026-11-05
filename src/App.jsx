@@ -7,6 +7,8 @@ import { silentRefreshHFToken } from './utils/higgsfieldAuth'
 import Nav from './components/Nav'
 import OfflineBanner from './components/OfflineBanner'
 import Landing from './pages/Landing'
+import Home from './pages/Home'
+import MobileTabBar from './components/MobileTabBar'
 import Influencers from './pages/Influencers'
 import Inspiration from './pages/Inspiration'
 import BrandDeals from './pages/BrandDeals'
@@ -22,6 +24,7 @@ function FeedbackButton() {
 
   return (
     <a
+      className="muse-feedback"
       href={FEEDBACK_FORM_URL}
       target="_blank"
       rel="noopener noreferrer"
@@ -68,7 +71,8 @@ export default function App() {
       <Nav />
       <OfflineBanner />
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/welcome" element={<Landing />} />
         <Route path="/influencers" element={<Influencers />} />
         <Route path="/inspiration" element={<Inspiration />} />
         <Route path="/brand-deals" element={<BrandDeals />} />
@@ -78,6 +82,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <FeedbackButton />
+      <MobileTabBar />
       <Analytics />
     </BrowserRouter>
     </StoreProvider>
