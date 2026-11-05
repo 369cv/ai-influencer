@@ -33,6 +33,7 @@ account (OAuth, PKCE).
 | `src/pages/Influencers.jsx` | Influencer profile + Content Studio + Video Studio (very large — known structural debt) |
 | `api/hf/[...path].js` | Edge function that proxies all Higgsfield MCP traffic and forwards SSE streams |
 | `api/claude.js` | Anthropic API proxy — caller supplies their own `x-api-key` |
+| `api/mcp.js` + `lib/mcp/` | Our own remote MCP server (connector URL `/api/mcp`). Design rules in `docs/mcp/build-playbook.md`; test with `node scripts/mcp-smoke.mjs` |
 
 ## Conventions
 

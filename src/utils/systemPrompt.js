@@ -535,7 +535,7 @@ const VIBE_TAG_MAP = {
 }
 
 // Vibe → color palette hint injected into the Wardrobe section
-const VIBE_PALETTE_MAP = {
+export const VIBE_PALETTE_MAP = {
   'Minimalist':    'Palette: muted neutrals — off-white, ecru, stone, warm grey, oat. No strong saturated colors.',
   'Editorial':     'Palette: bold monochrome or one statement color — all-black, deep charcoal, pure white, or a single saturated hue.',
   'Streetwear':    'Palette: washed-out neutrals — faded black, washed grey, dirty white, faded indigo denim.',
