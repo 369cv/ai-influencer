@@ -9,6 +9,7 @@ import OfflineBanner from './components/OfflineBanner'
 import Landing from './pages/Landing'
 import Home from './pages/Home'
 import MobileTabBar from './components/MobileTabBar'
+import AppSidebar from './components/AppSidebar'
 import Influencers from './pages/Influencers'
 import Inspiration from './pages/Inspiration'
 import BrandDeals from './pages/BrandDeals'
@@ -71,6 +72,7 @@ export default function App() {
     <ThemeProvider>
     <StoreProvider>
     <BrowserRouter>
+      <AppSidebar />
       <Nav />
       <OfflineBanner />
       <Routes>
