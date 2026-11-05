@@ -10,6 +10,8 @@ import {
   getPoses, buildPhotoStudioPrompt, randomParams, getOutfitPresets,
 } from '../utils/photoStudioPrompt'
 import LOC_PREVIEWS from '../utils/locationPreviews'
+import { PlanSheet } from '../components/PlanCard'
+import { estimateImageCredits, MODEL_LABELS } from '../utils/creditEstimate'
 
 const _CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_2z5tOA1YxOBG2p6w9RhgcS5yRLO/'
 const CAMILA_POSE_PREVIEWS = {
@@ -436,6 +438,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
   const [selectedHistIds, setSelectedHistIds] = useState(new Set())
   const [confirmClear, setConfirmClear] = useState(null)
   const [propInfoTip, setPropInfoTip] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
   const [hairstyleLocked, setHairstyleLocked] = useState(() => !!loadSettings(influencer?.id).hairstyleText)
 
   useEffect(() => {
@@ -806,6 +809,26 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
   const hasStancePreviews = Object.keys(influencer?.posePreviews || {}).some(k =>
     k.startsWith(`${stance}_`) || (stance === 'standing' && !k.includes('_'))
   )
+
+  // ── Plan card (shown before every Photo Studio generation) ──
+  const planPoseLabel = currentPoses.find(p => p.id === pose)?.label || pose || 'Front-facing'
+  const planWardrobe = wardrobeSlots.find(s => s.id === outfitPreset)
+  const planOutfit = wardrobeText?.trim()
+    || planWardrobe?.name
+    || (outfitPreset === 'current' ? 'Current look (character sheet)' : (getOutfitPresets(influencer?.gender).find(o => o.id === outfitPreset)?.label || outfitPreset))
+  const planTime = TIMES.find(t => t.id === timeOfDay)?.label
+  const planProps = [propText?.trim(), ...propSlots.filter(sl => sl?.image).map((sl, i) => `Product ${i + 1} · ${sl.mode || 'holding'}`)].filter(Boolean)
+  const planRows = [
+    { key: 'poses', label: 'Pose', value: `${planPoseLabel} · ${stance === 'sitting' ? 'Sitting' : 'Standing'}` },
+    { key: 'outfit', label: 'Outfit', value: planOutfit },
+    { key: 'location', label: 'Scene', value: [isCustomLoc ? location : locInfo.label, planTime].filter(Boolean).join(' · ') },
+    planProps.length > 0 && { key: 'refs', label: 'Props', value: planProps },
+    { key: 'model', label: 'Model', value: MODEL_LABELS.gpt_image_2 },
+    { key: 'aspect', label: 'Aspect ratio', value: aspectRatio === '1:1' ? '1:1 · Square' : aspectRatio === '16:9' ? '16:9 · Landscape' : '9:16 · Portrait' },
+    { key: 'resolution', label: 'Resolution', value: String(resolution).toUpperCase() },
+    { key: 'count', label: 'Output', value: `${outputCount} ${outputCount === 1 ? 'image' : 'images'}` },
+  ]
+  const planCredits = estimateImageCredits('gpt_image_2', resolution, outputCount)
 
   const outputDims =
     aspectRatio === '9:16' ? { maxWidth: 320, aspectRatio: '9/16' } :
@@ -1537,7 +1560,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
           }}>🎲 Random</button>
         )}
         <button
-          onClick={generate}
+          onClick={() => setPlanOpen(true)}
           disabled={isActivelyGenerating || !influencer}
           style={{
             flex: 1, padding: '12px 18px', borderRadius: 11, fontSize: 14, fontWeight: 700,
@@ -1551,6 +1574,16 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
           {isActivelyGenerating ? 'Generating…' : 'Generate Photo'}
         </button>
       </div>
+
+      <PlanSheet
+        open={planOpen}
+        onClose={() => setPlanOpen(false)}
+        subtitle={`A Photo Studio shot of ${influencer?.name || 'your influencer'}.`}
+        rows={planRows}
+        credits={planCredits}
+        onStart={() => { setPlanOpen(false); generate() }}
+        startLabel={outputCount > 1 ? `Start · ${outputCount} images` : 'Start'}
+      />
 
       {error && (
         <div style={{ padding: '10px 14px', borderRadius: 9, background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.2)', fontSize: 13, color: '#FF3B30', lineHeight: 1.4 }}>

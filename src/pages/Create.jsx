@@ -8,6 +8,8 @@ import { generateThreeImages } from '../utils/higgsfieldGenerate'
 import { isHFConnected, startHiggsfieldOAuthPopup } from '../utils/higgsfieldAuth'
 import { compressImage } from '../utils/imageUtils'
 import { gColor } from '../utils/influencerUtils'
+import PlanCard from '../components/PlanCard'
+import { estimateImageCredits, DEFAULT_RESOLUTION } from '../utils/creditEstimate'
 
 const NICHES = ['Fashion', 'Beauty', 'Lifestyle', 'Fitness', 'Travel', 'Food & Dining', 'Tech', 'Gaming', 'Finance', 'Entertainment', 'Wellness', 'Sports', 'Other']
 const VIBE_OPTIONS = [
@@ -1290,6 +1292,21 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
   }
 
   const displayName = data.name?.trim() || 'your influencer'
+  const modelInfo = MODELS.find(m => m.id === model)
+  const planResolution = DEFAULT_RESOLUTION[model] || '2k'
+  const planPoses = model === 'soul_2'
+    ? ['Facing camera', 'Angled', 'Candid outdoors']
+    : ['Front-facing', 'Hair touch', data.backstory?.trim() ? 'Candid, story scene' : 'Candid outdoors']
+  const planVibes = (data.vibeWords || []).length ? data.vibeWords.join(' · ') : null
+  const planRows = [
+    { key: 'poses', label: '3 looks, one per pose', value: planPoses },
+    { key: 'outfit', label: 'Outfit', value: planVibes ? `Styled from the ${planVibes} wardrobe` : 'Picked from the wardrobe library to match the niche' },
+    { key: 'model', label: 'Model', value: modelInfo?.name || model },
+    { key: 'aspect', label: 'Aspect ratio', value: aspectRatio === '16:9' ? '16:9 · Landscape' : '9:16 · Portrait' },
+    { key: 'resolution', label: 'Resolution', value: planResolution.toUpperCase() },
+    (data.faceRef || data.styleRef) && { key: 'refs', label: 'References', value: [data.faceRef && 'Face', data.styleRef && 'Style'].filter(Boolean) },
+  ]
+  const planCredits = estimateImageCredits(model, planResolution, 3)
 
   async function doConnect() {
     setConnectingHF(true)
@@ -1330,7 +1347,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
 
   return (
     <div>
-      {phase !== 'generating' && (
+      {phase !== 'generating' && phase !== 'plan' && (
         <div style={{ marginBottom: 36 }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>
             {phase === 'done' ? `Which look is ${displayName}?` : 'Generate your unique influencer'}
@@ -1339,6 +1356,17 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
             <p style={{ fontSize: 15, color: L.textSub, lineHeight: 1.55 }}>Hover any look to zoom in. Click to pick your favourite.</p>
           )}
         </div>
+      )}
+
+      {phase === 'plan' && (
+        <PlanCard
+          subtitle={`Muse Studio will make 3 looks of ${displayName}. You pick the one that becomes the profile.`}
+          rows={planRows}
+          credits={planCredits}
+          onEdit={() => setPhase('idle')}
+          onStart={generate}
+          startLabel="Start generating"
+        />
       )}
 
       {phase === 'idle' && (
@@ -1406,7 +1434,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
             })}
           </div>
 
-          <button onClick={generate} style={{
+          <button onClick={() => setPhase('plan')} style={{
             width: '100%', padding: '22px', borderRadius: 16, fontSize: 17, fontWeight: 800,
             background: 'linear-gradient(135deg,#EC4899,#8B5CF6)', color: '#fff',
             border: 'none', cursor: 'pointer', letterSpacing: '-0.3px',
@@ -1416,7 +1444,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
           }}
             onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 48px rgba(139,92,246,0.60)' }}
             onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 6px 36px rgba(139,92,246,0.45)' }}
-          >Generate 3 looks →</button>
+          >Review plan →</button>
           <style>{`@keyframes gen-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }`}</style>
         </div>
       )}
@@ -1457,7 +1485,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
             <div style={{ fontSize: 14, fontWeight: 700, color: '#FF3B30', marginBottom: 5 }}>Generation failed</div>
             <div style={{ fontSize: 13, color: '#FF6B6B', lineHeight: 1.5 }}>{genError}</div>
           </div>
-          <button onClick={generate} style={{ width: '100%', padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700, background: L.surfaceAlt, color: L.text, border: `1.5px solid ${L.border}`, cursor: 'pointer' }}>Try again →</button>
+          <button onClick={() => setPhase('plan')} style={{ width: '100%', padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700, background: L.surfaceAlt, color: L.text, border: `1.5px solid ${L.border}`, cursor: 'pointer' }}>Try again →</button>
         </div>
       )}
 
@@ -1525,7 +1553,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
               Start over
             </button>
-            <button onClick={generate} style={{
+            <button onClick={() => setPhase('plan')} style={{
               flex: 1, padding: '11px', borderRadius: 11, fontSize: 13, fontWeight: 600,
               background: 'rgba(139,92,246,0.07)', color: '#7C3AED',
               border: '1.5px solid rgba(139,92,246,0.20)', cursor: 'pointer', transition: 'all 0.15s',
