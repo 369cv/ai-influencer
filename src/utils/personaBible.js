@@ -34,6 +34,14 @@ export function personaToJSON(inf = {}) {
       dreamBrands: clean(inf.dreamBrands) || '',
     },
     brand: { palette: list(inf.palette) },
+    voiceProfile: inf.voiceProfile?.voiceId ? {
+      provider: inf.voiceProfile.provider || 'elevenlabs',
+      voiceId: inf.voiceProfile.voiceId,
+      voiceName: inf.voiceProfile.voiceName || '',
+      model: inf.voiceProfile.model || '',
+      settings: inf.voiceProfile.settings || {},
+      seed: Number.isInteger(inf.voiceProfile.seed) ? inf.voiceProfile.seed : null,
+    } : null,
     references: {
       main: imageRef(inf.mainImage),
       characterSheet: imageRef(inf.characterSheetImage),
@@ -60,6 +68,7 @@ export function personaToMarkdown(inf = {}) {
     section('Identity', [['Gender', p.identity.gender], ['Age', p.identity.age], ['Type', p.identity.type], ['Niche', p.identity.niche], ['Look', p.identity.look], ['Clothing style', p.identity.clothingStyle]]),
     section('Story', [['Backstory', p.story.backstory], ['Hobbies', p.story.hobbies], ['Personality', personality]]),
     section('Audience and voice', [['Audience', p.audience.audience], ['Voice', p.audience.voice], ['Content pillars', p.audience.contentPillars], ['Dream brands', p.audience.dreamBrands]]),
+    section('Voice', p.voiceProfile ? [['Voice', `${p.voiceProfile.voiceName || p.voiceProfile.voiceId} (${p.voiceProfile.provider}, ${p.voiceProfile.voiceId})`], ['Model', p.voiceProfile.model], ['Settings', Object.entries(p.voiceProfile.settings).map(([k, v]) => `${k} ${v}`)], ['Seed', p.voiceProfile.seed]] : []),
     section('Brand', [['Palette', p.brand.palette]]),
     section('References', [['Main image', p.references.main], ['Character sheet', p.references.characterSheet], ['Close-ups', p.references.closeUps]]),
     section('Wardrobe', [['Looks', p.wardrobe]]),

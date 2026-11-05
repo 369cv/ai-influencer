@@ -14,6 +14,7 @@ import { isHFConnected } from '../utils/higgsfieldAuth'
 import { buildCharSheetPrompt, buildCharSheetPromptWithClaude } from '../utils/charSheetPrompt'
 import PhotoStudioPanel from './PhotoStudio'
 import { exportPersonaBible } from '../utils/personaBible'
+import PersonaVoice from '../components/PersonaVoice'
 import WardrobeDrawer from '../components/WardrobeDrawer'
 
 function useMobile() {
@@ -6331,6 +6332,7 @@ export default function Influencers() {
             <Tabs active={activeTab} onChange={tab=>{setActiveTab(tab);requestAnimationFrame(()=>tabSecRef.current?.scrollIntoView({behavior:'smooth',block:'start'}))}} ac={ac}/>
 
             {activeTab==='Overview' && <DescriptionForm influencer={influencer} onUpdate={upd}/>}
+            {activeTab==='Overview' && <div style={{marginTop:16}}><PersonaVoice influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
             {activeTab==='Scripts' && (
               <ScriptsSection
                 scripts={influencer.scripts??[]}

@@ -56,7 +56,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 4 | Paired image ↔ motion prompts, one-click Animate — **built** | Studio | MuzeBoard, Muzecast | M |
 | 5 | Outlier score on tracked creators — **built** | Plan → Creators | Blueprint | M |
 | 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
-| 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
+| 7 | Persona voice (ElevenLabs BYOK) — **built** | Settings + influencer profile | ElevenLabs, Muzecast | M |
 | 8 | Post-generation rail with saved recipe + versions — **Details + Recreate built** | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
 | 9 | Approve → post pack — **built in Content's composer** | Content (was Plan → Board) | link.me, Google Workspace Studio | M |
 | 10 | Weekly ideas drop card — **built** | Home | Blueprint | M |
@@ -123,6 +123,11 @@ Use the existing ElevenLabs key slot in Settings. On the profile, a Voice sectio
 preview line. Scripts support inline delivery tags (`[soft]`, `[excited]`).
 - **Check:** with a key saved, profile lists voices and saves one; without a key, it links to
   Settings; settings persist after reload.
+- **Status: built.** `api/elevenlabs.js` (two operations only: list voices, speak a ≤600-character
+  preview; key goes only to api.elevenlabs.io) with a Vite dev mirror; `src/utils/elevenlabs.js`; and a
+  **Voice** card under the profile's Overview (`src/components/PersonaVoice.jsx`): pick a voice (search,
+  play samples), Stability / Similarity / Style / Speed, model, seed, and a preview line. Saved as
+  `influencer.voiceProfile` and included in Export persona. Inline delivery tags are not built.
 
 ### 8. Post-generation rail with saved recipe + versions — Content
 On a media item: Animate, Upscale, Reframe (9:16 / 1:1 / 16:9), the stored recipe (prompt,
