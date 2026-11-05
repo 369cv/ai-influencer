@@ -206,6 +206,8 @@ Card hover: ( To create ) ( Skip )   status dot on card corner
 - [Artlist — detail](https://mobbin.com/screens/449b0084-8c48-4b81-a54d-4e9bae3e8737): Settings grid (Model, Aspect, Quality, File type, Date created).
 - [Leonardo — detail](https://mobbin.com/screens/432b8df4-ca40-4aed-8b85-44c6bdfeae17): Prompt + Iterate, then a vertical action list.
 
+**Status: Details + Recreate built** as a sheet in the existing dark full-screen viewer (a new Details action next to Download / Post), not a right panel, so the viewer layout stays as is. Also fixed the sheet's centring: its open animation was overriding `translateX(-50%)`, which pushed the Post sheet off-centre too.
+
 **Spec (inside existing `MediaViewer`, right panel 320px)**
 ```
 Prompt                                  [Copy]

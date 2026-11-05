@@ -57,7 +57,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 5 | Outlier score on tracked creators | Plan → Creators | Blueprint | M |
 | 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
-| 8 | Post-generation rail with saved recipe + versions | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
+| 8 | Post-generation rail with saved recipe + versions — **Details + Recreate built** | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
 | 9 | Approve → post pack on scheduled cards | Plan → Board | link.me, Google Workspace Studio | M |
 | 10 | Weekly ideas drop card | Home | Blueprint | M |
 
@@ -117,6 +117,10 @@ references, model, ratio, seed, date — Google Flow), **Recreate** (reopen Stud
 **Remix** with a plain-language instruction that saves a new version (FlipScript), credits used.
 - **Check:** opening a media item shows the rail and recipe; Recreate opens Studio with
   identical settings; a remix adds v2 and lets you switch back to v1.
+- **Status: partly built.** Studio now saves each item's settings (`settings.recipe`); the viewer's
+  **Details** sheet shows prompt (Copy), model, aspect, resolution, length, refs, date, est. cost, and
+  **Recreate in Studio**. Make video already existed. Not built: Upscale, Reframe, Remix + versions.
+  Items made before this change show "Settings weren't saved".
 
 ### 9. Approve → post pack — Plan → Board
 Between To do and Doing, a project needs **Approve** (Workspace Studio approvals: gate posting

@@ -9,7 +9,7 @@ import { hasClaude, runSkill } from '../utils/claudeAssist'
 import { MODEL_LABELS } from '../utils/creditEstimate'
 import {
   PHOTO_MODELS, VIDEO_MODELS, PHOTO_RATIOS, VIDEO_RATIOS, PHOTO_RES, VIDEO_RES, VIDEO_SECONDS, MAX_SHOTS,
-  DEFAULTS, STUDIO_TEMPLATES, estimate, readJobs, writeJobs, SESSION, addToMediaHistory, uploadable, buildStudioPrompt,
+  DEFAULTS, STUDIO_TEMPLATES, estimate, readJobs, writeJobs, SESSION, addToMediaHistory, uploadable, buildStudioPrompt, toRecipe, RECIPE_KEYS,
 } from '../utils/studio'
 import { newId } from '../utils/localJson'
 
@@ -61,6 +61,17 @@ export default function Studio() {
     // Only one-shot navigation state triggers this; ?mode= is read once in the initial state.
     const st = location.state || {}
     const mode = st.mode || null
+    if (st.recipe && typeof st.recipe === 'object') {
+      // Content → Recreate: reopen with the exact settings that made the item.
+      const r = st.recipe
+      const m = r.mode === 'video' ? 'video' : 'photo'
+      const next = blankSettings(m)
+      RECIPE_KEYS.forEach(k => { if (k !== 'mode' && r[k] != null) next[k] = r[k] })
+      next.refs = (Array.isArray(r.refs) ? r.refs : []).slice(0, 4)
+      setS(next)
+      navigate(location.pathname, { replace: true, state: {} })
+      return
+    }
     if (st.influencerId || st.ref || st.template || mode) {
       setS(x => {
         let next = mode && mode !== x.mode ? { ...blankSettings(mode), influencerId: x.influencerId } : { ...x }
@@ -131,6 +142,7 @@ export default function Studio() {
     const job = { id, sessionId: SESSION, status: 'running', progress: 2, urls: [], createdAt: Date.now(), credits: estimate({ ...settings, count }),
       settings: { ...settings, prompt, shots, count, refs: settings.refs.filter(r => !r.startsWith('data:')) }, refCount: settings.refs.length, influencerName: who?.name || null }
     setJobs(l => [job, ...l])
+    const recipe = toRecipe({ ...job.settings, count: 1 }, estimate({ ...settings, count: 1 }))
     cancels.current[id] = false
     const isCancelled = () => cancels.current[id]
     const onProgress = p => updateJob(id, j => ({ progress: Math.max(j.progress || 0, Math.round(p)) }))
@@ -147,7 +159,7 @@ export default function Studio() {
           onPartialResults: urls => updateJob(id, { urls: [...new Set(urls.filter(Boolean))] }),
         })
         const urls = [...new Set((result?.urls || []).filter(Boolean))]
-        urls.forEach(url => addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id }))
+        urls.forEach(url => addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id, recipe }))
         updateJob(id, { status: urls.length ? 'done' : 'failed', urls, progress: 100, error: urls.length ? '' : 'No video came back. Check your Higgsfield dashboard.' })
       } else {
         const face = who?.mainImage ? uploadable(who.mainImage) : null
@@ -163,7 +175,7 @@ export default function Studio() {
           onProgress, isCancelled,
           onResult: url => {
             updateJob(id, j => ({ urls: [...new Set([...(j.urls || []), url])] }))
-            addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id })
+            addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id, recipe })
           },
         })
         updateJob(id, j => ({ status: j.urls.length ? 'done' : 'failed', progress: 100, error: j.urls.length ? '' : 'Nothing came back. Check your Higgsfield dashboard.' }))
