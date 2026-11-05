@@ -54,7 +54,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
 | 3 | Plan + cost before Generate — **mostly shipped** (cost on Generate exists; only the batch confirm is missing) | Studio | HeyGen, Higgsfield, Muzecast | S |
 | 4 | Paired image ↔ motion prompts, one-click Animate | Studio | MuzeBoard, Muzecast | M |
-| 5 | Outlier score on tracked creators | Plan → Creators | Blueprint | M |
+| 5 | Outlier score on tracked creators — **built** | Plan → Creators | Blueprint | M |
 | 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
 | 8 | Post-generation rail with saved recipe + versions — **Details + Recreate built** | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
@@ -101,6 +101,10 @@ mode (Seedance) with that motion text and the still as first frame.
 Rank posts by views ÷ that creator's own baseline (e.g. "208×"), not raw views; **Save to
 Inspiration** from any row.
 - **Check:** Creators view has an Outlier column and sort; Save adds the item to Inspiration.
+- **Status: built** in `src/pages/Tracking.jsx`. Each creator row has **Add post** (title, link, views; the
+  dialog shows the live score). An **Outlier posts** table lists every logged post sorted by views ÷ the
+  creator's latest logged average views, with a badge (≥10× accent, 3–10× tonal). The handoff is
+  **Add to Plan** (a Plan idea with the score and link), not Inspiration, because posts have no image.
 
 ### 6. Inspiration tags + one status model — Plan → Inspiration, Board
 Niche chips × shoot-type chips with counts and "Surprise me" (6 random). Each item gets
