@@ -58,7 +58,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 | 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
 | 8 | Post-generation rail with saved recipe + versions — **Details + Recreate built** | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
-| 9 | Approve → post pack on scheduled cards | Plan → Board | link.me, Google Workspace Studio | M |
+| 9 | Approve → post pack — **built in Content's composer** | Content (was Plan → Board) | link.me, Google Workspace Studio | M |
 | 10 | Weekly ideas drop card — **built** | Home | Blueprint | M |
 
 ### 1. Persona profile as single source of truth — Influencer profile

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useInfluencers } from '../store'
 import { useWorkspaceStore } from '../context/workspace'
 import { Page, Seg, Field, Empty, Dialog, InfluencerSelect, SkillAssist } from '../components/ui'
 import Library from './Library'
 import { collectLibrary } from '../utils/library'
 import { PLATFORMS, POST_STATUSES, platformName, validatePost, publishPost } from '../utils/publishing'
+import { downloadImage } from '../utils/imageUtils'
 import { isPublishingConnected } from '../utils/connections'
 import { influencerContext } from '../utils/claudeAssist'
 import { newId } from '../utils/localJson'
@@ -27,7 +28,6 @@ const narrow = () => typeof window !== 'undefined' && window.innerWidth < 720
 export default function Content() {
   const [params, setParams] = useSearchParams()
   const location = useLocation()
-  const navigate = useNavigate()
   const view = VIEWS.some(v => v.id === params.get('view')) ? params.get('view') : (narrow() ? 'list' : 'calendar')
   const [posts, setPosts] = useWorkspaceStore('muse_posts')
   const [accounts] = useWorkspaceStore('muse_accounts')
@@ -38,9 +38,9 @@ export default function Content() {
   useEffect(() => {
     const openId = params.get('open')
     if (params.get('compose') === '1') {
-      setComposing({ caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null })
-      setParams(p => { p.delete('compose'); return p }, { replace: true })
-      if (location.state?.prefillCaption || location.state?.prefillMedia) navigate(location.pathname + location.search, { replace: true, state: {} })
+      // ?compose=1 stays in the URL until the composer closes, so a direct
+      // load (bookmark, extension link) still opens it if the page remounts.
+      setComposing(c => c || { caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null })
     } else if (openId) {
       const p = posts.find(x => x.id === openId)
       if (p) setComposing(p)
@@ -48,6 +48,10 @@ export default function Content() {
     }
   }, [params]) // eslint-disable-line
 
+  const closeComposer = () => {
+    setComposing(null)
+    if (params.get('compose')) setParams(q => { q.delete('compose'); return q }, { replace: true, state: {} })
+  }
   const setView = v => setParams(q => { q.set('view', v); return q }, { replace: true })
   const save = p => setPosts(l => l.some(x => x.id === p.id) ? l.map(x => x.id === p.id ? p : x) : [p, ...l])
   const shown = posts.filter(p => (status === 'all' || (p.status || 'draft') === status) && (account === 'all' || p.accountIds?.includes(account)))
@@ -80,9 +84,9 @@ export default function Content() {
         <Composer
           initial={composing}
           accounts={accounts}
-          onClose={() => setComposing(null)}
-          onSave={p => { save(p); setComposing(null) }}
-          onDelete={id => { setPosts(l => l.filter(x => x.id !== id)); setComposing(null) }}
+          onClose={closeComposer}
+          onSave={p => { save(p); closeComposer() }}
+          onDelete={id => { setPosts(l => l.filter(x => x.id !== id)); closeComposer() }}
         />
       )}
     </Page>
@@ -206,6 +210,20 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
     } finally { setBusy(false) }
   }
   const blocker = !connected ? 'connect' : problems[0]
+  const approved = p.status === 'approved'
+  const canApprove = !locked && !approved && (p.caption.trim() || p.mediaUrls.length)
+  // Post pack: everything needed to post by hand or in another scheduler.
+  function downloadPack() {
+    const base = `${(inf?.name || 'post').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`
+    const lines = [
+      p.caption,
+      '',
+      targets.length ? `Accounts: ${targets.map(a => `${platformName(a.platform)} ${a.handle || ''}`.trim()).join(', ')}` : '',
+      p.scheduledAt ? `When: ${new Date(p.scheduledAt).toLocaleString()}` : '',
+    ].filter((l, i) => i < 2 || l)
+    downloadImage(`data:text/plain;base64,${btoa(unescape(encodeURIComponent(lines.join('\n').trim() + '\n')))}`, `${base}-caption.txt`)
+    p.mediaUrls.forEach((u, i) => setTimeout(() => downloadImage(u, `${base}-${i + 1}.${isVideo(u) ? 'mp4' : 'png'}`), 150 * (i + 1)))
+  }
 
   return (
     <div className="muse-sheet-backdrop" onClick={onClose}>
@@ -276,7 +294,10 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
               </p>
             )}
             {p.id && <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => onDelete(p.id)}>Delete</button>}
-            <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: p.scheduledAt ? 'planned' : 'draft' })} disabled={locked}>Save draft</button>
+            {approved && <span className="muse-badge approved" title={p.approvedAt ? `Approved ${new Date(p.approvedAt).toLocaleString()}` : undefined}>Approved ✓</span>}
+            <button type="button" className="muse-btn muse-btn-text" onClick={downloadPack} disabled={!p.caption.trim() && !p.mediaUrls.length} title="Download the caption and media to post by hand">Download pack</button>
+            <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: p.scheduledAt ? 'planned' : 'draft', approvedAt: undefined })} disabled={locked} title={approved ? 'Saving an edit moves it back to draft so it can be approved again' : undefined}>Save draft</button>
+            {canApprove && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: 'approved', approvedAt: new Date().toISOString() })}>Approve</button>}
             <div className="muse-split">
               <button type="button" className="muse-btn muse-btn-filled" disabled={!!blocker || busy || locked} onClick={() => send(false)}>
                 {busy ? 'Sending…' : future ? `Schedule · ${when(p.scheduledAt)}` : 'Post now'}

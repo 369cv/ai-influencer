@@ -131,6 +131,7 @@ select.muse-input { cursor: pointer; }
 .muse-list-main small { color: var(--text-secondary); font-size: var(--font-size-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .muse-badge { flex-shrink: 0; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--bg-tertiary); color: var(--text-primary); font-size: 12px; font-weight: var(--font-weight-semibold); white-space: nowrap; }
 .muse-badge.scheduled, .muse-badge.planned { background: var(--tonal); color: var(--on-tonal); }
+.muse-badge.approved { background: var(--accent); color: var(--on-accent); }
 .muse-badge.posted { background: color-mix(in srgb, var(--color-status-success) 14%, var(--surface)); color: color-mix(in srgb, var(--color-status-success) 70%, var(--text-primary)); }
 .muse-badge.failed { background: color-mix(in srgb, var(--color-status-danger) 12%, var(--surface)); color: color-mix(in srgb, var(--color-status-danger) 75%, var(--text-primary)); }
 .muse-progress { flex-shrink: 0; width: 96px; height: 6px; border-radius: var(--radius-pill); background: var(--bg-tertiary); overflow: hidden; display: block; }
@@ -185,7 +186,7 @@ select.muse-input { cursor: pointer; }
 .muse-thumb-add { border: 1.5px dashed var(--border); color: var(--accent); font-weight: var(--font-weight-semibold); font-size: 13px; background: var(--surface); }
 .muse-media-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .muse-picker { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border-subtle); }
-.muse-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: var(--space-2); max-height: 260px; overflow: auto; }
+.muse-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); grid-auto-rows: max-content; align-content: start; gap: var(--space-2); max-height: 260px; overflow: auto; }
 .muse-picker-grid .muse-thumb { width: 100%; height: auto; aspect-ratio: 4/5; }
 .muse-problems { list-style: disc; padding-left: var(--space-5); color: var(--text-primary); font-size: var(--font-size-label); line-height: 1.6; }
 .muse-calendar { overflow-x: auto; }
@@ -203,6 +204,7 @@ select.muse-input { cursor: pointer; }
 .muse-cal-day.today .muse-cal-num { background: var(--accent); color: var(--on-accent); }
 .muse-cal-item { text-align: left; font-size: 11px; line-height: 1.3; padding: 3px 6px; border-radius: 6px; background: var(--bg-tertiary); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .muse-cal-item.scheduled, .muse-cal-item.planned { background: var(--tonal); color: var(--on-tonal); }
+.muse-cal-item.approved { background: var(--accent); color: var(--on-accent); }
 .muse-cal-item.posted { background: color-mix(in srgb, var(--color-status-success) 14%, var(--surface)); }
 .muse-cal-item.failed { background: color-mix(in srgb, var(--color-status-danger) 12%, var(--surface)); }
 .muse-account-grid { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); }

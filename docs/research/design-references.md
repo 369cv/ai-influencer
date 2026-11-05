@@ -228,6 +228,8 @@ Versions  (v1) (v2●)                    ← pills
 
 ## 9. Approve → post pack — Plan → Board
 
+**Status: built in Content's composer** (Approve, Approved badge, Download pack), since posts live in Content, not on Plan's Board.
+
 **References**
 - [Buffer — Create post](https://mobbin.com/screens/24370d2b-c8ce-46bc-9434-99c2c630c594): channel avatars at top, Post / Reel / Story radio, editor left, **Instagram Preview** right, footer Save Draft + Publish Now.
 - [Mailchimp — customize per network](https://mobbin.com/screens/09a996b7-ee03-4e79-ad69-6ef9145e9bd0): one column per platform with an on/off toggle and its own preview.
