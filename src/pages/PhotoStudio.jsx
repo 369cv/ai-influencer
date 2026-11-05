@@ -594,6 +594,19 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
     } catch {}
   }, [influencer?.id, restoreKey]) // eslint-disable-line
 
+  // Library handoff: use an image as the reference and/or open the plan card once
+  useEffect(() => {
+    try {
+      const key = `ps_handoff_${influencer?.id}`
+      const raw = localStorage.getItem(key)
+      if (!raw) return
+      localStorage.removeItem(key)
+      const h = JSON.parse(raw)
+      if (h.ref) setOverrideRef(h.ref)
+      if (h.openPlan) setPlanOpen(true)
+    } catch {}
+  }, [influencer?.id, restoreKey]) // eslint-disable-line
+
   useEffect(() => {
     if (generating) {
       startRef.current = Date.now()
