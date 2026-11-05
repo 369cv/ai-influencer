@@ -13,6 +13,7 @@ import { useTheme } from '../context/theme'
 import { isHFConnected } from '../utils/higgsfieldAuth'
 import { buildCharSheetPrompt, buildCharSheetPromptWithClaude } from '../utils/charSheetPrompt'
 import PhotoStudioPanel from './PhotoStudio'
+import { exportPersonaBible } from '../utils/personaBible'
 import WardrobeDrawer from '../components/WardrobeDrawer'
 
 function useMobile() {
@@ -6202,6 +6203,7 @@ export default function Influencers() {
               }}>Videos</button>
             </div>
             <button type="button" className="muse-btn muse-btn-tonal" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>navigate('/studio',{state:{influencerId:influencer.id}})}>Open in Studio</button>
+            <button type="button" className="muse-btn muse-btn-text" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>exportPersonaBible(influencer)} title="Download this persona as Markdown and JSON">Export persona</button>
           </div>
 
 

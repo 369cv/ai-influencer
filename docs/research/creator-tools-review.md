@@ -50,7 +50,7 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 
 | # | Idea | Page | Sources | Effort |
 |---|---|---|---|---|
-| 1 | Persona profile as single source of truth | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
+| 1 | Persona profile as single source of truth — **Export built** | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
 | 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
 | 3 | Plan + cost before Generate — **mostly shipped** (cost on Generate exists; only the batch confirm is missing) | Studio | HeyGen, Higgsfield, Muzecast | S |
 | 4 | Paired image ↔ motion prompts, one-click Animate | Studio | MuzeBoard, Muzecast | M |
@@ -70,6 +70,11 @@ role (HeyGen Brand Spec, Pomelli), audience/tone (Blueprint Content Profile). Th
 (Google Flow, Higgsfield). Add **Export persona bible** (Markdown + JSON).
 - **Check:** profile shows Identity / Looks / Voice / Brand sections; Studio's prompt uses
   identity fields when that influencer is selected; Export downloads `.md` and `.json`.
+- **Status: Export built.** **Export persona** (next to Open in Studio) downloads `<name>-persona.md`
+  and `<name>-persona.json` (`format: muse-persona`, v1) from the fields the profile already has:
+  identity, story, audience/voice, palette, reference image paths, wardrobe, scripts, brand deals.
+  Images stored inside the app are marked, not embedded. Not built yet: the Identity/Looks/Voice/Brand
+  section layout, facet chips, Rebuild, archetype entry paths.
 
 ### 2. Analyze, then remix from a reference URL — Studio
 In Studio's composer, paste an IG/TikTok/YouTube URL → **Analyze** (cheap, no generation:
