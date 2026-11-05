@@ -7,6 +7,8 @@ side panel. Target app: Muse Studio
 Constraints for every idea: map to an existing page (Home, Studio, Content, Plan,
 Settings, influencer profile) · no new sidebar items · light mode only.
 
+Visual specs for each idea: [design-references.md](design-references.md).
+
 ## Index
 
 | Tool | Status | One-line takeaway | Feeds ideas |
