@@ -28,6 +28,18 @@ export default function PersonaVoice({ influencer, onUpdate }) {
   const [line, setLine] = useState(() => `Hey, it's ${influencer.name || 'me'}. Here's what I'm wearing today.`)
   const audio = useRef(null)
   const lastUrl = useRef(null)
+  // Sliders and seed edit a local draft; it's saved 400ms after the last
+  // change so dragging doesn't rewrite the whole influencer store each tick.
+  const [draft, setDraft] = useState(settings)
+  const [seedDraft, setSeedDraft] = useState(vp?.seed)
+  const dirty = useRef(false)
+  useEffect(() => {
+    if (!dirty.current) return
+    const t = setTimeout(() => { dirty.current = false; save({ settings: draft, seed: seedDraft }) }, 400)
+    return () => clearTimeout(t)
+  }, [draft, seedDraft]) // eslint-disable-line react-hooks/exhaustive-deps
+  const editDraft = patch => { dirty.current = true; setDraft(d => ({ ...d, ...patch })) }
+  const editSeed = v => { dirty.current = true; setSeedDraft(v) }
 
   useEffect(() => () => { audio.current?.pause(); if (lastUrl.current) URL.revokeObjectURL(lastUrl.current) }, [])
 
@@ -49,7 +61,7 @@ export default function PersonaVoice({ influencer, onUpdate }) {
   async function preview() {
     setBusy('tts'); setError('')
     try {
-      const url = await speak({ voiceId: vp.voiceId, text: line, model: vp.model, settings, seed: vp.seed })
+      const url = await speak({ voiceId: vp.voiceId, text: line, model: vp.model, settings: draft, seed: seedDraft })
       if (lastUrl.current) URL.revokeObjectURL(lastUrl.current)
       lastUrl.current = url
       play(url)
@@ -114,8 +126,8 @@ export default function PersonaVoice({ influencer, onUpdate }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3) var(--space-5)' }}>
             {SLIDERS.map(s => (
               <label key={s.key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
-                <span style={{ display: 'flex', justifyContent: 'space-between' }}><strong style={{ fontWeight: 600 }}>{s.label}</strong><span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{Number(settings[s.key]).toFixed(2)}</span></span>
-                <input type="range" min={s.min} max={s.max} step={s.step} value={settings[s.key]} onChange={e => save({ settings: { ...settings, [s.key]: Number(e.target.value) } })} aria-label={s.label} style={{ accentColor: 'var(--accent)' }} />
+                <span style={{ display: 'flex', justifyContent: 'space-between' }}><strong style={{ fontWeight: 600 }}>{s.label}</strong><span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{Number(draft[s.key]).toFixed(2)}</span></span>
+                <input type="range" min={s.min} max={s.max} step={s.step} value={draft[s.key]} onChange={e => editDraft({ [s.key]: Number(e.target.value) })} aria-label={s.label} style={{ accentColor: 'var(--accent)' }} />
                 <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{s.hint}</span>
               </label>
             ))}
@@ -127,8 +139,8 @@ export default function PersonaVoice({ influencer, onUpdate }) {
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
               <strong style={{ fontWeight: 600 }}>Seed</strong>
-              <input className="muse-input" inputMode="numeric" value={vp.seed ?? ''} placeholder="Optional, keeps takes alike" aria-label="Seed"
-                onChange={e => { const v = e.target.value.replace(/\D/g, ''); save({ seed: v === '' ? undefined : Math.min(4294967295, Number(v)) }) }} />
+              <input className="muse-input" inputMode="numeric" value={seedDraft ?? ''} placeholder="Optional, keeps takes alike" aria-label="Seed"
+                onChange={e => { const v = e.target.value.replace(/\D/g, ''); editSeed(v === '' ? undefined : Math.min(4294967295, Number(v))) }} />
             </label>
           </div>
 

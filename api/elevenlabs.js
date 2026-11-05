@@ -9,6 +9,14 @@ const BASE = 'https://api.elevenlabs.io'
 const MAX_TEXT = 600
 const VOICE_ID = /^[A-Za-z0-9]{8,40}$/
 const MODEL_ID = /^[a-z0-9_]{3,40}$/
+// ElevenLabs errors come as a string, { message } or a validation array; always return plain text.
+const errText = (data, fallback) => {
+  const d = data?.detail
+  if (typeof d === 'string') return d
+  if (typeof d?.message === 'string') return d.message
+  if (Array.isArray(d) && typeof d[0]?.msg === 'string') return d[0].msg
+  return fallback
+}
 const clamp = (v, lo, hi) => (typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : undefined)
 
 // Shared by the Vercel function and the Vite dev mirror.
@@ -19,7 +27,7 @@ export async function handleElevenLabs({ method, op, voice, key, body }) {
   if (op === 'voices' && method === 'GET') {
     const r = await fetch(`${BASE}/v1/voices`, { headers })
     const data = await r.json().catch(() => ({}))
-    if (!r.ok) return { status: r.status, json: { error: data?.detail?.message || data?.detail || 'ElevenLabs refused the request.' } }
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs refused the request.') } }
     const voices = (data.voices || []).map(v => ({ voice_id: v.voice_id, name: v.name, labels: v.labels || {}, preview_url: v.preview_url || '', category: v.category || '' }))
     return { status: 200, json: { voices } }
   }
@@ -48,7 +56,7 @@ export async function handleElevenLabs({ method, op, voice, key, body }) {
     })
     if (!r.ok) {
       const data = await r.json().catch(() => ({}))
-      return { status: r.status, json: { error: data?.detail?.message || data?.detail || 'ElevenLabs could not make that preview.' } }
+      return { status: r.status, json: { error: errText(data, 'ElevenLabs could not make that preview.') } }
     }
     return { status: 200, audio: Buffer.from(await r.arrayBuffer()) }
   }

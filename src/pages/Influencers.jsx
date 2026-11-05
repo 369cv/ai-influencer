@@ -6332,7 +6332,7 @@ export default function Influencers() {
             <Tabs active={activeTab} onChange={tab=>{setActiveTab(tab);requestAnimationFrame(()=>tabSecRef.current?.scrollIntoView({behavior:'smooth',block:'start'}))}} ac={ac}/>
 
             {activeTab==='Overview' && <DescriptionForm influencer={influencer} onUpdate={upd}/>}
-            {activeTab==='Overview' && <div style={{marginTop:16}}><PersonaVoice influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
+            {activeTab==='Overview' && <div style={{marginTop:16}}><PersonaVoice key={influencer.id} influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
             {activeTab==='Scripts' && (
               <ScriptsSection
                 scripts={influencer.scripts??[]}
