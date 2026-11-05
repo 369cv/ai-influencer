@@ -37,7 +37,7 @@ Visual specs for each idea: [design-references.md](design-references.md).
 ### What Muse Studio already has (checked on `claude/muse-studio`)
 
 Sidebar: Home, Influencers, Content, Plan (+ Settings). Studio has Photo / Video modes.
-Plan has Board (idea → draft → scheduled → posted), Creators, Inspiration views. Content has a
+Plan has Board (Ideas · To do · Doing · Done), Creators, Inspiration views. Studio's prompt bar already shows chips, a count stepper and `~N credits` on Generate. Content has a
 media view. Influencers have a character sheet and a wardrobe/looks drawer. Settings has a
 labeled API-key vault (Higgsfield, Claude, ElevenLabs label). A `/workflows` page exists but
 isn't in the sidebar. Ideas below build on these, they don't duplicate them.
@@ -52,10 +52,10 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 |---|---|---|---|---|
 | 1 | Persona profile as single source of truth | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
 | 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
-| 3 | Plan + cost before Generate | Studio | HeyGen, Higgsfield, Muzecast | S |
+| 3 | Plan + cost before Generate — **mostly shipped** (cost on Generate exists; only the batch confirm is missing) | Studio | HeyGen, Higgsfield, Muzecast | S |
 | 4 | Paired image ↔ motion prompts, one-click Animate | Studio | MuzeBoard, Muzecast | M |
 | 5 | Outlier score on tracked creators | Plan → Creators | Blueprint | M |
-| 6 | Inspiration tags + one status model into Board | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
+| 6 | Inspiration tags + one status model into Board — **built** | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
 | 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
 | 8 | Post-generation rail with saved recipe + versions | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
 | 9 | Approve → post pack on scheduled cards | Plan → Board | link.me, Google Workspace Studio | M |
@@ -99,7 +99,8 @@ Inspiration** from any row.
 
 ### 6. Inspiration tags + one status model — Plan → Inspiration, Board
 Niche chips × shoot-type chips with counts and "Surprise me" (6 random). Each item gets
-To create / Created / Skipped; "To create" drops a linked card into Board's Idea column.
+To create / Skipped; "To create" drops a card (with the image) into Board's Ideas column.
+- **Status: built** in `src/pages/Inspiration.jsx` (tags and status stored in `board.meta`, parallel to `board.images`). Verified in Chromium at 1280px and 390px.
 - **Check:** one chip from each row narrows the grid and counts match; To create creates a
   Board card with a source link; Skipped hides it by default.
 
@@ -118,7 +119,7 @@ references, model, ratio, seed, date — Google Flow), **Recreate** (reopen Stud
   identical settings; a remix adds v2 and lets you switch back to v1.
 
 ### 9. Approve → post pack — Plan → Board
-Between Draft and Scheduled, a card needs **Approve** (Workspace Studio approvals: gate posting
+Between To do and Doing, a project needs **Approve** (Workspace Studio approvals: gate posting
 and spend). Approved cards offer **Post pack**: asset per platform aspect, caption, hashtags,
 and per-platform preview (link.me Post to All). Direct publishing comes later via
 link.me / Higgsfield TikTok publish; the pack works with any scheduler.

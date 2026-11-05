@@ -17,7 +17,7 @@ spec has a "21st.dev slot" naming the component to look for (see
 |---|---|---|---|---|
 | 1 | Persona profile | Influencer profile | Plain, Intercom, Linktree | Character sheet, `WardrobeDrawer` |
 | 2 | Analyze → remix from URL | Studio | Synthesia AI video assistant | Studio composer, `muse-plan` rows |
-| 3 | Plan + cost before Generate | Studio | fal, Leonardo, Artlist | `PlanCard` (used in Create/PhotoStudio, not Studio yet) |
+| 3 | Plan + cost before Generate (mostly shipped) | Studio | fal, Leonardo, Artlist | Studio prompt bar already has it; `PlanCard` for batch confirm |
 | 4 | Image ↔ motion + Animate | Studio | Krea, Magnific | Studio Photo/Video `MODES` |
 | 5 | Outlier score | Plan → Creators | Vimeo video report | `TrackingView` |
 | 6 | Inspiration chips + status | Plan → Inspiration / Board | Magnific, Leonardo | `Inspiration embedded`, Board columns |
@@ -164,6 +164,8 @@ Video                          Views   Creator avg   Outlier ▼
 
 ## 6. Inspiration chips + status — Plan → Inspiration / Board
 
+**Status: built.** Chips use the existing `.muse-pchip`; per-image Niche / Shoot selects, To create (adds a Plan idea with the image) and Skip sit on the tile; masonry is `columns: 3 200px` so phones get one column.
+
 **References**
 - [Magnific — results](https://mobbin.com/screens/06f8bff7-75c7-4ad9-bea9-bc118bc126b8): chip row of dropdown filters; active chips tinted with ×; **Clear all**; "53 results" next to the query.
 - [Leonardo — community](https://mobbin.com/screens/4003bb95-237a-49a8-a9fd-496aff096272): icon + label pill chips, one active filled.
@@ -231,7 +233,7 @@ Versions  (v1) (v2●)                    ← pills
 - [Wrike — board](https://mobbin.com/screens/37e1797c-5449-462b-bb7d-3521505155bb): tinted column headers with counts.
 
 **Spec**
-- Board columns stay Idea → Draft → Scheduled → Posted; a Draft card shows **Needs approval** (`--tonal` chip) until approved; dragging to Scheduled is blocked with a toast "Approve first".
+- Board columns stay Ideas · To do · Doing · Done; a To do project shows **Needs approval** (`--tonal` chip) until approved; dragging to Doing is blocked with a toast "Approve first".
 - Card menu → **Approve** (filled) in a `.muse-sheet` using `muse-plan` rows: asset, caption, platforms, schedule.
 - Approved card → **Post pack** sheet (Buffer layout): left caption + hashtags, platform toggles (Mailchimp), right preview for the selected platform; footer **Download pack** (filled) + Copy caption (tonal).
 - No direct publishing in this pass; the existing `MediaViewer` "Compose post" stays the hook for it later.
