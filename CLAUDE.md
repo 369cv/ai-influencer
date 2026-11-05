@@ -33,6 +33,9 @@ account (OAuth, PKCE).
 | `src/pages/Influencers.jsx` | Influencer profile + Content Studio + Video Studio (very large — known structural debt) |
 | `api/hf/[...path].js` | Edge function that proxies all Higgsfield MCP traffic and forwards SSE streams |
 | `api/claude.js` | Anthropic API proxy — caller supplies their own `x-api-key` |
+| `src/utils/network.js` | Online/offline state + in-memory wait queue; Higgsfield calls `await whenOnline()` |
+| `src/components/OfflineBanner.jsx` | Offline / queued-request status bar under the nav |
+| `vite.config.js` (`VitePWA`) | Installable PWA: precaches the app shell only; images/videos cached on first view; `/api/*` never cached |
 
 ## Conventions
 
@@ -55,6 +58,11 @@ account (OAuth, PKCE).
 - Don't refactor `Influencers.jsx` casually. It's 4,700+ lines and the
   state is tangled; any split needs its own dedicated session with
   in-browser verification of every flow.
+
+## Deployment
+
+Vercel Git integration: pushes to `main` deploy to production, other branches get
+preview URLs. `vercel.json` sets `sw.js` to no-cache so app updates roll out.
 
 ## Dev workflow
 

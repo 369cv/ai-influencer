@@ -1,4 +1,5 @@
 import { getHFToken, refreshHFToken, disconnectHF } from './higgsfieldAuth'
+import { whenOnline, isOnline } from './network'
 
 const MCP_URL = '/api/hf/mcp'
 const PENDING_KEY = 'hf_pending_gens'
@@ -93,6 +94,8 @@ export async function resumeVideoJob(jobIds, count, onProgress, onPartialResults
 }
 
 async function mcpPost(body, isRetry = false) {
+  // Offline: hold the request until the connection returns instead of failing.
+  await whenOnline()
   const token = getHFToken()
   const headers = {
     'Content-Type': 'application/json',
@@ -109,6 +112,8 @@ async function mcpPost(body, isRetry = false) {
     res = await fetch(MCP_URL, { method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal })
   } catch (e) {
     clearTimeout(timeout)
+    // Dropped mid-request because the connection went away: queue and resend once.
+    if (!isOnline() && !isRetry) return mcpPost(body, true)
     if (e.name === 'AbortError') throw new Error('Higgsfield timed out — your session may have expired. Reconnect in Settings.')
     throw new Error('Connection error — check your internet connection or reconnect Higgsfield in Settings')
   }
@@ -434,6 +439,7 @@ async function uploadMedia(dataUrl, { type, defaultContentType, getExt, prefix }
     throw new Error(`media_upload failed — got: ${JSON.stringify(uploadData)?.slice(0, 200) ?? 'null'}`)
   }
 
+  await whenOnline()
   const putRes = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } })
   if (!putRes.ok) throw new Error(`${type} upload failed: ${putRes.status}`)
 
