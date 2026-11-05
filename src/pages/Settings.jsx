@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import SocialAccounts from '../components/SocialAccounts'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { startHiggsfieldOAuthPopup, disconnectHF, isHFConnected } from '../utils/higgsfieldAuth'
 import { useWorkspace } from '../context/workspace'
@@ -17,12 +18,13 @@ import { Page, Field, Dialog } from '../components/ui'
 const SECTIONS = [
   { id: 'workspace', label: 'Workspace' },
   { id: 'connections', label: 'Connections' },
+  { id: 'accounts', label: 'Social accounts' },
   { id: 'skills', label: 'Skills' },
 ]
 
 function Section({ id, title, sub, children }) {
   return (
-    <section id={`settings-${id}`} className="muse-panel muse-settings-section">
+    <section id={`settings-${id}`} className="muse-settings-section">
       <div className="muse-settings-head">
         <h2>{title}</h2>
         {sub && <p>{sub}</p>}
@@ -49,20 +51,24 @@ const Status = ({ on, label }) => <span className={`muse-badge ${on ? 'posted' :
 
 export default function Settings() {
   const location = useLocation()
-  const [params] = useSearchParams()
-  const section = params.get('section')
-  useEffect(() => {
-    if (section) document.getElementById(`settings-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [section])
+  const [params, setParams] = useSearchParams()
+  const section = SECTIONS.some(x => x.id === params.get('section')) ? params.get('section') : 'connections'
 
   return (
-    <Page title="Settings" sub="Your workspace, the services you connect, and the skills Claude uses.">
-      <nav className="muse-filter-row" aria-label="Settings sections">
-        {SECTIONS.map(s => <a key={s.id} href={`?section=${s.id}`} className={`muse-chip${section === s.id ? ' on' : ''}`}>{s.label}</a>)}
-      </nav>
-      <WorkspaceSection />
-      <ConnectionsSection connectedParam={new URLSearchParams(location.search).get('connected') === '1'} />
-      <SkillsSection />
+    <Page title="Settings">
+      <div className="muse-settings">
+        <nav className="muse-subnav" aria-label="Settings sections">
+          {SECTIONS.map(x => (
+            <button key={x.id} type="button" className={section === x.id ? 'on' : ''} aria-current={section === x.id ? 'page' : undefined} onClick={() => setParams({ section: x.id })}>{x.label}</button>
+          ))}
+        </nav>
+        <div className="muse-settings-body">
+          {section === 'workspace' && <WorkspaceSection />}
+          {section === 'connections' && <ConnectionsSection connectedParam={new URLSearchParams(location.search).get('connected') === '1'} />}
+          {section === 'accounts' && <Section id="accounts" title="Social accounts" sub="Where each influencer posts, per workspace."><SocialAccounts /></Section>}
+          {section === 'skills' && <SkillsSection />}
+        </div>
+      </div>
     </Page>
   )
 }
@@ -127,7 +133,7 @@ function ConnectionsSection({ connectedParam }) {
 
   return (
     <Section id="connections" title="Connections" sub="Everything here is optional and stays in this browser. Keys go only to the service they belong to.">
-      <h3 className="muse-panel-title">Generation</h3>
+      <h3 className="muse-group-title">Generation</h3>
       <Row title="Higgsfield" sub="Photos and videos with your own Higgsfield credits." status={<Status on={hf} />}>
         {hf
           ? <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => { if (confirm('Disconnect your Higgsfield account?')) { disconnectHF(); setHf(false) } }}>Disconnect</button>
@@ -138,7 +144,7 @@ function ConnectionsSection({ connectedParam }) {
       </Row>
       {!claudeKey && <SecretInput placeholder="sk-ant-…" onSave={saveClaude} />}
 
-      <h3 className="muse-panel-title">Posting</h3>
+      <h3 className="muse-group-title">Posting</h3>
       <Row title="Posting service" sub="Bring your own posting API. It does the posting and scheduling; Muse Studio keeps the queue." status={<Status on={isPublishingConnected(pub)} />}>
         <select className="muse-input" value={pub.provider || ''} onChange={e => setPub({ ...pub, provider: e.target.value })} aria-label="Posting provider">
           <option value="">None</option>
@@ -175,7 +181,7 @@ function ConnectionsSection({ connectedParam }) {
         </div>
       )}
 
-      <h3 className="muse-panel-title">Your API keys</h3>
+      <h3 className="muse-group-title">Your API keys</h3>
       <p className="muse-muted">Bring your own key for other AI services. Saved keys are available to skills, workflows and future integrations.</p>
       {keys.map(k => (
         <Row key={k.id} title={k.label || API_SERVICES.find(s => s.id === k.service)?.name} sub={`${API_SERVICES.find(s => s.id === k.service)?.name || k.service} · ${mask(k.key)}`} status={<Status on />}>
@@ -184,7 +190,7 @@ function ConnectionsSection({ connectedParam }) {
       ))}
       <button type="button" className="muse-btn muse-btn-tonal" onClick={() => setKeyDraft({ service: 'openai' })}>Add API key</button>
 
-      <h3 className="muse-panel-title">MCP servers</h3>
+      <h3 className="muse-group-title">MCP servers</h3>
       <p className="muse-muted">Add remote MCP servers (connector URLs) you use, e.g. your own tools or a community knowledge server. Muse Studio’s own MCP server is at <code>/api/mcp</code>.</p>
       {mcps.map(m => (
         <Row key={m.id} title={m.name} sub={`${m.url}${m.token ? ` · token ${mask(m.token)}` : ''}`} status={<Status on={m.enabled !== false} label={m.enabled !== false ? 'On' : 'Off'} />}>

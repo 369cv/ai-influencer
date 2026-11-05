@@ -53,13 +53,13 @@ at vercel.com/new.
 
 | Path | Role |
 |---|---|
-| `src/App.jsx` | Routes, providers, global chrome (Nav, OfflineBanner, MobileTabBar) |
+| `src/App.jsx` | Routes (incl. redirects for /library, /tracking, /inspiration), providers, global chrome (AppSidebar, Nav, OfflineBanner, NewMenu) |
 | `src/pages/Home.jsx` | Prompt-first home; a typed brief opens `/create` with `state.prefillBackstory` |
 | `src/pages/Create.jsx` | Creation wizard; accepts `location.state` `{ prefillName, prefillGender, prefillBackstory, replaceId }`. Steps are the `STEPS` array (id, label, title, sub); add a screen by adding an entry and a `stepId === '…'` branch |
 | `src/components/create/LookStudio.jsx` | Look step: `LookPreview` (illustrated live preview) + tabbed option grids; a pull-up sheet on phones |
 | `src/utils/lookOptions.js` | Skin, hair, eye, build, ethnicity and vibe option data |
 | `src/pages/Influencers.jsx` | Profile + Content Studio + Video Studio (6k+ lines; **don't refactor casually**). Brand colours are tokens now; the per-influencer accent (`accent(inf)` → hex from palette/gender) is data and stays hex because it is used with alpha suffixes and `parseInt` |
-| `src/components/AppSidebar.jsx` | Desktop rail (≥1100px). Sets `html[data-rail]`; CSS derives `--rail-offset`, which `#root`, `.nav-root`, `.muse-wizard-bar` and the Influencers fixed shell use as their left edge |
+| `src/components/AppSidebar.jsx` | **The only navigation**: logo + workspace switcher, New, Home · Influencers · Content · Plan, Recent, Help & feedback, Settings. ≥1100px full (collapsible), 720–1099px icons only, <720px a drawer opened from the slim bar in `Nav.jsx`. Sets `html[data-rail]` (→ `--rail-offset`, and `--nav-h: 0` from 720px up) and `html[data-drawer]` |
 | `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
 | `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
 | `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
@@ -75,12 +75,12 @@ at vercel.com/new.
 | `src/styles/muse-components.css` | Shared token-only component classes: `.muse-btn-*`, `.muse-plan*`, `.muse-sheet*` |
 | `src/design/tokens.json` → `tokens.css` | Design tokens (W3C DTCG). `npm run tokens` regenerates the CSS |
 | `docs/design/muse-studio-brand.md` | Brand guide: identity, tokens, patterns |
-| `src/components/StarterSheet.jsx` | The three starters. `openStarters(mode?)` opens it from anywhere (nav, rail, tab bar, Home "+") |
+| `src/components/NewMenu.jsx` | The one **New** menu (grouped: Create · Content · Plan · From a template). `openNewMenu(anchorEl?)` opens it as a popover next to the anchor, or centered on narrow screens |
 | `src/context/workspace.jsx` | Workspaces + `useWorkspaceStore(base)`: localStorage key `${base}__${workspaceId}` for `muse_ideas`, `muse_projects`, `muse_posts`, `muse_accounts`, `muse_tracked` |
-| `src/pages/Plan.jsx` · `src/utils/planning.js` | Ideas (statuses, brainstorm with a skill) and projects built from `PROJECT_TEMPLATES` (content piece, series, brand deal, launch); each step can link to where it's done or run a skill |
-| `src/pages/Content.jsx` · `src/utils/publishing.js` | Queue, month calendar, social accounts, composer (Library media picker, caption skill). `publishPost()` → `/api/publish` |
+| `src/pages/Plan.jsx` · `src/utils/planning.js` | Views Board · Creators · Inspiration. Board columns Ideas · To do · Doing · Done (`normalizeStatus()` maps older statuses); ideas and projects open in a side panel (`Panel` in `ui.jsx`). Brand-deal projects carry brand, fee, deliverables, paid. `/tracking` and `/inspiration` redirect here |
+| `src/pages/Content.jsx` · `src/utils/publishing.js` | Views Calendar · List · Media (`Library embedded`), status/account filters, two-pane composer (editor + live preview, Schedule / Post now split button). `publishPost()` → `/api/publish`. `/library` redirects to `?view=media`. Social accounts are in `src/components/SocialAccounts.jsx` (Settings) |
 | `api/publish.js` | Posting proxy, user's own credentials per request: Ayrshare (`/api/post`, `/api/user` for the test) or a public https webhook (SSRF-guarded via `img-proxy` helpers, optional HMAC `X-Muse-Signature`) |
-| `src/pages/Tracking.jsx` | Tracked creators with manual snapshots and 30-day growth |
+| `src/pages/Tracking.jsx` | `TrackingView`: tracked creators with manual snapshots and 30-day growth (rendered inside Plan) |
 | `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting), skills (built-ins + imported SKILL.md), and `runSkill()` over `/api/claude` |
 | `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
 
@@ -95,8 +95,10 @@ at vercel.com/new.
 - **Motion:** short and calm (≤500ms ease-out, small rise or fade); hover lifts cards
   by 2px. Always honor `prefers-reduced-motion`.
 - **SVG attributes:** `stroke="…"`/`fill="…"` attributes can't take `var(--…)`; use `style={{ stroke: 'var(--accent)' }}` or keep hex there.
-- **Phone first:** below 720px, the nav links hide and `.muse-tabbar` takes over. Keep
-  tap targets at least 40px.
+- **Web first, responsive:** one navigation (the sidebar). Below 720px it becomes a drawer
+  opened from the slim top bar; there is no separate phone tab bar. Keep tap targets at least 40px
+  and no horizontal page scroll at 390px.
+- **No duplicates:** one New menu, one sidebar, view switches (`Seg`) instead of extra pages or tabs.
 - **Brand:** the name is "Muse Studio" and the logo is `public/icon.svg`. Never use
   Google, Gemini or Workspace names, logos, colors or the Google Sans font. The style
   is inspired by them, but the brand is original.

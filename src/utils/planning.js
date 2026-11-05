@@ -9,13 +9,18 @@ export const IDEA_STATUSES = [
   { id: 'archived', label: 'Archived' },
 ]
 
+// Board columns: Ideas (ideas not yet in a project) + three project states.
 export const PROJECT_STATUSES = [
-  { id: 'planning', label: 'Planning' },
-  { id: 'producing', label: 'Producing' },
-  { id: 'review', label: 'Review' },
-  { id: 'scheduled', label: 'Scheduled' },
+  { id: 'todo', label: 'To do' },
+  { id: 'doing', label: 'Doing' },
   { id: 'done', label: 'Done' },
 ]
+// Projects saved before the board had 3 states.
+export function normalizeStatus(s) {
+  if (s === 'done') return 'done'
+  if (s === 'doing' || s === 'producing' || s === 'review' || s === 'scheduled') return 'doing'
+  return 'todo'
+}
 
 export const PROJECT_TEMPLATES = [
   {
@@ -39,7 +44,7 @@ export const PROJECT_TEMPLATES = [
       { label: 'List the episodes', assist: 'ideas' },
       { label: 'Batch-generate visuals', to: '/influencers' },
       { label: 'Batch captions', assist: 'caption' },
-      { label: 'Plan the posting calendar', to: '/content?tab=calendar' },
+      { label: 'Plan the posting calendar', to: '/content?view=calendar' },
       { label: 'Schedule every episode', to: '/content' },
       { label: 'Review what performed; keep or kill the format' },
     ],
@@ -47,9 +52,9 @@ export const PROJECT_TEMPLATES = [
   {
     id: 'brand-deal', name: 'Brand deal campaign', blurb: 'Brief, concept, approvals, delivery and the report.',
     steps: [
-      { label: 'Log the deal and the brief', to: '/brand-deals' },
+      { label: 'Log the brand, fee, deliverables and dates' },
+      { label: 'Make the product sheet', to: '/brand-deals' },
       { label: 'Concept and talking points', assist: 'ideas' },
-      { label: 'Agree deliverables, dates and rate' },
       { label: 'Produce drafts', to: '/influencers' },
       { label: 'Send for brand approval' },
       { label: 'Revisions' },
@@ -64,10 +69,10 @@ export const PROJECT_TEMPLATES = [
       { label: 'Create the influencer and the face anchor', to: '/create' },
       { label: 'Angle sheet for consistency', to: '/influencers' },
       { label: 'Bio, handle and profile picture' },
-      { label: 'Set up the social accounts', to: '/content?tab=accounts' },
+      { label: 'Set up the social accounts', to: '/settings?section=accounts' },
       { label: 'Produce the first 9 posts', to: '/influencers' },
-      { label: 'Schedule launch week', to: '/content?tab=calendar' },
-      { label: 'Track similar creators for benchmarks', to: '/tracking' },
+      { label: 'Schedule launch week', to: '/content?view=calendar' },
+      { label: 'Track similar creators for benchmarks', to: '/plan?view=creators' },
     ],
   },
   { id: 'blank', name: 'Blank project', blurb: 'Start empty and add your own steps.', steps: [] },

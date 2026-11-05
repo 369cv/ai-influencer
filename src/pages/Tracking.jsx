@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useWorkspaceStore } from '../context/workspace'
-import { Page, Field, Empty, Dialog } from '../components/ui'
+import { Field, Empty, Dialog } from '../components/ui'
 import { PLATFORMS, platformName } from '../utils/publishing'
 import { newId } from '../utils/localJson'
 
@@ -26,7 +26,7 @@ function profileUrl(c) {
   })[c.platform] || ''
 }
 
-export default function Tracking() {
+export function TrackingView() {
   const [creators, setCreators] = useWorkspaceStore('muse_tracked')
   const [editing, setEditing] = useState(null)
   const [logging, setLogging] = useState(null)
@@ -39,13 +39,9 @@ export default function Tracking() {
   const save = c => setCreators(l => l.some(x => x.id === c.id) ? l.map(x => x.id === c.id ? c : x) : [c, ...l])
 
   return (
-    <Page
-      title="Tracked creators"
-      sub="Benchmark influencers, competitors and collab prospects. Log a snapshot each time you check them."
-      actions={<button type="button" className="muse-btn muse-btn-filled" onClick={() => setEditing({})}>Track a creator</button>}
-      wide
-    >
+    <div className="muse-stack">
       <div className="muse-filter-row">
+        <button type="button" className="muse-btn muse-btn-filled" onClick={() => setEditing({})}>Track a creator</button>
         <input className="muse-input muse-search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, handle, niche" aria-label="Search tracked creators" />
         {[{ id: 'all', label: 'All' }, ...RELATIONS].map(r => (
           <button key={r.id} type="button" className={`muse-chip${rel === r.id ? ' on' : ''}`} onClick={() => setRel(r.id)}>{r.label}</button>
@@ -97,7 +93,7 @@ export default function Tracking() {
 
       {editing && <CreatorDialog creator={editing} onClose={() => setEditing(null)} onSave={c => { save(c); setEditing(null) }} onDelete={id => { setCreators(l => l.filter(x => x.id !== id)); setEditing(null) }} />}
       {logging && <SnapshotDialog creator={logging} onClose={() => setLogging(null)} onSave={s => { save({ ...logging, snapshots: [...(logging.snapshots || []), s] }); setLogging(null) }} />}
-    </Page>
+    </div>
   )
 }
 

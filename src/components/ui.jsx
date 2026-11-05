@@ -23,6 +23,32 @@ export function Page({ title, sub, actions, children, wide }) {
   )
 }
 
+export function Seg({ options, value, onChange, label }) {
+  return (
+    <div className="muse-seg" role="tablist" aria-label={label}>
+      {options.map(o => (
+        <button key={o.id} type="button" role="tab" aria-selected={value === o.id} className={value === o.id ? 'on' : ''} onClick={() => onChange(o.id)}>{o.label}</button>
+      ))}
+    </div>
+  )
+}
+
+export function Panel({ title, onClose, children, footer }) {
+  return (
+    <>
+      <div className="muse-panel-scrim" onClick={onClose} aria-hidden />
+      <aside className="muse-sidepanel" role="dialog" aria-label={title}>
+        <div className="muse-sidepanel-head">
+          {typeof title === 'string' ? <h3>{title}</h3> : title}
+          <button type="button" className="muse-btn muse-btn-text" onClick={onClose} aria-label="Close panel">✕</button>
+        </div>
+        <div className="muse-sidepanel-body">{children}</div>
+        {footer && <div className="muse-sidepanel-foot">{footer}</div>}
+      </aside>
+    </>
+  )
+}
+
 export function Tabs({ tabs, value, onChange }) {
   return (
     <div className="muse-tabs" role="tablist">
