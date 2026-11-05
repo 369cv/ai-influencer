@@ -167,8 +167,27 @@ const claudePlugin = {
   },
 }
 
+// Local dev posting proxy — mirrors api/publish.js for Vercel production
+const publishPlugin = {
+  name: 'publish-proxy',
+  configureServer(server) {
+    server.middlewares.use('/api/publish', async (req, res) => {
+      if (req.method !== 'POST') { res.writeHead(405, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"POST only"}'); return }
+      const chunks = []
+      req.on('data', c => chunks.push(c))
+      await new Promise(r => req.on('end', r))
+      let body = {}
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch {}
+      const { handlePublish } = await import('./api/publish.js')
+      const { status, json } = await handlePublish(body)
+      res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      res.end(JSON.stringify(json))
+    })
+  },
+}
+
 export default defineConfig({
-  plugins: [react(), pwa, searchPlugin, imgProxyPlugin, claudePlugin],
+  plugins: [react(), pwa, searchPlugin, imgProxyPlugin, claudePlugin, publishPlugin],
   server: {
     proxy: {
       '/api/hf': {

@@ -5,14 +5,18 @@
 // Anything else shows a Connect step — never a fake result.
 
 import { isHFConnected } from './higgsfieldAuth'
+import { isPublishingConnected, getApiKeys } from './connections'
+const hasKey = service => getApiKeys().some(k => k.service === service)
 
 export const INTEGRATIONS = {
-  higgsfield: { name: 'Higgsfield', mono: 'Hf', isConnected: () => isHFConnected(), connectTo: '/settings', available: true },
-  claude:     { name: 'Claude',     mono: 'Cl', isConnected: () => { try { return !!localStorage.getItem('claude_api_key') } catch { return false } }, connectTo: '/settings', available: true },
-  elevenlabs: { name: 'ElevenLabs', mono: 'El', isConnected: () => false, available: false },
-  heygen:     { name: 'HeyGen',     mono: 'Hg', isConnected: () => false, available: false },
-  tiktok:     { name: 'TikTok',     mono: 'Tt', isConnected: () => false, available: false },
-  instagram:  { name: 'Instagram',  mono: 'Ig', isConnected: () => false, available: false },
+  higgsfield: { name: 'Higgsfield', mono: 'Hf', isConnected: () => isHFConnected(), connectTo: '/settings?section=connections', available: true },
+  claude:     { name: 'Claude',     mono: 'Cl', isConnected: () => { try { return !!localStorage.getItem('claude_api_key') } catch { return false } }, connectTo: '/settings?section=connections', available: true },
+  // ElevenLabs / HeyGen: your own key can be saved in Settings → Connections; the steps that use it aren't built yet.
+  elevenlabs: { name: 'ElevenLabs', mono: 'El', isConnected: () => hasKey('elevenlabs'), connectTo: '/settings?section=connections', available: false },
+  heygen:     { name: 'HeyGen',     mono: 'Hg', isConnected: () => hasKey('heygen'), connectTo: '/settings?section=connections', available: false },
+  // Posting goes through the posting service you connect (Ayrshare or a webhook).
+  tiktok:     { name: 'TikTok',     mono: 'Tt', isConnected: () => isPublishingConnected(), connectTo: '/settings?section=connections', available: true },
+  instagram:  { name: 'Instagram',  mono: 'Ig', isConnected: () => isPublishingConnected(), connectTo: '/settings?section=connections', available: true },
   muse:       { name: 'Muse Studio', mono: 'M', isConnected: () => true, available: true },
 }
 
