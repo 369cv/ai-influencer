@@ -42,6 +42,7 @@ The PRs are stacked; merge them in order.
 | #7 | `claude/muse-library` | **Library** at `/library`: media grid of every photo/video with filters, full-screen viewer with Modify, Make video, More like this, Download, Post | Draft, stacked on #6 |
 | #8 | `claude/muse-workflows` | **Workflow template gallery** at `/workflows` and trigger → steps view at `/workflows/:id`; unconnected apps show *Connect* steps | Draft, stacked on #7 |
 | #9 | `claude/muse-extension-hooks` | **Chrome extension hooks**: `/create?brief=&name=`, `/import?type=face\|style\|inspiration&url=&source=`, guarded `mode=import` in `/api/img-proxy` | Draft, stacked on #8 |
+| #10 | `claude/muse-influencers-restyle` | **Influencers.jsx token restyle** (styles only, no split) + **desktop sidebar rail** (≥1100px, collapsible, recents) | Draft, stacked on #9 |
 
 **Deploy:** Vercel's Git integration builds from GitHub (`369cv/ai-influencer`).
 `main` is production and every PR gets a preview URL. The repo must be imported once
@@ -56,7 +57,8 @@ at vercel.com/new.
 | `src/pages/Create.jsx` | Creation wizard; accepts `location.state` `{ prefillName, prefillGender, prefillBackstory, replaceId }`. Steps are the `STEPS` array (id, label, title, sub); add a screen by adding an entry and a `stepId === '…'` branch |
 | `src/components/create/LookStudio.jsx` | Look step: `LookPreview` (illustrated live preview) + tabbed option grids; a pull-up sheet on phones |
 | `src/utils/lookOptions.js` | Skin, hair, eye, build, ethnicity and vibe option data |
-| `src/pages/Influencers.jsx` | Profile + Content Studio + Video Studio (6k+ lines; **don't refactor casually**) |
+| `src/pages/Influencers.jsx` | Profile + Content Studio + Video Studio (6k+ lines; **don't refactor casually**). Brand colours are tokens now; the per-influencer accent (`accent(inf)` → hex from palette/gender) is data and stays hex because it is used with alpha suffixes and `parseInt` |
+| `src/components/AppSidebar.jsx` | Desktop rail (≥1100px). Sets `html[data-rail]`; CSS derives `--rail-offset`, which `#root`, `.nav-root`, `.muse-wizard-bar` and the Influencers fixed shell use as their left edge |
 | `src/store.jsx` | `localStorage` stores (`useInfluencers`, …) and seed influencers |
 | `src/utils/higgsfieldAuth.js` / `higgsfieldGenerate.js` | OAuth and generation (MCP over `/api/hf/*`) |
 | `src/utils/network.js` | `whenOnline()` offline queue, `useNetworkStatus()` |
@@ -84,6 +86,7 @@ at vercel.com/new.
   primary action, large light headings (Figtree 400).
 - **Motion:** short and calm (≤500ms ease-out, small rise or fade); hover lifts cards
   by 2px. Always honor `prefers-reduced-motion`.
+- **SVG attributes:** `stroke="…"`/`fill="…"` attributes can't take `var(--…)`; use `style={{ stroke: 'var(--accent)' }}` or keep hex there.
 - **Phone first:** below 720px, the nav links hide and `.muse-tabbar` takes over. Keep
   tap targets at least 40px.
 - **Brand:** the name is "Muse Studio" and the logo is `public/icon.svg`. Never use
@@ -147,7 +150,8 @@ permission for the app origin only.
 4. ✅ Library (#7). Handoffs reuse keys the studios already read: `ps_restore_pending_<id>` (settings), `hf_start_frame_<id>` (video start frame), plus a new one-shot `ps_handoff_<id>` `{ ref, openPlan }` read by Photo Studio, and `state.studioTab` read by Influencers. Post shows *Connect* placeholders until integrations exist.
 5. ✅ Workflow template gallery (#8). Next: a step runner (Higgsfield photo + Claude caption are runnable today), then flip each integration's `available`/`isConnected` as it ships.
 6. ✅ `/import` and `?brief=` routes for the Chrome extension (#9). Next: build the extension itself (MV3 side panel) against §6.
-7. Integrations (HeyGen, ElevenLabs, social publishing, cloud sync): decisions still pending.
+7. ✅ Influencers.jsx token restyle + desktop sidebar (#10). Splitting the file still needs a dedicated session with live Higgsfield verification.
+8. Integrations (HeyGen, ElevenLabs, social publishing, cloud sync): **waiting on the owner's pick** of which to start.
 
 **Blocked from the cloud session** (environment network allowlist): 21st.dev
 components, urltoany.com, studio.workspace.google.com and motionsites.ai. Add those
