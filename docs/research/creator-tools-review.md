@@ -1,7 +1,7 @@
 # Creator Tools Review — Muse Studio
 
 Read-only review of external creator tools, gathered tab-by-tab with the Claude in Chrome
-side panel (no settings changed, nothing generated, no credits spent). Target app: Muse Studio
+side panel. Target app: Muse Studio
 (`ai-influencer-git-claude-muse-studio-369cvs-projects.vercel.app`, branch `claude/muse-studio`).
 
 Constraints for every idea: map to an existing page (Home, Studio, Content, Plan,
@@ -11,25 +11,34 @@ Settings, influencer profile) · no new sidebar items · light mode only.
 
 | Tool | Status | One-line takeaway | Feeds ideas |
 |---|---|---|---|
-| [Higgsfield](#higgsfield) | Reviewed | Structured character schema, motion transfer from reference video, recipes over MCP | 1, 2, 3, 9 |
-| [Blueprint](#blueprint) | Reviewed | Outlier-ranked inspo → script → calendar, one status model, Content Profiles | 5, 8, 10 |
-| [HeyGen](#heygen) | Reviewed | Persona → Looks/Voice/Motion; plan-before-generate; post-gen action rail | 1, 2, 3, 9 |
-| [ElevenLabs](#elevenlabs) | Reviewed | Voice = voice_id + locked settings + seed; inline delivery tags; form↔code mirror | 6 |
+| [Higgsfield](#higgsfield) | Reviewed | Structured character schema, motion transfer from reference video, recipes over MCP | 1, 2, 3, 8 |
+| [Blueprint](#blueprint) | Reviewed | Outlier-ranked inspo → script → calendar, one status model, Content Profiles | 5, 6, 10 |
+| [HeyGen](#heygen) | Reviewed | Persona → Looks/Voice/Motion; plan-before-generate; post-gen action rail | 1, 2, 3, 8 |
+| [ElevenLabs](#elevenlabs) | Reviewed | Voice = voice_id + locked settings + seed; inline delivery tags; form↔code mirror | 7 |
 | [Pomelli](#pomelli) | Reviewed | One profile feeds every tool; three entry paths; brand book export | 1 |
-| [MuzeBoard](#muzeboard) | Reviewed | Prompt vault with image ↔ motion pairs, tagged niche × shoot type | 4, 7 |
-| [Muzecast](#muzecast) | Reviewed | 6-angle spec sheet anchor; one composer, many workflows; Flip a viral URL | 1, 2, 4, 6, 7 |
-| [FlipScript](#flipscript) | Pending | (Muzecast exposes a FlipScript workflow: keep reference structure, rewrite script) | 2 |
-| [ManyChat](#manychat) | Pending | | |
-| [Google Flow](#google-flow) | Pending | | |
-| [link.me](#linkme) | Pending | | |
+| [MuzeBoard](#muzeboard) | Reviewed | Prompt vault with image ↔ motion pairs, tagged niche × shoot type | 4, 6 |
+| [Muzecast](#muzecast) | Reviewed | 6-angle spec sheet anchor; one composer, many workflows; Flip a viral URL | 1, 2, 4, 7 |
+| [FlipScript](#flipscript) | Reviewed | Analyze first (cheap), generate later; structured script blueprint; versioned remixes | 2, 8 |
+| [Google Flow](#google-flow) | Reviewed | Character as saved object; prompt + settings stored on every batch; x4 variations → Favorites | 1, 8 |
+| [Google Workspace Studio](#google-workspace-studio) | Reviewed (extra) | Prompt → editable trigger/steps pipeline; typed AI steps; Approvals queue | 9 |
+| [link.me](#linkme) | Reviewed | Post to All composer; keyword → auto-DM → lead → product; agency roll-up | 9 |
+| [ManyChat](#manychat) | Not reviewed | Auto-DM pattern covered by link.me Automations | — |
+
+### Incidents during review (check these)
+
+- **Google Flow:** a misclick on the "The Familiar" sample character started "Generating…".
+  Done was not clicked. Check the credit balance and the Fashion project's Characters view.
+- **Google Workspace Studio:** opening "New flow" auto-created an empty draft "Untitled flow"
+  (`/workflow/b024ff5a…`). Not turned on. Delete it from Flows.
+- All other tools: view-only; nothing generated, saved, purchased or toggled.
 
 ### What Muse Studio already has (checked on `claude/muse-studio`)
 
 Sidebar: Home, Influencers, Content, Plan (+ Settings). Studio has Photo / Video modes.
 Plan has Board (idea → draft → scheduled → posted), Creators, Inspiration views. Content has a
 media view. Influencers have a character sheet and a wardrobe/looks drawer. Settings has a
-labeled API-key vault (Higgsfield, Claude, ElevenLabs label). Ideas below build on these, they
-don't duplicate them.
+labeled API-key vault (Higgsfield, Claude, ElevenLabs label). A `/workflows` page exists but
+isn't in the sidebar. Ideas below build on these, they don't duplicate them.
 
 ---
 
@@ -39,37 +48,39 @@ Ranked by value to an AI-influencer workflow ÷ effort. Effort: S (≤1 day), M 
 
 | # | Idea | Page | Sources | Effort |
 |---|---|---|---|---|
-| 1 | Persona profile as single source of truth | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Blueprint | M |
-| 2 | Remix from a reference URL | Studio | Muzecast (Flip/FlipScript), HeyGen (Recreate), Higgsfield (Motion transfer) | L |
-| 3 | Plan + cost before Generate | Studio | HeyGen (Plan vs Auto-pilot), Higgsfield, Muzecast | S |
+| 1 | Persona profile as single source of truth | Influencer profile | Pomelli, Higgsfield, HeyGen, Muzecast, Google Flow, Blueprint | M |
+| 2 | Analyze, then remix from a reference URL | Studio | FlipScript, Muzecast, HeyGen, Higgsfield | L |
+| 3 | Plan + cost before Generate | Studio | HeyGen, Higgsfield, Muzecast | S |
 | 4 | Paired image ↔ motion prompts, one-click Animate | Studio | MuzeBoard, Muzecast | M |
 | 5 | Outlier score on tracked creators | Plan → Creators | Blueprint | M |
-| 6 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
-| 7 | Two-axis chips + counts + "Surprise me" | Plan → Inspiration | MuzeBoard, Muzecast | S |
-| 8 | One status model from Inspiration to Board | Plan | Blueprint | S |
-| 9 | Post-generation action rail | Content | HeyGen, Higgsfield | M |
+| 6 | Inspiration tags + one status model into Board | Plan → Inspiration, Board | MuzeBoard, Muzecast, Blueprint | S |
+| 7 | Persona voice (ElevenLabs BYOK) | Settings + influencer profile | ElevenLabs, Muzecast | M |
+| 8 | Post-generation rail with saved recipe + versions | Content | HeyGen, Higgsfield, Google Flow, FlipScript | M |
+| 9 | Approve → post pack on scheduled cards | Plan → Board | link.me, Google Workspace Studio | M |
 | 10 | Weekly ideas drop card | Home | Blueprint | M |
 
 ### 1. Persona profile as single source of truth — Influencer profile
 Extend the existing character sheet into a portable persona object every generator reads:
 identity attributes (Higgsfield-style facets, not free text), face/angle reference sheet with
-**Rebuild** (Muzecast), Looks (already via wardrobe), voice (idea 6), palette + font tokens by
-role (HeyGen Brand Spec, Pomelli), audience/tone (Blueprint Content Profile). Add **Export
-persona bible** (Markdown + JSON) for collaborators.
+**Rebuild** (Muzecast), Looks (already via wardrobe), voice (idea 7), palette + font tokens by
+role (HeyGen Brand Spec, Pomelli), audience/tone (Blueprint Content Profile). Three ways in
+(Pomelli): from an Instagram handle, a reference-image dump, or an archetype preset
+(Google Flow, Higgsfield). Add **Export persona bible** (Markdown + JSON).
 - **Check:** profile shows Identity / Looks / Voice / Brand sections; Studio's prompt uses
   identity fields when that influencer is selected; Export downloads `.md` and `.json`.
 
-### 2. Remix from a reference URL — Studio
-New option in Studio's composer: paste an IG/TikTok/YouTube URL → choose **Swap in persona**
-(Higgsfield motion transfer with the persona sheet) or **Keep structure, new script**
-(FlipScript pattern, script drafted by Claude in the persona's tone). Mode lives in the
-existing composer, not a new page.
-- **Check:** pasting a URL reveals the two options; Swap shows the reference + persona +
-  credit estimate before Generate; Keep-structure returns an editable script.
+### 2. Analyze, then remix from a reference URL — Studio
+In Studio's composer, paste an IG/TikTok/YouTube URL → **Analyze** (cheap, no generation:
+transcript + structured blueprint: hook type → bridge → body → persuasion devices → CTA, plus a
+visual-style read) → then choose **Swap in persona** (Higgsfield motion transfer with the
+persona sheet) or **Keep structure, new script** (drafted by Claude in the persona's tone).
+The blueprint is saved and linked to its source, persona and outputs.
+- **Check:** pasting a URL enables Analyze only; the blueprint renders as named sections; the
+  two remix options appear after Analyze, each with a credit estimate.
 
 ### 3. Plan + cost before Generate — Studio
 Show model, settings, prompt summary and credit estimate on/near the Generate button; optional
-"Review plan" step for batches. Prevents wasted spend.
+"Review plan" step for batches.
 - **Check:** Generate button label includes cost; changing batch count or model updates it;
   batch > 1 shows a confirm summary.
 
@@ -84,37 +95,48 @@ Rank posts by views ÷ that creator's own baseline (e.g. "208×"), not raw views
 Inspiration** from any row.
 - **Check:** Creators view has an Outlier column and sort; Save adds the item to Inspiration.
 
-### 6. Persona voice — Settings + influencer profile
+### 6. Inspiration tags + one status model — Plan → Inspiration, Board
+Niche chips × shoot-type chips with counts and "Surprise me" (6 random). Each item gets
+To create / Created / Skipped; "To create" drops a linked card into Board's Idea column.
+- **Check:** one chip from each row narrows the grid and counts match; To create creates a
+  Board card with a source link; Skipped hides it by default.
+
+### 7. Persona voice — Settings + influencer profile
 Use the existing ElevenLabs key slot in Settings. On the profile, a Voice section stores
 `voice_id`, model, locked settings (stability, similarity, style, speed) and seed, plus a
 preview line. Scripts support inline delivery tags (`[soft]`, `[excited]`).
 - **Check:** with a key saved, profile lists voices and saves one; without a key, it links to
   Settings; settings persist after reload.
 
-### 7. Two-axis chips + counts + "Surprise me" — Plan → Inspiration
-Niche chips (Lifestyle, Beauty, Fashion, Fitness…) × shoot-type chips (Editorial, UGC,
-Streetstyle, Headshot, Motion) with counts; "Surprise me" picks 6 random items. Tags, not
-folders.
-- **Check:** combining one chip from each row narrows the grid; counts match results; Surprise
-  me shows 6 items.
+### 8. Post-generation rail with saved recipe + versions — Content
+On a media item: Animate, Upscale, Reframe (9:16 / 1:1 / 16:9), the stored recipe (prompt,
+references, model, ratio, seed, date — Google Flow), **Recreate** (reopen Studio with it),
+**Remix** with a plain-language instruction that saves a new version (FlipScript), credits used.
+- **Check:** opening a media item shows the rail and recipe; Recreate opens Studio with
+  identical settings; a remix adds v2 and lets you switch back to v1.
 
-### 8. One status model from Inspiration to Board — Plan
-Inspiration items get To create / Created / Skipped; "To create" drops a card into Board's
-Idea column linked back to its source.
-- **Check:** marking an inspiration item To create creates a Board card with a source link;
-  Skipped hides it from the default filter.
-
-### 9. Post-generation action rail — Content
-On a media item: Animate, Upscale, Reframe (9:16 / 1:1 / 16:9), **Recreate settings** (reopen
-Studio with the exact prompt/model/seed), and the credits it cost.
-- **Check:** opening a media item shows the rail; Recreate opens Studio with identical
-  settings.
+### 9. Approve → post pack — Plan → Board
+Between Draft and Scheduled, a card needs **Approve** (Workspace Studio approvals: gate posting
+and spend). Approved cards offer **Post pack**: asset per platform aspect, caption, hashtags,
+and per-platform preview (link.me Post to All). Direct publishing comes later via
+link.me / Higgsfield TikTok publish; the pack works with any scheduler.
+- **Check:** a Draft card can't move to Scheduled until approved; Post pack downloads asset(s)
+  + caption text; preview shows each selected platform.
 
 ### 10. Weekly ideas drop — Home
-A Home card: "This week's ideas", generated on demand from persona (idea 1) + tracked creators
-(idea 5) + saved inspiration; each idea can go to Plan in one click.
+A Home card: "This week's ideas", generated on demand from persona (1) + tracked creators (5) +
+saved inspiration; each idea goes to Plan in one click.
 - **Check:** Home shows the card with an empty state; Generate produces ideas; "Add to Plan"
   creates Board cards.
+
+### Considered, not ranked
+- **Keyword → auto-DM → lead → product** (link.me, ManyChat): high value, but it's distribution
+  and CRM, not studio work. Use link.me directly; revisit once idea 9 exists.
+- **Visual flow builder** (Workspace Studio, ElevenLabs Flows): `/workflows` already exists;
+  surfacing it needs a sidebar item, which is out of scope.
+- **Per-persona workspaces with roll-up analytics** (link.me Agency): useful for multi-client
+  use; larger store change.
+- **Sell prompt packs / courses** (link.me, MuzeBoard): business model, not a feature.
 
 ---
 
@@ -129,10 +151,15 @@ A Home card: "This week's ideas", generated on demand from persona (idea 1) + tr
 | Pomelli | None visible | None visible | Google Ads, Drive, Instagram Business | Download Business Data |
 | MuzeBoard | None | None | None | Clipboard text |
 | Muzecast | None (BYOK for ElevenLabs/HeyGen) | None | None | Video download, spec sheet |
+| FlipScript | Internal only (`/api/remix/*`, session-gated) | None | None (access code) | On-screen text |
+| Google Flow | None visible | None | Google account | Per-item download |
+| Workspace Studio | None visible (developer doc exists) | None | Google account; Beta connectors (admin-gated) | Via Sheets/Docs/Drive steps |
+| link.me | None visible | None | YouTube, Instagram, TikTok, Facebook, X, Threads, LinkedIn | Leads CSV, email export |
 
-Fastest wins for Muse Studio: Higgsfield (already integrated) for ideas 2, 3, 9; ElevenLabs
-(key slot exists) for idea 6; Blueprint MCP is useful from Claude for research, not as an
-in-app dependency.
+Fastest wins for Muse Studio: Higgsfield (already integrated) for ideas 2, 3, 8; ElevenLabs
+(key slot exists) for idea 7; Claude (already proxied) for the analyze/script steps in idea 2.
+Blueprint and Higgsfield MCP servers are useful from Claude for research and batch runs, not as
+in-app dependencies.
 
 ---
 
@@ -254,16 +281,69 @@ in-app dependency.
 **Worth copying:** 6-angle spec sheet as generation anchor · character → looks hierarchy · one composer, many workflows · Flip / FlipScript trend-to-content loop · curated setups with counts, keep face out of scene prompts.
 
 ### FlipScript
-_Pending — paste side-panel output._ (Seen inside Muzecast as a workflow; standalone tab not yet reviewed.)
+- **URL:** https://www.flipscript.ai/remix (app) · https://www.flipscript.ai/ (landing)
+- **Tags:** `analyze-before-generate` `script-blueprint` `versioned-remix` `single-screen`
 
-### ManyChat
-_Pending._
+**Main flows**
+1. **Flip from URL:** Video URL tab → IG / TikTok / YT Shorts link → Transcribe & Analyze → structure breakdown → original script.
+2. **Flip from file:** Upload Video tab → MP4/MOV (≤100MB) → Transcribe & Analyze → breakdown → script.
+3. **Remix loop (landing, not observed):** pick script → instruction ("make it funnier", "shorten to 30s") → new version in history → switch versions.
+4. **Access:** Get Lifetime Access ($57, Stan Store) → login with access code.
+
+**Key controls:** URL / Upload toggle · URL field · upload dropzone (links to IG downloaders) · single Transcribe & Analyze button (disabled until input) · remix instruction box + version switcher · one-screen app.
+
+**Worth copying:** cheap analyze step before expensive generation · blueprint as a structured object (hook → bridge → body → persuasion → CTA) linked to source, persona, outputs · audio + visual analysis (transcript + frames, captions, pacing, style) · natural-language remix with versions · one primary button for quick capture.
 
 ### Google Flow
-_Pending (labs.google/flow)._
+- **URL:** https://flow.google.com/
+- **Tags:** `character-object` `batch-recipe` `variations` `favorites` `custom-tools`
+
+**Main flows**
+1. **Project generation:** project → prompt → model (Nano Banana 2.1) + aspect (4:3 / 9:16) + count (x4) → optional Agent mode → batches with prompt, reference, date, model.
+2. **Iterate:** batch → add references → rewrite/reuse prompt → regenerate → download / undo / delete.
+3. **Character builder:** Characters → archetype (Eccentric, Professional, Wildcard, Familiar, Wicked, Fantastical) or from scratch → format + model → upload / add from project → Done.
+4. **Tools:** My Tools / Community / Templates → open or remix → Create tool by description (upgraded plan).
+5. **Library:** All media / Images / Videos / Characters / Scenes / Favorites / Uploads → search, sort → Trash.
+
+**Key controls:** prompt bar · Agent toggle · model picker · aspect chip · count (x4) · + references · Add media · per-batch download/undo/delete · Characters · Scenes · Favorites · Create tool.
+
+**Worth copying:** saved character reused everywhere · prompt + metadata on every batch for exact reproduction · projects by content pillar used as tags · remixable tool templates (Storyboard Studio, Character X-Ray, Style Writer, Shot Explorer, Video Resizer) · x4 variations → Favorites as approval.
+
+### Google Workspace Studio
+- **URL:** https://studio.workspace.google.com/ (reviewed in addition to the original list)
+- **Tags:** `prompt-to-pipeline` `triggers` `typed-ai-steps` `approvals` `share-to-copy`
+
+**Main flows**
+1. **Prompt-to-flow:** describe a task → Create → Gemini drafts starter + steps → edit → Test run → Turn on.
+2. **Template:** category chip → card → More details / Turn on.
+3. **Manual build:** New flow → starter (trigger) → steps → required fields → Test run → Turn on.
+4. **Manage:** Flows list / Activity (run history).
+5. **Human-in-the-loop:** Approvals → Pending / All → approve or reject.
+
+**Key controls:** starters (schedule, manual, email, chat, @mention, reaction, sheet change, file added, meeting, form response) · AI steps (Ask, Create, Deep Research, Recap, Extract, Decide, Summarize) · logic (Check if, Filter, Repeat for each) · NotebookLM knowledge · Gmail/Chat/Sheets/Drive/Calendar/Docs/Tasks actions · editor bar (rename, undo, Activity, Share, Test run, Turn on).
+
+**Worth copying:** prompt drafts an editable pipeline, not a black box · real-world event triggers (trending sound, brand brief, comment spike, schedule) · typed AI verbs as reusable steps · approvals queue for posting/DMs/spend · outcome-named templates with share-to-copy links.
 
 ### link.me
-_Pending._
+- **URL:** https://link.me (dashboard `/profile`; public page `link.me/<handle>`)
+- **Tags:** `cross-post` `auto-dm` `lead-capture` `digital-products` `agency`
+
+**Main flows**
+1. **Bio link:** Edit Profile → publish to `link.me/<handle>`.
+2. **Cross-post:** Post to All → format → upload (≤1GB, ≤3 min) → caption → accounts (YT Shorts, IG Reels, TikTok, FB Reels, X, Threads, LinkedIn) → optional schedule → preview → post.
+3. **Auto-DM:** Automations → trigger (keyword or always-on) → link posts → publish → activations, clicks, CTR.
+4. **Leads → email:** Audience (source, temperature) → templates → campaign → history, form submissions.
+5. **Digital product:** create → cover, price → Draft/Publish → shop page → Sales.
+6. **Course:** Course Builder → draft → publish → learners.
+7. **Agency:** invite/create managed users → managers → roll-up analytics ($99.99/mo, 5 seats).
+
+**Key controls:** per-platform account chips · schedule toggle · post preview · automation filters + monthly activations meter (free: 1,000 activations, 3 keyword, 4 always-on) · analytics tabs + date presets + pixels · leads CSV import/export · product publish toggle · sales email export · agency roles, custom domain.
+
+**Worth copying:** one composer → many platforms with preview, right after generation · comment keyword → DM → lead → product loop · per-persona workspaces with roll-up · productized know-how next to tools · label first-party vs platform metrics honestly.
+
+### ManyChat
+_Not reviewed this round._ Its core pattern (comment/keyword → automated DM → lead) is covered by
+link.me Automations above.
 
 ---
 
