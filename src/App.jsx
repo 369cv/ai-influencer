@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from './context/theme'
 import { StoreProvider } from './store'
 import { silentRefreshHFToken } from './utils/higgsfieldAuth'
 import Nav from './components/Nav'
+import OfflineBanner from './components/OfflineBanner'
 import Landing from './pages/Landing'
 import Influencers from './pages/Influencers'
 import Inspiration from './pages/Inspiration'
@@ -65,6 +66,7 @@ export default function App() {
     <StoreProvider>
     <BrowserRouter>
       <Nav />
+      <OfflineBanner />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/influencers" element={<Influencers />} />
