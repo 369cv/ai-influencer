@@ -100,8 +100,39 @@ const claudePlugin = {
   },
 }
 
+// Local dev MCP server — mirrors api/mcp.js for Vercel production.
+// Connect a client to http://localhost:5173/api/mcp
+const mcpPlugin = {
+  name: 'mcp-server',
+  configureServer(server) {
+    server.middlewares.use('/api/mcp', async (req, res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type, accept, mcp-session-id, mcp-protocol-version')
+      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST, OPTIONS' })
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Method not allowed — POST JSON-RPC to this endpoint.' } }))
+        return
+      }
+      let body = ''
+      for await (const chunk of req) body += chunk
+      try {
+        const { handleMcpPost } = await server.ssrLoadModule('/lib/mcp/server.js')
+        const { status, json } = await handleMcpPost(body, req.headers)
+        if (json === null) { res.writeHead(status); res.end(); return }
+        res.writeHead(status, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(json))
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32603, message: e.message } }))
+      }
+    })
+  },
+}
+
 export default defineConfig({
-  plugins: [react(), searchPlugin, imgProxyPlugin, claudePlugin],
+  plugins: [react(), searchPlugin, imgProxyPlugin, claudePlugin, mcpPlugin],
   server: {
     proxy: {
       '/api/hf': {
