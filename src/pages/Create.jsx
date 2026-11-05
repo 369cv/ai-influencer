@@ -8,70 +8,51 @@ import { generateThreeImages } from '../utils/higgsfieldGenerate'
 import { isHFConnected, startHiggsfieldOAuthPopup } from '../utils/higgsfieldAuth'
 import { compressImage } from '../utils/imageUtils'
 import { gColor } from '../utils/influencerUtils'
+import { VIBE_OPTIONS, SKIN_TONES, HAIR_COLORS, HAIR_LENGTHS_FEMALE, HAIR_LENGTHS_MALE, HAIR_TEXTURES, EYE_COLORS, BUILDS_FEMALE, BUILDS_MALE, ETHNICITIES } from '../utils/lookOptions'
+import LookStudio from '../components/create/LookStudio'
 import PlanCard from '../components/PlanCard'
 import { estimateImageCredits, DEFAULT_RESOLUTION } from '../utils/creditEstimate'
 
 const NICHES = ['Fashion', 'Beauty', 'Lifestyle', 'Fitness', 'Travel', 'Food & Dining', 'Tech', 'Gaming', 'Finance', 'Entertainment', 'Wellness', 'Sports', 'Other']
-const VIBE_OPTIONS = [
-  { id: 'Minimalist',   label: 'Minimalist',   sub: 'Clean, simple, less is more',            icon: '🤍' },
-  { id: 'Old Money',    label: 'Old Money',    sub: 'Understated wealth & heritage',           icon: '🏛' },
-  { id: 'Clean Girl',   label: 'Clean Girl',   sub: 'Effortless, dewy, no-makeup look',        icon: '🫧', genders: ['female'] },
-  { id: 'Editorial',    label: 'Editorial',    sub: 'High fashion, bold & structured',         icon: '🖤' },
-  { id: 'Streetwear',   label: 'Streetwear',   sub: 'Urban, casual street style',              icon: '🧢' },
-  { id: 'Bohemian',     label: 'Bohemian',     sub: 'Earthy, flowy, free-spirited',            icon: '🌿' },
-  { id: 'Glam',         label: 'Glam',         sub: 'Dressy, dramatic & glamorous',            icon: '✨' },
-  { id: 'Preppy',       label: 'Preppy',       sub: 'Classic, collegiate, polished',           icon: '🎓' },
-  { id: 'Sporty',       label: 'Sporty',       sub: 'Athletic & activewear vibes',             icon: '⚡' },
-  { id: 'Dark & Moody', label: 'Dark & Moody', sub: 'Alternative, edgy & dramatic',           icon: '🌙' },
-  { id: 'Y2K',          label: 'Y2K',          sub: '2000s nostalgia & pop culture',           icon: '💿' },
-  { id: 'Cottagecore',  label: 'Cottagecore',  sub: 'Romantic, vintage & nature',             icon: '🌸', genders: ['female'] },
-  { id: 'Tech Bro',     label: 'Tech Bro',     sub: 'Smart-casual, Silicon Valley',            icon: '💻', genders: ['male'] },
-  { id: 'Coastal',      label: 'Coastal',      sub: 'Linen, nautical, effortlessly sun-worn',  icon: '🌊' },
+// One task per screen. Order matters: the index + 1 is the step number.
+const STEPS = [
+  { id: 'name',     label: 'Name',       title: 'Name your influencer',  sub: 'Start with the basics. You can change anything later.' },
+  { id: 'niche',    label: 'Niche',      title: 'What do they post about?', sub: 'Pick all that apply. It shapes scenes, props and captions.' },
+  { id: 'refs',     label: 'References', title: 'Add references',        sub: 'Both optional. The more you give, the closer the result.' },
+  { id: 'story',    label: 'Story',      title: 'Who are they?',         sub: 'Their story, vibe and what makes them different.' },
+  { id: 'look',     label: 'Look',       title: 'How do they look?',     sub: 'Tap a tab, pick a feature, and watch the preview update.' },
+  { id: 'generate', label: 'Generate',   title: null,                     sub: null },
 ]
-const STEPS = ['Basics', 'References', 'Story', 'Look', 'Generate']
+const stepIndex = id => STEPS.findIndex(s => s.id === id) + 1
 
+function StepHead({ title, sub }) {
+  return (
+    <header className="muse-step-head">
+      <h2>{title}</h2>
+      {sub && <p>{sub}</p>}
+    </header>
+  )
+}
+
+function WizardProgress({ current }) {
+  const s = STEPS[current - 1]
+  return (
+    <div className="muse-wizard-progress" aria-label={`Step ${current} of ${STEPS.length}: ${s.label}`}>
+      <div className="muse-wizard-bars">
+        {STEPS.map((x, i) => <span key={x.id} className={i + 1 < current ? 'done' : i + 1 === current ? 'active' : ''} />)}
+      </div>
+      <span className="muse-wizard-count">Step {current} of {STEPS.length} · {s.label}</span>
+    </div>
+  )
+}
+
+const MODEL_PREF_KEY = 'aiis_model_pref'
 const MODELS = [
   { id: 'soul_2',            name: 'Higgsfield Soul', tag: 'Influencer-Native',   tagColor: '#EC4899', provider: 'higgsfield',              desc: 'Native model for fashion and UGC.',          maxRefs: 1 },
   { id: 'gpt_image_2',       name: 'GPT Image 2',     tag: 'Max Quality',         tagColor: '#10B981', provider: 'openai',                  desc: 'Highest quality output, maximum realism.',   maxRefs: 2 },
-  { id: 'nano_banana_2',     name: 'Nano Banana Pro', tag: 'Sharpest Detail',     tagColor: '#8B5CF6', provider: 'banana', version: 'Pro', desc: 'Maximum detail and portrait precision.',     maxRefs: 2 },
+  { id: 'nano_banana_2',     name: 'Nano Banana Pro', tag: 'Sharpest Detail',     tagColor: 'var(--accent)', provider: 'banana', version: 'Pro', desc: 'Maximum detail and portrait precision.',     maxRefs: 2 },
   { id: 'nano_banana_flash', name: 'Nano Banana 2',   tag: 'Fastest',             tagColor: '#0EA5E9', provider: 'banana', version: '2',   desc: 'Rapid results, still premium quality.',      maxRefs: 2 },
 ]
-const MODEL_PREF_KEY = 'aiis_model_pref'
-
-// ── Physical description builder constants ─────────────────────
-const SKIN_TONES = [
-  { id: 'fair',   label: 'Fair',   swatch: '#FDDBB4' },
-  { id: 'light',  label: 'Light',  swatch: '#F0C080' },
-  { id: 'medium', label: 'Medium', swatch: '#D4956A' },
-  { id: 'tan',    label: 'Tan',    swatch: '#C07A47' },
-  { id: 'brown',  label: 'Brown',  swatch: '#8B5E3C' },
-  { id: 'deep',   label: 'Deep',   swatch: '#5C3A1E' },
-  { id: 'ebony',  label: 'Ebony',  swatch: '#2D1A0E' },
-]
-const HAIR_COLORS = [
-  { id: 'blonde',   label: 'Blonde',    swatch: '#F5D17A' },
-  { id: 'brunette', label: 'Brunette',  swatch: '#7B4F2E' },
-  { id: 'black',    label: 'Black',     swatch: '#1A1A1A' },
-  { id: 'auburn',   label: 'Auburn',    swatch: '#9B3A2A' },
-  { id: 'red',      label: 'Red',       swatch: '#C0392B' },
-  { id: 'silver',   label: 'Silver',    swatch: '#A8A8A8' },
-  { id: 'dyed',     label: 'Dyed',      swatch: 'linear-gradient(135deg,#EC4899,#8B5CF6)' },
-]
-const HAIR_LENGTHS_FEMALE = ['Short', 'Medium', 'Long', 'Extra long']
-const HAIR_LENGTHS_MALE   = ['Buzz cut', 'Short', 'Medium', 'Long']
-const HAIR_TEXTURES = ['Straight', 'Wavy', 'Curly', 'Coily']
-const EYE_COLORS = [
-  { id: 'blue',       label: 'Blue',       swatch: '#4A90D9' },
-  { id: 'green',      label: 'Green',      swatch: '#4A9B6F' },
-  { id: 'brown',      label: 'Brown',      swatch: '#7B4F2E' },
-  { id: 'hazel',      label: 'Hazel',      swatch: '#9B7A3A' },
-  { id: 'dark',       label: 'Dark',       swatch: '#1A1008' },
-  { id: 'light grey', label: 'Grey',       swatch: '#8A9BAA' },
-]
-const BUILDS_FEMALE = ['Petite', 'Slim', 'Athletic', 'Average', 'Curvy', 'Tall', 'Plus']
-const BUILDS_MALE   = ['Slim', 'Athletic', 'Average', 'Muscular', 'Stocky', 'Tall']
-const ETHNICITIES = ['White', 'Black', 'Hispanic', 'East Asian', 'South Asian', 'Middle Eastern', 'Southeast Asian', 'Mixed']
-
 function buildPhysicalDescString(d) {
   const { ethnicity, skinTone, hairColor, hairLength, hairTexture, eyeColor, build, uniqueFeatures } = d
   const parts = []
@@ -85,22 +66,13 @@ function buildPhysicalDescString(d) {
   return parts.join(', ')
 }
 
-// Floating card configuration
-const ALL_IMGS = ['/inf/i1.png', '/inf/i2.png', '/inf/i3.jpg', '/inf/i4.jpg', '/inf/i5.png', '/inf/i6.jpg', '/inf/i7.png', '/inf/i8.png', '/inf/i9.png', '/inf/i10.png', '/inf/i11.png', '/inf/i12.png', '/inf/i13.png', '/inf/i14.png', '/inf/i15.png', '/inf/i16.png']
-const CARD_CONFIG = [
-  { left: '1%',  top: '15%', w: 162, rot: '-9deg',  op: 0.48, period: 9,  sway: 12, delay: 0.0 },
-  { left: '5%',  top: '58%', w: 140, rot:  '5deg',  op: 0.34, period: 11, sway: 15, delay: 1.9 },
-  { right: '1%', top: '10%', w: 170, rot:  '10deg', op: 0.48, period: 10, sway: 13, delay: 0.5 },
-  { right: '5%', top: '57%', w: 148, rot: '-6deg',  op: 0.34, period: 12, sway: 16, delay: 1.3 },
-]
-
 // Theme tokens — map to CSS variables so dark mode is automatic
 const L = {
   bg: 'var(--bg)',
   surface: 'var(--surface)',
   surfaceAlt: 'var(--bg-tertiary)',
   border: 'var(--border)',
-  borderFocus: '#8B5CF6',
+  borderFocus: 'var(--accent)',
   text: 'var(--text-primary)',
   textSub: 'var(--text-secondary)',
   textFaint: 'var(--text-tertiary)',
@@ -138,95 +110,11 @@ function Lbl({ children, optional }) {
   )
 }
 
-// ── Animated floating cards (same feel as Landing) ────────────
-function FloatingCards() {
-  const [srcs, setSrcs] = useState(() => [ALL_IMGS[0], ALL_IMGS[2], ALL_IMGS[3], ALL_IMGS[5]])
-  const [fading, setFading] = useState([false, false, false, false])
-
-  useEffect(() => {
-    let alive = true
-    function tick() {
-      if (!alive) return
-      const i = Math.floor(Math.random() * CARD_CONFIG.length)
-      setFading(p => { const n = [...p]; n[i] = true; return n })
-      setTimeout(() => {
-        if (!alive) return
-        setSrcs(p => {
-          const current = p[i]
-          const shown = p.filter((_, idx) => idx !== i)
-          const opts = ALL_IMGS.filter(s => !shown.includes(s) && s !== current)
-          const next = [...p]; next[i] = opts[Math.floor(Math.random() * opts.length)]; return next
-        })
-        setFading(p => { const n = [...p]; n[i] = false; return n })
-      }, 700)
-    }
-    const id = setInterval(tick, 3000)
-    return () => { alive = false; clearInterval(id) }
-  }, [])
-
-  return (
-    <>
-      {CARD_CONFIG.map((c, i) => (
-        <div key={i} className="create-bg-card" style={{
-          position: 'absolute', top: c.top,
-          ...(c.left ? { left: c.left } : { right: c.right }),
-          width: c.w, transform: `rotate(${c.rot})`,
-          opacity: 0, '--t-op': c.op,
-          animation: `cAppear 0.9s ease ${c.delay + 0.2}s forwards`,
-          pointerEvents: 'none', zIndex: 0,
-        }}>
-          <div style={{
-            animation: `cFloat ${c.period}s ease-in-out ${c.delay}s infinite, cSway ${c.sway}s ease-in-out ${c.delay * 0.6}s infinite`,
-            borderRadius: 18, overflow: 'hidden',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04)',
-            opacity: fading[i] ? 0 : 1, transition: 'opacity 0.7s ease',
-          }}>
-            <img src={srcs[i]} alt="" style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-          </div>
-        </div>
-      ))}
-    </>
-  )
-}
-
-// ── Step indicator ────────────────────────────────────────────
-function StepIndicator({ current }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 52 }}>
-      {STEPS.map((label, i) => {
-        const n = i + 1; const done = n < current; const active = n === current
-        return (
-          <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: '50%', fontSize: 12, fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                background: done ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : active ? 'var(--text-primary)' : L.surfaceAlt,
-                color: done ? '#fff' : active ? 'var(--bg)' : L.textFaint,
-                border: done || active ? 'none' : `1.5px solid ${L.border}`,
-                transition: 'all 0.25s',
-                boxShadow: active ? '0 0 0 5px rgba(139,92,246,0.12)' : 'none',
-              }}>{done ? '✓' : n}</div>
-              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', color: active ? L.text : L.textFaint, whiteSpace: 'nowrap', transition: 'color 0.2s' }}>{label}</span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 1.5, background: done ? 'linear-gradient(90deg,#EC4899,#8B5CF6)' : L.border, margin: '0 6px', marginBottom: 22, transition: 'background 0.3s' }} />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ── Step 1: Basics ────────────────────────────────────────────
 function Step1({ data, set, onGenderChange, ageErrorPulse }) {
   return (
     <div>
-      <div style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>Name your influencer</h2>
-        <p style={{ fontSize: 15, color: L.textSub, lineHeight: 1.55 }}>Start with the basics — you can always refine later.</p>
-      </div>
+      <StepHead title={STEPS[0].title} sub={STEPS[0].sub} />
 
       <div style={{ marginBottom: 22 }}>
         <Lbl>Name</Lbl>
@@ -237,8 +125,8 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
         <Lbl>Gender</Lbl>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
           {[
-            { g: 'Female', color: '#EC4899', glow: 'rgba(236,72,153,0.10)', icon: '♀' },
-            { g: 'Male',   color: '#3B82F6', glow: 'rgba(59,130,246,0.10)', icon: '♂' },
+            { g: 'Female', color: 'var(--accent)', glow: 'var(--accent-light)', icon: '♀' },
+            { g: 'Male',   color: 'var(--accent)', glow: 'var(--accent-light)', icon: '♂' },
           ].map(({ g, color, glow, icon }) => {
             const on = data.gender === g
             return (
@@ -281,8 +169,16 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
         )}
       </div>
 
+    </div>
+  )
+}
+
+// ── Step 2: Niche ─────────────────────────────────────────────
+function StepNiche({ data, set }) {
+  return (
+    <div>
+      <StepHead title={STEPS[1].title} sub={STEPS[1].sub} />
       <div>
-        <Lbl>Niche <span style={{ fontSize: 10, fontWeight: 500, color: L.textFaint, textTransform: 'none', letterSpacing: 0 }}>pick all that apply</span></Lbl>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {NICHES.map(n => {
             const on = (data.niches || []).includes(n)
@@ -292,11 +188,11 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
                 set('niches', on ? cur.filter(x => x !== n) : [...cur, n])
               }} style={{
                 padding: '8px 17px', borderRadius: 22, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                border: `1.5px solid ${on ? '#8B5CF6' : L.border}`,
-                background: on ? 'rgba(139,92,246,0.09)' : L.surface,
-                color: on ? '#7C3AED' : L.textSub,
+                border: `1.5px solid ${on ? 'var(--accent)' : L.border}`,
+                background: on ? 'var(--accent-light)' : L.surface,
+                color: on ? 'var(--accent)' : L.textSub,
                 transition: 'all 0.15s',
-                boxShadow: on ? '0 0 0 1px #8B5CF655' : 'none',
+                boxShadow: on ? '0 0 0 1px var(--accent)' : 'none',
               }}>{n}</button>
             )
           })}
@@ -352,7 +248,7 @@ function RefSlot({ label, hint, value, onChange, note, onNoteChange, notePlaceho
           <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: dragging ? 0.5 : 1, transition: 'opacity 0.15s' }} />
           {dragging && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(139,92,246,0.15)', pointerEvents: 'none' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#7C3AED' }}>Drop to replace</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Drop to replace</span>
             </div>
           )}
           <button
@@ -367,17 +263,17 @@ function RefSlot({ label, hint, value, onChange, note, onNoteChange, notePlaceho
           style={{
             aspectRatio: '3/4', borderRadius: 16, cursor: 'pointer', transition: 'all 0.18s', padding: 16,
             border: dragging ? '2px dashed #8B5CF6' : '2px dashed var(--border)',
-            background: dragging ? 'rgba(139,92,246,0.08)' : L.surfaceAlt,
+            background: dragging ? 'var(--accent-light)' : L.surfaceAlt,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}
           onMouseEnter={e => { if (!dragging) { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.50)'; e.currentTarget.style.background = 'rgba(139,92,246,0.06)' } }}
           onMouseLeave={e => { if (!dragging) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = L.surfaceAlt } }}
         >
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: L.surface, boxShadow: L.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: dragging ? '#8B5CF6' : L.textFaint, transition: 'color 0.15s' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: L.surface, boxShadow: L.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: dragging ? 'var(--accent)' : L.textFaint, transition: 'color 0.15s' }}>
             {dragging ? '↓' : '+'}
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: dragging ? '#7C3AED' : L.textSub, marginBottom: 3, transition: 'color 0.15s' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: dragging ? 'var(--accent)' : L.textSub, marginBottom: 3, transition: 'color 0.15s' }}>
               {dragging ? 'Drop image' : 'Upload photo'}
             </div>
             <div style={{ fontSize: 12, color: L.textFaint, lineHeight: 1.4 }}>{hint}</div>
@@ -409,10 +305,7 @@ function RefSlot({ label, hint, value, onChange, note, onNoteChange, notePlaceho
 function Step2({ data, set }) {
   return (
     <div>
-      <div style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>Add references</h2>
-        <p style={{ fontSize: 15, color: L.textSub, lineHeight: 1.55 }}>Both optional — the more you give, the closer the result.</p>
-      </div>
+      <StepHead title={STEPS[2].title} sub={STEPS[2].sub} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <RefSlot
@@ -442,14 +335,11 @@ function Step2({ data, set }) {
 function Step3({ data, set }) {
   const pv = data.personality ?? 50
   const mood = pv < 35 ? 'Thoughtful & introspective' : pv > 65 ? 'Bold & outgoing' : 'Balanced & versatile'
-  const moodColor = pv < 35 ? '#3B82F6' : pv > 65 ? '#EC4899' : '#8B5CF6'
+  const moodColor = pv < 35 ? '#3B82F6' : pv > 65 ? '#EC4899' : 'var(--accent)'
 
   return (
     <div>
-      <div style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>Who are they?</h2>
-        <p style={{ fontSize: 15, color: L.textSub, lineHeight: 1.55 }}>Their story, vibe, what makes them different.</p>
-      </div>
+      <StepHead title={STEPS[3].title} sub={STEPS[3].sub} />
 
       <div style={{ background: L.surface, borderRadius: 18, padding: '22px', boxShadow: L.card, marginBottom: 16 }}>
         <Lbl optional>Backstory</Lbl>
@@ -480,217 +370,12 @@ function Step3({ data, set }) {
   )
 }
 
-// ── Physical description builder ─────────────────────────────
-function PhysicalBuilder({ data, set, gender }) {
-  const isMale = (gender || '').toLowerCase() === 'male'
-  const hairLengths = isMale ? HAIR_LENGTHS_MALE : HAIR_LENGTHS_FEMALE
-  const builds = isMale ? BUILDS_MALE : BUILDS_FEMALE
-  const sec = { paddingBottom: 20, marginBottom: 20, borderBottom: `1px solid ${L.border}` }
-  const lbl = { fontSize: 11, fontWeight: 700, color: L.textFaint, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 11 }
-  const chips = { display: 'flex', flexWrap: 'wrap', gap: 7 }
-
-  function Swatch({ item, field }) {
-    const on = data[field] === item.id
-    return (
-      <button onClick={() => set(field, on ? '' : item.id)} style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 12px 6px 7px', borderRadius: 22, cursor: 'pointer',
-        border: `1.5px solid ${on ? '#8B5CF6' : L.border}`,
-        background: on ? 'rgba(139,92,246,0.09)' : L.surfaceAlt,
-        boxShadow: on ? '0 0 0 1px #8B5CF655' : 'none',
-        transition: 'all 0.15s',
-      }}>
-        <div style={{ width: 13, height: 13, borderRadius: '50%', flexShrink: 0, background: item.swatch, border: '1.5px solid rgba(0,0,0,0.10)' }} />
-        <span style={{ fontSize: 12.5, fontWeight: 500, color: on ? '#7C3AED' : L.textSub, lineHeight: 1 }}>{item.label}</span>
-      </button>
-    )
-  }
-
-  function Pill({ label, field }) {
-    const on = data[field] === label
-    return (
-      <button onClick={() => set(field, on ? '' : label)} style={{
-        padding: '6px 14px', borderRadius: 22, cursor: 'pointer',
-        border: `1.5px solid ${on ? '#8B5CF6' : L.border}`,
-        background: on ? 'rgba(139,92,246,0.09)' : L.surfaceAlt,
-        color: on ? '#7C3AED' : L.textSub,
-        fontSize: 12.5, fontWeight: 500, lineHeight: 1,
-        boxShadow: on ? '0 0 0 1px #8B5CF655' : 'none',
-        transition: 'all 0.15s',
-      }}>{label}</button>
-    )
-  }
-
-  function SegmentPicker({ options, field }) {
-    const val = data[field]
-    return (
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, gap: 3, background: L.surfaceAlt, borderRadius: 10, padding: 3 }}>
-        {options.map(opt => {
-          const on = val === opt
-          return (
-            <button key={opt} onClick={() => set(field, opt)} style={{
-              padding: '7px 4px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              fontSize: 12, fontWeight: on ? 700 : 500,
-              background: on ? L.surface : 'transparent',
-              color: on ? '#7C3AED' : L.textFaint,
-              boxShadow: on ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-              transition: 'all 0.15s',
-              whiteSpace: 'nowrap',
-            }}>{opt}</button>
-          )
-        })}
-      </div>
-    )
-  }
-
-  function randomize() {
-    const pick = arr => arr[Math.floor(Math.random() * arr.length)]
-    set('ethnicity',  pick(ETHNICITIES))
-    set('skinTone',   pick(SKIN_TONES).id)
-    set('hairColor',  pick(HAIR_COLORS).id)
-    set('hairLength', pick(hairLengths))
-    set('hairTexture',pick(HAIR_TEXTURES))
-    set('eyeColor',   pick(EYE_COLORS).id)
-    set('build',      pick(builds))
-  }
-
-  return (
-    <div style={{ background: L.surface, borderRadius: 18, padding: '22px', boxShadow: L.card, marginBottom: 16 }}>
-
-      {/* Header row with randomizer */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: L.text }}>Physical appearance</div>
-        <button onClick={randomize} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 13px', borderRadius: 20, border: `1.5px solid ${L.border}`,
-          background: L.surfaceAlt, color: L.textSub, fontSize: 12, fontWeight: 600,
-          cursor: 'pointer', transition: 'all 0.15s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = '#8B5CF6'; e.currentTarget.style.color = '#7C3AED' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = L.border; e.currentTarget.style.color = L.textSub }}
-        >
-          🎲 Randomize
-        </button>
-      </div>
-
-      {/* Ethnicity */}
-      <div style={sec}>
-        <div style={lbl}>🌍 Ethnicity</div>
-        <div style={chips}>
-          {ETHNICITIES.map(e => <Pill key={e} label={e} field="ethnicity" />)}
-        </div>
-      </div>
-
-      {/* Skin tone */}
-      <div style={sec}>
-        <div style={lbl}>🤎 Skin tone</div>
-        <div style={chips}>
-          {SKIN_TONES.map(s => <Swatch key={s.id} item={s} field="skinTone" />)}
-        </div>
-      </div>
-
-      {/* Hair */}
-      <div style={sec}>
-        <div style={lbl}>💇 Hair</div>
-        <div style={{ ...chips, marginBottom: 16 }}>
-          {HAIR_COLORS.map(h => <Swatch key={h.id} item={h} field="hairColor" />)}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <div>
-            <div style={{ fontSize: 10.5, fontWeight: 600, color: L.textFaint, marginBottom: 9, letterSpacing: '0.2px' }}>Length</div>
-            <SegmentPicker options={hairLengths} field="hairLength" />
-          </div>
-          <div>
-            <div style={{ fontSize: 10.5, fontWeight: 600, color: L.textFaint, marginBottom: 9, letterSpacing: '0.2px' }}>Texture</div>
-            <SegmentPicker options={HAIR_TEXTURES} field="hairTexture" />
-          </div>
-        </div>
-      </div>
-
-      {/* Eye color */}
-      <div style={sec}>
-        <div style={lbl}>👁 Eye color</div>
-        <div style={chips}>
-          {EYE_COLORS.map(e => <Swatch key={e.id} item={e} field="eyeColor" />)}
-        </div>
-      </div>
-
-      {/* Build */}
-      <div style={sec}>
-        <div style={lbl}>💪 Build</div>
-        <div style={chips}>
-          {builds.map(b => <Pill key={b} label={b} field="build" />)}
-        </div>
-      </div>
-
-      {/* Custom description */}
-      <div>
-        <div style={{ ...lbl, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          ✏️ Custom description
-          <span style={{ fontSize: 10, fontWeight: 500, color: L.textFaint, textTransform: 'none', letterSpacing: 0, opacity: 0.55 }}>optional</span>
-        </div>
-        <input
-          className={inputCls}
-          value={data.uniqueFeatures || ''}
-          onChange={e => set('uniqueFeatures', e.target.value)}
-          placeholder="Anything else — freckles, dimples, beauty mark, tattoos…"
-          style={{ ...inputStyle, background: L.surfaceAlt }}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ── Step 4: Look ──────────────────────────────────────────────
-function Step4({ data, set }) {
-  const gender = (data.gender || '').toLowerCase()
-  const visibleVibes = VIBE_OPTIONS.filter(v => {
-    if (!v.genders) return true
-    if (!gender) return true
-    return v.genders.includes(gender)
-  })
-
+// ── Step 5: Look ──────────────────────────────────────────────
+function StepLook({ data, set }) {
   return (
     <div>
-      <div style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>How do they look?</h2>
-        <p style={{ fontSize: 15, color: L.textSub, lineHeight: 1.55 }}>Physical features and aesthetic — this shapes the AI generation.</p>
-      </div>
-
-      <PhysicalBuilder data={data} set={set} gender={gender} />
-
-      <div style={{ background: L.surface, borderRadius: 18, padding: '22px', boxShadow: L.card }}>
-        <Lbl optional>Aesthetic vibe</Lbl>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-          {visibleVibes.map(v => {
-            const on = data.vibeWords?.includes(v.id)
-            return (
-              <button key={v.id} onClick={() => {
-                set('vibeWords', on ? [] : [v.id])
-              }} style={{
-                padding: '11px 13px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-                background: on ? 'rgba(139,92,246,0.09)' : L.surfaceAlt,
-                border: `1.5px solid ${on ? '#8B5CF6' : L.border}`,
-                transition: 'all 0.15s',
-                boxShadow: on ? '0 0 0 1px #8B5CF655' : 'none',
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
-              }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: on ? '#7C3AED' : L.text, marginBottom: 3 }}>
-                    <span style={{ marginRight: 6 }}>{v.icon}</span>{v.label}
-                  </div>
-                  <div style={{ fontSize: 11, color: on ? 'rgba(124,58,237,0.6)' : L.textFaint, lineHeight: 1.35 }}>{v.sub}</div>
-                </div>
-                {on && (
-                  <div style={{ width: 17, height: 17, borderRadius: '50%', background: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                    <svg width="8" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </div>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      <StepHead title={STEPS[4].title} sub={STEPS[4].sub} />
+      <LookStudio data={data} set={set} gender={(data.gender || '').toLowerCase()} name={data.name?.trim()} />
     </div>
   )
 }
@@ -978,7 +663,7 @@ function GeneratingScreen({ genProgress, model, aspectRatio, landscape, hasRef =
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <span style={{
           display: 'inline-block', fontSize: 80, fontWeight: 900, lineHeight: 1, letterSpacing: '-4px',
-          color: isDipping ? '#F59E0B' : '#8B5CF6', transition: 'color 0.5s',
+          color: isDipping ? '#F59E0B' : 'var(--accent)', transition: 'color 0.5s',
         }}>{fakeProgress}%</span>
         <div style={{
           fontSize: 11, fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase',
@@ -1324,7 +1009,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
     return (
       <div>
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8 }}>Connect Higgsfield to generate</h2>
+          <h2 className="muse-step-title">Connect Higgsfield to generate</h2>
         </div>
         <div style={{ background: 'rgba(201,255,0,0.06)', border: '1.5px solid rgba(201,255,0,0.35)', borderRadius: 18, padding: '24px' }}>
           <button
@@ -1349,7 +1034,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
     <div>
       {phase !== 'generating' && phase !== 'plan' && (
         <div style={{ marginBottom: 36 }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: L.text, marginBottom: 8, lineHeight: 1.1 }}>
+          <h2 className="muse-step-title">
             {phase === 'done' ? `Which look is ${displayName}?` : 'Generate your unique influencer'}
           </h2>
           {phase === 'done' && (
@@ -1382,8 +1067,8 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
                   padding: '12px 14px', borderRadius: 12, textAlign: 'left', position: 'relative',
                   cursor: blocked ? 'not-allowed' : 'pointer',
                   opacity: blocked ? 0.45 : 1,
-                  border: `1.5px solid ${blocked ? 'rgba(255,59,48,0.22)' : on ? '#8B5CF6' : L.border}`,
-                  background: blocked ? 'rgba(255,59,48,0.04)' : on ? 'rgba(139,92,246,0.08)' : L.surfaceAlt,
+                  border: `1.5px solid ${blocked ? 'rgba(255,59,48,0.22)' : on ? 'var(--accent)' : L.border}`,
+                  background: blocked ? 'rgba(255,59,48,0.04)' : on ? 'var(--accent-light)' : L.surfaceAlt,
                   boxShadow: on && !blocked ? '0 0 0 1px rgba(139,92,246,0.15), 0 2px 12px rgba(139,92,246,0.10)' : 'none',
                   display: 'flex', alignItems: 'flex-start', gap: 11, transition: 'all 0.15s',
                 }}>
@@ -1403,7 +1088,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
                   )}
                   <ProviderIcon provider={m.provider} version={m.version} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: blocked ? '#FF3B30' : on ? '#8B5CF6' : L.text, marginBottom: 4, lineHeight: 1.2 }}>{m.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: blocked ? '#FF3B30' : on ? 'var(--accent)' : L.text, marginBottom: 4, lineHeight: 1.2 }}>{m.name}</div>
                     {blocked
                       ? <div style={{ fontSize: 10.5, color: '#FF3B30', fontWeight: 600, lineHeight: 1.3 }}>Not compatible with references</div>
                       : <div style={{ fontSize: 10.5, color: L.textFaint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.desc}</div>
@@ -1423,12 +1108,12 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
                 <button key={r} onClick={() => setAspectRatio(r)} style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '4px 10px', borderRadius: 20, cursor: 'pointer',
-                  border: `1.5px solid ${on ? '#8B5CF6' : L.border}`,
-                  background: on ? 'rgba(139,92,246,0.10)' : 'transparent',
+                  border: `1.5px solid ${on ? 'var(--accent)' : L.border}`,
+                  background: on ? 'var(--accent-light)' : 'transparent',
                   transition: 'all 0.12s',
                 }}>
-                  <div style={{ width: r === '9:16' ? 7 : 12, height: r === '9:16' ? 12 : 7, borderRadius: 1.5, background: on ? '#8B5CF6' : L.textFaint, opacity: on ? 1 : 0.5, transition: 'all 0.12s', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: on ? '#8B5CF6' : L.textFaint }}>{label}</span>
+                  <div style={{ width: r === '9:16' ? 7 : 12, height: r === '9:16' ? 12 : 7, borderRadius: 1.5, background: on ? 'var(--accent)' : L.textFaint, opacity: on ? 1 : 0.5, transition: 'all 0.12s', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: on ? 'var(--accent)' : L.textFaint }}>{label}</span>
                 </button>
               )
             })}
@@ -1470,7 +1155,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
                   <VariationCard key={i} url={url} selected={false} gc={gc} onSelect={() => {}} index={i} landscape={isLandscape} onExpand={u => setLightboxUrl(u)} />
                 ) : (
                   <div key={i} style={{ borderRadius: 14, overflow: 'hidden', background: 'var(--bg-tertiary)', aspectRatio: isLandscape ? '16/9' : '9/16', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.3)', borderTopColor: '#8B5CF6', animation: 'genSpin 0.8s linear infinite' }} />
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '2.5px solid rgba(139,92,246,0.3)', borderTopColor: 'var(--accent)', animation: 'genSpin 0.8s linear infinite' }} />
                   </div>
                 )
               })}
@@ -1555,7 +1240,7 @@ function Step5({ data, onFinish, onReset, hfConnected, onConnected }) {
             </button>
             <button onClick={() => setPhase('plan')} style={{
               flex: 1, padding: '11px', borderRadius: 11, fontSize: 13, fontWeight: 600,
-              background: 'rgba(139,92,246,0.07)', color: '#7C3AED',
+              background: 'rgba(139,92,246,0.07)', color: 'var(--accent)',
               border: '1.5px solid rgba(139,92,246,0.20)', cursor: 'pointer', transition: 'all 0.15s',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
@@ -1598,6 +1283,8 @@ export default function Create() {
 
   function set(k, v) { setData(prev => ({ ...prev, [k]: v })) }
 
+  useEffect(() => { window.scrollTo({ top: 0 }) }, [step])
+
   const FEMALE_ONLY_VIBES = ['Clean Girl', 'Cottagecore']
   const MALE_ONLY_VIBES = ['Tech Bro']
   function handleGenderChange(g) {
@@ -1613,10 +1300,10 @@ export default function Create() {
     }))
   }
 
-  function canAdvance() { return step === 1 ? (!!data.name.trim() && !!data.gender) : true }
+  function canAdvance() { return STEPS[step - 1].id === 'name' ? (!!data.name.trim() && !!data.gender) : true }
 
   function handleContinue() {
-    if (step === 1 && data.age !== '' && Number(data.age) < 18) {
+    if (STEPS[step - 1].id === 'name' && data.age !== '' && Number(data.age) < 18) {
       setShakeContinue(true)
       setAgeErrorPulse(true)
       setTimeout(() => setShakeContinue(false), 500)
@@ -1711,23 +1398,17 @@ export default function Create() {
 
   const isLastStep = step === STEPS.length
 
+  const stepId = STEPS[step - 1].id
+  const isLook = stepId === 'look'
+
   return (
-    <div style={{ paddingTop: 'var(--nav-h)', minHeight: '100vh', background: L.bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+    <div className="muse-wizard">
+      <div className="muse-glow" aria-hidden />
 
-      {/* Subtle atmosphere orbs */}
-      <div style={{ position: 'absolute', width: 700, height: 700, top: '-20%', left: '-14%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 65%)', pointerEvents: 'none', animation: 'orbA 18s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', width: 600, height: 600, top: '-14%', right: '-12%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 65%)', pointerEvents: 'none', animation: 'orbB 22s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', width: 500, height: 500, bottom: '-20%', left: '22%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 65%)', pointerEvents: 'none', animation: 'orbC 26s ease-in-out infinite' }} />
+      <div className={`muse-wizard-body${isLook ? ' wide' : ''}`}>
+        <WizardProgress current={step} />
 
-      <FloatingCards />
-
-      {/* Edge vignette to blend cards into bg */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 42%, transparent 28%, var(--bg) 100%)', pointerEvents: 'none', zIndex: 1 }} />
-
-      <div style={{ width: '100%', maxWidth: 548, padding: '40px 24px 100px', position: 'relative', zIndex: 2 }}>
-        <StepIndicator current={step} />
-
-        {!hfConnected && step < 5 && (
+        {!hfConnected && stepId !== 'generate' && (
           <div style={{
             marginBottom: 32, borderRadius: 14, padding: '1.5px',
             background: '#C9FF00',
@@ -1757,7 +1438,7 @@ export default function Create() {
         )}
 
         {/* Claude API key nudge — same card DNA as HF, visually secondary */}
-        {step === 1 && !localStorage.getItem('claude_api_key') && (
+        {stepId === 'name' && !localStorage.getItem('claude_api_key') && (
           <div style={{
             marginBottom: 32, borderRadius: 14, padding: '1.5px',
             background: 'rgba(245,158,11,0.45)',
@@ -1790,52 +1471,33 @@ export default function Create() {
           </div>
         )}
 
-        {step === 1 && <Step1 data={data} set={set} onGenderChange={handleGenderChange} ageErrorPulse={ageErrorPulse} />}
-        {step === 2 && <Step2 data={data} set={set} />}
-        {step === 3 && <Step3 data={data} set={set} />}
-        {step === 4 && <Step4 data={data} set={set} />}
-        {step === 5 && <Step5 data={data} onFinish={finish} onReset={resetAll} hfConnected={hfConnected} onConnected={() => setHfConnected(true)} />}
+        <div key={stepId} className="muse-step">
+        {stepId === 'name' && <Step1 data={data} set={set} onGenderChange={handleGenderChange} ageErrorPulse={ageErrorPulse} />}
+        {stepId === 'niche' && <StepNiche data={data} set={set} />}
+        {stepId === 'refs' && <Step2 data={data} set={set} />}
+        {stepId === 'story' && <Step3 data={data} set={set} />}
+        {stepId === 'look' && <StepLook data={data} set={set} />}
+        {stepId === 'generate' && <Step5 data={data} onFinish={finish} onReset={resetAll} hfConnected={hfConnected} onConnected={() => setHfConnected(true)} />}
 
-        {!isLastStep && (
-          <div style={{ display: 'flex', gap: 10, marginTop: 36 }}>
-            {step > 1 && (
-              <button onClick={() => setStep(s => s - 1)} style={{ flexShrink: 0, padding: '13px 22px', borderRadius: 12, border: `1.5px solid ${L.border}`, fontSize: 14, fontWeight: 600, color: L.textSub, background: L.surface, cursor: 'pointer', transition: 'all 0.15s', boxShadow: L.card }}
-                onMouseEnter={e => { e.currentTarget.style.color = L.text; e.currentTarget.style.boxShadow = L.cardHover }}
-                onMouseLeave={e => { e.currentTarget.style.color = L.textSub; e.currentTarget.style.boxShadow = L.card }}
-              >← Back</button>
-            )}
-            <button onClick={handleContinue} disabled={!canAdvance()} style={{
-              flex: 1, padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none',
-              background: canAdvance() ? 'linear-gradient(135deg,#EC4899,#8B5CF6)' : L.surfaceAlt,
-              color: canAdvance() ? '#fff' : L.textFaint,
-              boxShadow: canAdvance() ? '0 4px 22px rgba(139,92,246,0.35)' : 'none',
-              transition: 'all 0.2s', cursor: canAdvance() ? 'pointer' : 'default',
-              animation: shakeContinue ? 'shake 0.45s ease' : 'none',
-            }}
-              onMouseEnter={e => { if (canAdvance()) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 30px rgba(139,92,246,0.50)' } }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = canAdvance() ? '0 4px 22px rgba(139,92,246,0.35)' : 'none' }}
-            >{step === 4 ? 'Continue to Generate →' : 'Continue →'}</button>
-          </div>
-        )}
+        </div>
+      </div>
 
-        {isLastStep && step > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 14 }}>
-            <button onClick={() => setStep(s => s - 1)} style={{ padding: '11px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600, color: L.textSub, background: 'transparent', border: `1.5px solid ${L.border}`, cursor: 'pointer', transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.35)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = L.border; e.currentTarget.style.color = L.textSub }}
-            >← Back</button>
-          </div>
-        )}
+      {/* Back / Next pinned to the bottom of the screen */}
+      <div className="muse-wizard-bar">
+        <div className="muse-wizard-bar-inner">
+          {step > 1
+            ? <button type="button" className="muse-btn muse-btn-tonal" onClick={() => setStep(s => s - 1)}>Back</button>
+            : <button type="button" className="muse-btn muse-btn-text" onClick={() => navigate(-1)}>Cancel</button>}
+          {!isLastStep && (
+            <button type="button" className="muse-btn muse-btn-filled muse-wizard-next" onClick={handleContinue} disabled={!canAdvance()} style={{ animation: shakeContinue ? 'shake 0.45s ease' : 'none' }}>
+              {STEPS[step].id === 'generate' ? 'Next: Generate' : 'Next'}
+            </button>
+          )}
+        </div>
       </div>
 
       <style>{`
-        @media (max-width: 980px) { .create-bg-card { display: none !important; } }
-        @keyframes orbA { 0%,100%{transform:translate(0,0)scale(1)} 40%{transform:translate(50px,-40px)scale(1.05)} 70%{transform:translate(-30px,28px)scale(0.96)} }
-        @keyframes orbB { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-38px,48px)scale(1.08)} }
-        @keyframes orbC { 0%,100%{transform:translate(0,0)scale(1)} 35%{transform:translate(28px,-48px)scale(0.93)} 70%{transform:translate(-38px,18px)scale(1.06)} }
-        @keyframes cFloat { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-16px)} }
         @keyframes cSway  { 0%,100%{transform:translateX(0px)} 25%{transform:translateX(5px)} 75%{transform:translateX(-4px)} }
-        @keyframes cAppear { from{opacity:0} to{opacity:var(--t-op,0.45)} }
         @keyframes shimmer { 0%,100%{opacity:.45} 50%{opacity:.85} }
         @keyframes genSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes spin { to{transform:rotate(360deg)} }
@@ -1844,9 +1506,9 @@ export default function Create() {
         @keyframes shimmerSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(250%)} }
         @keyframes shake { 0%,100%{transform:translateX(0)} 18%{transform:translateX(-7px)} 36%{transform:translateX(7px)} 54%{transform:translateX(-5px)} 72%{transform:translateX(5px)} 88%{transform:translateX(-2px)} }
         @keyframes agePulse { 0%{transform:scale(1)} 40%{transform:scale(1.015)} 100%{transform:scale(1)} }
-        .create-input:focus { border-color: #8B5CF6 !important; box-shadow: 0 0 0 3px rgba(139,92,246,0.12) !important; background: var(--surface) !important; }
+        .create-input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--focus-ring) !important; background: var(--surface) !important; }
         .create-input::placeholder { color: var(--text-tertiary) !important; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#fff; border:2.5px solid #8B5CF6; box-shadow:0 2px 8px rgba(0,0,0,0.18); cursor:pointer; transition:transform 0.1s, box-shadow 0.1s; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#fff; border:2.5px solid var(--accent); box-shadow:0 2px 8px rgba(0,0,0,0.18); cursor:pointer; transition:transform 0.1s, box-shadow 0.1s; }
         input[type=range]::-webkit-slider-thumb:active { transform:scale(1.15); box-shadow:0 0 0 5px rgba(139,92,246,0.18); }
       `}</style>
     </div>
