@@ -6,13 +6,14 @@ import { useWorkspace } from '../context/workspace'
 import { useLocalJSON, newId } from '../utils/localJson'
 import {
   CLAUDE_KEY, API_KEYS_KEY, MCP_KEY, PUBLISHING_KEY,
-  API_SERVICES, isPublishingConnected, mask,
+  API_SERVICES, mask, normalizePublishing, isRouteConnected, connectedRoutes, POSTING_ROUTES, routeName,
 } from '../utils/connections'
 import { CATEGORIES, CONNECTORS, PLATFORMS, STATUS_LABEL } from '../utils/connectors'
 import { LOGOS } from '../utils/connectorLogos'
 import ConnectorLogo from '../components/ConnectorLogo'
 import { testPublishing } from '../utils/publishing'
-import { SKILLS_KEY, BUILTIN_SKILLS, readSkills, parseSkillMarkdown, skillToMarkdown } from '../utils/skills'
+import { SKILLS_KEY, BUILTIN_SKILLS, LIBRARY_SKILLS, readSkills, loadSkill, skillsForConnector, parseSkillMarkdown, skillToMarkdown } from '../utils/skills'
+import { useWorkspaceStore } from '../context/workspace'
 import { Page, Field, Dialog, Seg } from '../components/ui'
 
 // Settings: Workspace · Connections (Higgsfield, Claude, posting, your own API keys,
@@ -106,11 +107,45 @@ function SecretInput({ placeholder, onSave, cta = 'Save' }) {
 }
 
 
+
+// What Muse does with a connector: explicit `can`, else a sensible default for its auth type.
+function capabilitiesOf(c) {
+  if (c.can) return c.can
+  if (c.auth === 'key') return [['write', `Use ${c.name} with your key in skills and workflows`, 'planned']]
+  if (c.auth === 'mcp') return [['read', 'Its MCP tools, for Claude and workflows', 'planned']]
+  return [['write', c.use.replace(/\.$/, ''), 'planned']]
+}
+// Where a connector's credentials live and which host they reach.
+function privacyOf(c) {
+  switch (c.auth) {
+    case 'oauth': return 'You sign in with Higgsfield. The token stays in this browser; requests go through this app’s proxy to Higgsfield only.'
+    case 'claude': return 'Your key stays in this browser and is sent only to Anthropic, through this app’s /api/claude proxy.'
+    case 'key': return c.live ? `Your key stays in this browser and is sent only to ${c.name}, through this app’s proxy.` : 'Your key is stored in this browser only. Nothing sends it anywhere yet.'
+    case 'posting': return c.provider === 'ayrshare' ? 'Your key stays in this browser. It is sent to Ayrshare through this app’s /api/publish proxy only when you post or test.' : 'The URL and secret stay in this browser. Posts are sent from this app’s server to your URL (public https only, no redirects), signed when you set a secret.'
+    case 'social': return 'Handles are stored per workspace in this browser. Muse never asks for your social media password.'
+    case 'mcp': return 'The server URL is stored in this browser. Nothing calls it yet.'
+    default: return ''
+  }
+}
+const CAP_STATE = { live: 'Live', planned: 'Planned', setup: 'Needs setup' }
+
 function ConnectionsSection({ connectedParam }) {
   const [hf, setHf] = useState(isHFConnected)
   const [hfBusy, setHfBusy] = useState(false)
   const [claudeKey, setClaudeKey] = useState(() => { try { return localStorage.getItem(CLAUDE_KEY) || '' } catch { return '' } })
-  const [pub, setPub] = useLocalJSON(PUBLISHING_KEY, { provider: '' })
+  const [pubRaw, setPubRaw] = useLocalJSON(PUBLISHING_KEY, {})
+  const pub = normalizePublishing(pubRaw)
+  const liveRoutes = connectedRoutes(pub)
+  // Change one route's settings; the first route connected becomes the default.
+  const setRoute = (id, patch) => {
+    const routes = { ...pub.routes, [id]: patch === null ? undefined : { ...(pub.routes[id] || {}), ...patch } }
+    if (patch === null) delete routes[id]
+    const next = { ...pub, version: 2, routes }
+    const live = connectedRoutes(next)
+    if (!live.includes(next.defaultRoute)) next.defaultRoute = live[0] || ''
+    setPubRaw(next)
+  }
+  const [accounts] = useWorkspaceStore('muse_accounts')
   const [keys, setKeys] = useLocalJSON(API_KEYS_KEY, [])
   const [mcps, setMcps] = useLocalJSON(MCP_KEY, [])
   const [pubTest, setPubTest] = useState('')
@@ -139,10 +174,10 @@ function ConnectionsSection({ connectedParam }) {
   }
   const saveClaude = k => { localStorage.setItem(CLAUDE_KEY, k); setClaudeKey(k) }
 
-  async function runPubTest() {
+  async function runPubTest(routeId) {
     setPubTest('Testing…')
     try {
-      const r = await testPublishing()
+      const r = await testPublishing(routeId)
       setPubTest(r.accounts?.length ? `Works. Linked: ${r.accounts.join(', ')}` : 'Works.')
     } catch (e) { setPubTest(e.message) }
   }
@@ -153,7 +188,8 @@ function ConnectionsSection({ connectedParam }) {
       case 'oauth': return hf ? 'connected' : 'off'
       case 'claude': return claudeKey ? 'connected' : 'off'
       case 'key': return keys.some(k => k.service === c.service && k.key) ? (c.live ? 'connected' : 'saved') : 'off'
-      case 'posting': return pub.provider === c.provider && isPublishingConnected(pub) ? 'connected' : 'off'
+      case 'posting': return isRouteConnected(c.provider, pub) ? 'connected' : 'off'
+      case 'social': { const has = (accounts || []).some(a => a.platform === c.platform); return has ? (liveRoutes.length ? 'connected' : 'saved') : 'off' }
       case 'mcp': return mcps.some(m => m.url === c.mcpUrl) ? 'saved' : 'off'
       default: return 'soon'
     }
@@ -211,10 +247,27 @@ function ConnectionsSection({ connectedParam }) {
             {open.usedBy.map(u => <Link key={u.label} to={u.to} className="muse-pchip">{u.label}</Link>)}
           </div>
         )}
-        {open?.category === 'publish' && open.auth === 'posting' && (
+        {open?.id === 'ayrshare' && (
           <div className="muse-conn-platforms">
             <span className="muse-muted">Posts reach</span>
             {PLATFORMS.map(p => <span key={p.logo || p.asset} title={p.name || LOGOS[p.logo]?.title}><ConnectorLogo slug={p.logo} asset={p.asset} size={28} /></span>)}
+          </div>
+        )}
+        {open && (
+          <div className="muse-conn-caps">
+            <h3 className="muse-group-title">What Muse can do</h3>
+            <ul>
+              {capabilitiesOf(open).map(([dir, label, state]) => {
+                const st = state === 'live' && s !== 'connected' && s !== 'saved' ? 'setup' : state
+                return (
+                  <li key={label}>
+                    <span className={`muse-conn-dir ${dir}`}>{dir === 'read' ? 'Read' : 'Write'}</span>
+                    <span className="muse-conn-cap">{label}</span>
+                    <span className={`muse-conn-capstate ${st}`}>{CAP_STATE[st]}</span>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )}
         <div className="muse-conn-setup">
@@ -240,40 +293,54 @@ function ConnectionsSection({ connectedParam }) {
               </>
             )}
 
-            {open.auth === 'posting' && (
-              <>
-                {pub.provider && pub.provider !== open.provider && <p className="muse-muted">You’re posting through {CONNECTORS.find(c => c.provider === pub.provider)?.name}. Saving here switches to {open.name}.</p>}
-                {open.provider === 'ayrshare' && (
-                  <>
-                    {pub.provider === 'ayrshare' && pub.apiKey
-                      ? <Row title="API key" sub={mask(pub.apiKey)}><button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => setPub({ ...pub, apiKey: '' })}>Remove</button></Row>
-                      : <SecretInput placeholder="Ayrshare API key" onSave={k => setPub({ ...pub, provider: 'ayrshare', apiKey: k })} />}
-                    {pub.provider === 'ayrshare' && (
-                      <Field label="Default profile key" hint="Optional (Business plan). Accounts can also set their own.">
-                        <input className="muse-input mono" type="password" autoComplete="off" value={pub.profileKey || ''} onChange={e => setPub({ ...pub, profileKey: e.target.value })} />
+            {open.auth === 'posting' && (() => {
+              const route = POSTING_ROUTES.find(r => r.id === open.provider)
+              const cur = pub.routes[open.provider] || {}
+              const live = isRouteConnected(open.provider, pub)
+              return (
+                <>
+                  {route.kind === 'ayrshare' ? (
+                    <>
+                      {cur.apiKey
+                        ? <Row title="API key" sub={mask(cur.apiKey)}><button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => setRoute('ayrshare', { apiKey: '' })}>Remove</button></Row>
+                        : <SecretInput placeholder="Ayrshare API key" onSave={k => setRoute('ayrshare', { apiKey: k })} />}
+                      {cur.apiKey && (
+                        <Field label="Default profile key" hint="Optional (Business plan). Accounts can also set their own.">
+                          <input className="muse-input mono" type="password" autoComplete="off" value={cur.profileKey || ''} onChange={e => setRoute('ayrshare', { profileKey: e.target.value })} />
+                        </Field>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <ol className="muse-conn-steps">
+                        <li>In {route.id === 'webhook' ? 'your service' : route.name}, add a trigger: <strong>{route.step}</strong>.</li>
+                        <li>Paste its URL here and press Test. {route.id === 'webhook' ? 'Your endpoint' : route.name} receives a <code>muse.test</code> event.</li>
+                        <li>Map the fields of a <code>muse.post</code> event (caption, mediaUrls, platforms, accounts, scheduledAt, via) to the apps you post with.</li>
+                      </ol>
+                      <Field label="Webhook URL" hint="A public https URL.">
+                        <input className="muse-input mono" value={cur.url || ''} onChange={e => setRoute(open.provider, { url: e.target.value.trim() })} placeholder={route.placeholder} />
                       </Field>
-                    )}
-                  </>
-                )}
-                {open.provider === 'webhook' && (
-                  <>
-                    <Field label="Webhook URL" hint="A public https URL from Zapier (Catch Hook), Make (Custom webhook) or n8n (Webhook node).">
-                      <input className="muse-input mono" value={pub.provider === 'webhook' ? pub.webhookUrl || '' : ''} onChange={e => setPub({ ...pub, provider: 'webhook', webhookUrl: e.target.value.trim() })} placeholder="https://hooks.zapier.com/…" />
-                    </Field>
-                    <Field label="Signing secret" hint="Optional. Each request carries X-Muse-Signature: sha256=HMAC(body).">
-                      <input className="muse-input mono" type="password" autoComplete="off" value={pub.provider === 'webhook' ? pub.webhookSecret || '' : ''} onChange={e => setPub({ ...pub, provider: 'webhook', webhookSecret: e.target.value })} />
-                    </Field>
-                  </>
-                )}
-                {pub.provider === open.provider && (
-                  <div className="muse-assist-row">
-                    <button type="button" className="muse-btn muse-btn-tonal" onClick={runPubTest} disabled={!isPublishingConnected(pub)}>Test connection</button>
-                    <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => { setPub({ provider: '' }); setPubTest('') }}>Disconnect</button>
-                    {pubTest && <span className="muse-muted">{pubTest}</span>}
-                  </div>
-                )}
-              </>
-            )}
+                      <Field label="Signing secret" hint="Optional. Each request carries X-Muse-Signature: sha256=HMAC(body).">
+                        <input className="muse-input mono" type="password" autoComplete="off" value={cur.secret || ''} onChange={e => setRoute(open.provider, { secret: e.target.value })} />
+                      </Field>
+                    </>
+                  )}
+                  {live && (
+                    <div className="muse-assist-row">
+                      <button type="button" className="muse-btn muse-btn-tonal" onClick={() => runPubTest(open.provider)}>Test connection</button>
+                      {liveRoutes.length > 1 && (pub.defaultRoute === open.provider
+                        ? <span className="muse-badge posted">Default route</span>
+                        : <button type="button" className="muse-btn muse-btn-text" onClick={() => setPubRaw({ ...pub, version: 2, defaultRoute: open.provider })}>Make default</button>)}
+                      <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => { setRoute(open.provider, null); setPubTest('') }}>Disconnect</button>
+                      {pubTest && <span className="muse-muted" role="status">{pubTest}</span>}
+                    </div>
+                  )}
+                  {live && <p className="muse-muted">Choose which accounts post through {route.name} in <Link to="/settings?section=accounts">Social accounts</Link>. Accounts without a choice use the default{pub.defaultRoute ? ` (${routeName(pub.defaultRoute)})` : ''}.</p>}
+                </>
+              )
+            })()}
+
+            {open.auth === 'social' && <SocialAccounts platform={open.platform} />}
 
             {open.auth === 'mcp' && (() => {
               const saved = mcps.find(m => m.url === open.mcpUrl)
@@ -314,6 +381,21 @@ function ConnectionsSection({ connectedParam }) {
             </>
           )}
         </div>
+        {open && skillsForConnector(open.id).length > 0 && (
+          <div className="muse-conn-skills">
+            <h3 className="muse-group-title">Skills made for {open.name}</h3>
+            <ul className="muse-conn-group">
+              {skillsForConnector(open.id).map(sk => (
+                <li key={sk.id}><Link className="muse-conn-row" to="/settings?section=skills">
+                  <span className="muse-conn-skill-mark" aria-hidden>✦</span>
+                  <span className="muse-conn-text"><strong>{sk.name}</strong><small>{sk.description}</small></span>
+                  <span className="muse-conn-action muted">{sk.uses?.includes('reference') ? 'Reference' : sk.uses?.includes('video') ? 'Studio · video' : sk.uses?.includes('photo') ? 'Studio · photo' : 'Plan & Content'}</span>
+                </Link></li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {open && privacyOf(open) && <p className="muse-conn-privacy"><strong>Privacy.</strong> {privacyOf(open)}</p>}
       {keyDraft && (
         <Dialog title="Add API key" onClose={() => setKeyDraft(null)} actions={<>
           <button type="button" className="muse-btn muse-btn-tonal" onClick={() => setKeyDraft(null)}>Cancel</button>
@@ -398,6 +480,8 @@ function ConnectionsSection({ connectedParam }) {
   )
 }
 
+const USE_LABEL = { ideas: 'ideas & planning', caption: 'captions & copy', photo: 'Studio photo prompts', video: 'Studio video prompts' }
+
 function SkillsSection() {
   const [mine, setMine] = useLocalJSON(SKILLS_KEY, [])
   const [editing, setEditing] = useState(null)
@@ -417,8 +501,9 @@ function SkillsSection() {
     if (added.length) setMine(l => [...l, ...added])
   }
 
-  function download(s) {
-    const blob = new Blob([skillToMarkdown(s)], { type: 'text/markdown' })
+  async function download(s) {
+    const full = await loadSkill(s)
+    const blob = new Blob([full.markdown || skillToMarkdown(full)], { type: 'text/markdown' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `${s.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'skill'}.md`
@@ -426,25 +511,42 @@ function SkillsSection() {
   }
 
   return (
-    <Section id="skills" title="Skills" sub="Your own instructions for content work: hooks, scripts, captions, prompts. Claude follows the skill you pick in Plan and Content. Import SKILL.md files or write one here.">
-      {all.map(s => (
-        <Row key={s.id} title={s.name} sub={[s.description, s.builtin ? 'Built in' : s.source && `Imported from ${s.source}`, s.uses?.length ? `Used for ${s.uses.join(', ')}` : 'Used everywhere'].filter(Boolean).join(' · ')} status={<Status on={s.enabled !== false} label={s.enabled !== false ? 'On' : 'Off'} />}>
-          {s.builtin
-            ? <button type="button" className="muse-btn muse-btn-text" onClick={() => setEditing({ ...s, id: newId('skill'), builtin: false, basedOn: s.id, name: s.name })}>Customize</button>
-            : <>
-                <button type="button" className="muse-btn muse-btn-text" onClick={() => upsert({ ...s, enabled: s.enabled === false })}>{s.enabled === false ? 'Turn on' : 'Turn off'}</button>
-                <button type="button" className="muse-btn muse-btn-text" onClick={() => setEditing(s)}>Edit</button>
-                <button type="button" className="muse-btn muse-btn-text" onClick={() => download(s)}>Export</button>
-                <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => setMine(l => l.filter(x => x.id !== s.id))}>{s.basedOn ? 'Reset' : 'Delete'}</button>
-              </>}
-        </Row>
+    <Section id="skills" title="Skills" sub="Your own instructions for content work: hooks, scripts, captions and prompts. Claude follows the skill you pick in Plan, Content and the Studio prompt step. Import SKILL.md files or write one here.">
+      {[
+        { label: 'Your skill library', list: all.filter(s => s.library || LIBRARY_SKILLS.some(l => l.id === s.basedOn)) },
+        { label: 'Built in', list: all.filter(s => s.builtin && !s.library) },
+        { label: 'Yours', list: all.filter(s => !s.builtin && !LIBRARY_SKILLS.some(l => l.id === s.basedOn)) },
+      ].filter(g => g.list.length).map(g => (
+        <div key={g.label} className="muse-stack">
+          <h3 className="muse-group-title">{g.label}</h3>
+          {g.list.map(s => {
+            const where = s.uses?.includes('reference') ? 'Reference only (runs in Claude Code)' : s.uses?.length ? `Used for ${s.uses.map(u => USE_LABEL[u] || u).join(', ')}` : 'Used everywhere'
+            const works = (s.connectors || []).map(id => CONNECTORS.find(c => c.id === id)?.name).filter(Boolean)
+            return (
+              <Row key={s.id} title={s.name} sub={[s.description, where, works.length && `Works with ${works.join(', ')}`, s.basedOn && 'Your customized copy', !s.builtin && s.source && `Imported from ${s.source}`].filter(Boolean).join(' · ')}
+                status={s.uses?.includes('reference') ? <span className="muse-badge draft">Reference</span> : <Status on={s.enabled !== false} label={s.enabled !== false ? 'On' : 'Off'} />}>
+                {s.builtin
+                  ? <>
+                      {!s.uses?.includes('reference') && <button type="button" className="muse-btn muse-btn-text" onClick={async () => { const full = await loadSkill(s); setEditing({ ...full, id: newId('skill'), builtin: false, library: false, file: undefined, markdown: undefined, basedOn: s.id }) }}>Customize</button>}
+                      {s.library && <button type="button" className="muse-btn muse-btn-text" onClick={() => download(s)}>Export</button>}
+                    </>
+                  : <>
+                      <button type="button" className="muse-btn muse-btn-text" onClick={() => upsert({ ...s, enabled: s.enabled === false })}>{s.enabled === false ? 'Turn on' : 'Turn off'}</button>
+                      <button type="button" className="muse-btn muse-btn-text" onClick={() => setEditing(s)}>Edit</button>
+                      <button type="button" className="muse-btn muse-btn-text" onClick={() => download(s)}>Export</button>
+                      <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => setMine(l => l.filter(x => x.id !== s.id))}>{s.basedOn ? 'Reset' : 'Delete'}</button>
+                    </>}
+              </Row>
+            )
+          })}
+        </div>
       ))}
       <div className="muse-assist-row">
         <button type="button" className="muse-btn muse-btn-filled" onClick={() => setEditing({ id: newId('skill'), name: '', description: '', instructions: '', enabled: true, uses: [] })}>New skill</button>
         <button type="button" className="muse-btn muse-btn-tonal" onClick={() => fileRef.current?.click()}>Import .md files</button>
         <input ref={fileRef} type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple hidden onChange={e => { importFiles([...e.target.files]); e.target.value = '' }} />
       </div>
-      <p className="muse-field-hint">{BUILTIN_SKILLS.length} built-in skills stay available; customizing one saves your copy in its place.</p>
+      <p className="muse-field-hint">{BUILTIN_SKILLS.length + LIBRARY_SKILLS.length} built-in and library skills stay available; customizing one saves your copy in its place.</p>
 
       {editing && (
         <Dialog title={editing.name ? `Edit “${editing.name}”` : 'New skill'} onClose={() => setEditing(null)} wide actions={<>
@@ -455,7 +557,7 @@ function SkillsSection() {
           <Field label="Description" hint="When should this skill be used?"><input className="muse-input" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} /></Field>
           <Field label="Use it for">
             <div className="muse-chip-row">
-              {[{ id: 'ideas', label: 'Ideas & planning' }, { id: 'caption', label: 'Captions & copy' }].map(u => {
+              {[{ id: 'ideas', label: 'Ideas & planning' }, { id: 'caption', label: 'Captions & copy' }, { id: 'photo', label: 'Studio photo prompts' }, { id: 'video', label: 'Studio video prompts' }].map(u => {
                 const on = editing.uses?.includes(u.id)
                 return <button key={u.id} type="button" aria-pressed={on} className={`muse-chip${on ? ' on' : ''}`} onClick={() => setEditing({ ...editing, uses: on ? editing.uses.filter(x => x !== u.id) : [...(editing.uses || []), u.id] })}>{u.label}</button>
               })}

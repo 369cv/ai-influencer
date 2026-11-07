@@ -5,7 +5,8 @@ import { Seg } from '../components/ui'
 import { isHFConnected, startHiggsfieldOAuthPopup } from '../utils/higgsfieldAuth'
 import { generateNImages, generateVideo } from '../utils/higgsfieldGenerate'
 import { downloadImage } from '../utils/imageUtils'
-import { hasClaude, runSkill } from '../utils/claudeAssist'
+import { hasClaude, runSkill, influencerContext } from '../utils/claudeAssist'
+import { skillsFor } from '../utils/skills'
 import { MODEL_LABELS } from '../utils/creditEstimate'
 import RemixVideo from '../components/RemixVideo'
 import {
@@ -44,6 +45,7 @@ export default function Studio() {
   const [s, setS] = useState(() => blankSettings(params.get('mode') === 'video' ? 'video' : 'photo'))
   const [hf, setHf] = useState(isHFConnected)
   const [enhance, setEnhance] = useState(false)
+  const [skillId, setSkillId] = useState('')
   const [showMotion, setShowMotion] = useState(false)
   const [showRemix, setShowRemix] = useState(false)
   const [editingShots, setEditingShots] = useState(false)
@@ -137,7 +139,20 @@ export default function Studio() {
     setNotice('')
     const who = (influencers || []).find(i => i.id === settings.influencerId)
     let prompt = settings.prompt.trim()
-    if (enhance && hasClaude() && prompt && settings === s) {
+    const skill = skillId && skillsFor(settings.mode).find(x => x.id === skillId)
+    if (skill && hasClaude() && prompt && settings === s) {
+      // A skill from Settings → Skills writes the final prompt (e.g. Fashion influencer → Seedance).
+      setNotice(`Writing the prompt with “${skill.name}”…`)
+      try {
+        prompt = await runSkill({
+          skill,
+          task: `Write the final ${settings.mode} prompt for this idea, ready to paste into Higgsfield (${MODEL_LABELS[settings.model] || settings.model}). Make sensible choices instead of asking questions, skip any approval step, and return only the prompt text: no headings, tables or commentary.\n\nIdea: ${prompt}`,
+          context: influencerContext(who),
+          maxTokens: settings.mode === 'video' ? 3500 : 1500,
+        })
+        setNotice('')
+      } catch (e) { setNotice(`The skill failed (${e.message}); used your prompt as written.`) }
+    } else if (enhance && hasClaude() && prompt && settings === s) {
       try { prompt = await runSkill({ skill: ENHANCE_SKILL, task: prompt, maxTokens: 300 }) } catch (e) { setNotice('Prompt enhance failed; used your prompt as written.') }
     }
     const shots = settings.mode === 'photo' ? settings.shots.map(x => x.trim()).filter(Boolean) : []
@@ -317,7 +332,15 @@ export default function Studio() {
           {s.mode === 'photo' && !s.shots.length && <button type="button" className="muse-pchip" onClick={() => { set({ shots: Array.from({ length: s.count }, () => '') }); setEditingShots(true) }} title="Write a different shot for each image">Shot list</button>}
 
           {s.mode === 'photo' && <button type="button" className={`muse-pchip${showMotion || s.motion ? ' on' : ''}`} aria-pressed={showMotion || !!s.motion} onClick={() => { if (showMotion || s.motion) { setShowMotion(false); set({ motion: '' }) } else setShowMotion(true) }} title="Save a motion prompt with these photos, used when you animate them">Motion</button>}
-          <button type="button" className={`muse-pchip${enhance ? ' on' : ''}`} aria-pressed={enhance} disabled={!hasClaude()} onClick={() => setEnhance(v => !v)} title={hasClaude() ? 'Rewrite the prompt with Claude before generating' : 'Add your Anthropic key in Settings → Connections to use this'}>✦ Enhance</button>
+          {hasClaude() && skillsFor(s.mode).length > 0 && (
+            <label className={`muse-pchip${skillId ? ' on' : ''}`} title="Let one of your skills write the final prompt from your idea">
+              <select value={skillsFor(s.mode).some(x => x.id === skillId) ? skillId : ''} onChange={e => setSkillId(e.target.value)} aria-label="Skill">
+                <option value="">✦ Skill: none</option>
+                {skillsFor(s.mode).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+              </select>
+            </label>
+          )}
+          <button type="button" className={`muse-pchip${enhance ? ' on' : ''}`} aria-pressed={enhance} disabled={!hasClaude() || !!(skillId && skillsFor(s.mode).some(x => x.id === skillId))} onClick={() => setEnhance(v => !v)} title={hasClaude() ? 'Rewrite the prompt with Claude before generating' : 'Add your Anthropic key in Settings → Connections to use this'}>✦ Enhance</button>
 
           <button type="submit" className="muse-pbar-go" disabled={!hf}>
             Generate{credits != null && <small>~{credits} credits</small>}

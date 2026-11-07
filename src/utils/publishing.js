@@ -1,7 +1,7 @@
 // Publishing goes through the posting service you connect in Settings → Connections
 // (bring your own key). Muse Studio keeps the queue and the calendar; the provider
 // does the actual posting, including scheduled times.
-import { getPublishing, isPublishingConnected } from './connections'
+import { getPublishing, isPublishingConnected, isRouteConnected, routeForAccount, routeName, POSTING_ROUTES } from './connections'
 
 export const PLATFORMS = [
   { id: 'instagram', name: 'Instagram', needsMedia: true },
@@ -12,6 +12,7 @@ export const PLATFORMS = [
   { id: 'facebook', name: 'Facebook' },
   { id: 'linkedin', name: 'LinkedIn' },
   { id: 'pinterest', name: 'Pinterest', needsMedia: true },
+  { id: 'bluesky', name: 'Bluesky' },
 ]
 export const platformName = id => PLATFORMS.find(p => p.id === id)?.name || id
 
@@ -42,49 +43,56 @@ export function validatePost(post, accounts) {
   return [...new Set(problems)]
 }
 
-// Sends a post now, or for a future time when post.scheduledAt is set.
+// What /api/publish needs for one route: Ayrshare or a webhook (Zapier, Make, n8n, custom).
+function routeRequest(routeId, cfg) {
+  const r = cfg.routes[routeId] || {}
+  return POSTING_ROUTES.find(x => x.id === routeId)?.kind === 'ayrshare'
+    ? { provider: 'ayrshare', credentials: { apiKey: r.apiKey, profileKey: r.profileKey || undefined } }
+    : { provider: 'webhook', credentials: { webhookUrl: r.url, webhookSecret: r.secret || undefined } }
+}
+
+async function callPublish(body) {
+  const res = await fetch('/api/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || data.ok === false) throw new Error(data.error || `Request failed (${res.status})`)
+  return data
+}
+
+// Sends a post now, or for a future time when post.scheduledAt is set. Accounts are
+// grouped by their posting route, one request per route.
 // Resolves { status: 'posted'|'scheduled', providerId?, links? }; throws on failure.
 export async function publishPost(post, accounts) {
   const cfg = getPublishing()
   if (!isPublishingConnected(cfg)) throw new Error('Connect a posting service in Settings → Connections first.')
   const targets = accounts.filter(a => post.accountIds?.includes(a.id))
   const future = post.scheduledAt && new Date(post.scheduledAt).getTime() > Date.now() + 60_000
-  const res = await fetch('/api/publish', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      provider: cfg.provider,
-      credentials: cfg.provider === 'ayrshare'
-        ? { apiKey: cfg.apiKey, profileKey: cfg.profileKey || undefined }
-        : { webhookUrl: cfg.webhookUrl, webhookSecret: cfg.webhookSecret || undefined },
+  const groups = {}
+  for (const a of targets) (groups[routeForAccount(a, cfg)] ||= []).push(a)
+  const results = await Promise.allSettled(Object.entries(groups).map(async ([routeId, list]) => {
+    const data = await callPublish({
+      ...routeRequest(routeId, cfg),
       post: {
         caption: post.caption || '',
         mediaUrls: (post.mediaUrls || []).filter(u => /^https:\/\//i.test(u)),
-        platforms: [...new Set(targets.map(a => a.platform))],
-        accounts: targets.map(a => ({ platform: a.platform, handle: a.handle, profileKey: a.profileKey || undefined })),
+        platforms: [...new Set(list.map(a => a.platform))],
+        accounts: list.map(a => ({ platform: a.platform, handle: a.handle, profileKey: a.profileKey || undefined })),
         scheduledAt: future ? new Date(post.scheduledAt).toISOString() : undefined,
         title: post.title || undefined,
+        via: routeId,
       },
-    }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok || data.ok === false) throw new Error(data.error || `Posting failed (${res.status})`)
-  return { status: future ? 'scheduled' : 'posted', providerId: data.id, links: data.links || [] }
+    })
+    return { routeId, id: data.id, links: data.links || [] }
+  }))
+  const routes = Object.keys(groups)
+  const failed = results.map((r, i) => r.status === 'rejected' && `${routeName(routes[i])}: ${r.reason?.message || 'failed'}`).filter(Boolean)
+  const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value)
+  if (failed.length) throw new Error((ok.length ? `Sent through ${ok.map(o => routeName(o.routeId)).join(', ')}, but ` : '') + failed.join(' · '))
+  return { status: future ? 'scheduled' : 'posted', providerId: ok.map(o => o.id).filter(Boolean).join(',') || undefined, links: ok.flatMap(o => o.links) }
 }
 
-export async function testPublishing() {
+// Checks one route's credentials (Ayrshare: lists linked accounts; webhook: sends a test event).
+export async function testPublishing(routeId) {
   const cfg = getPublishing()
-  const res = await fetch('/api/publish', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      provider: cfg.provider, test: true,
-      credentials: cfg.provider === 'ayrshare'
-        ? { apiKey: cfg.apiKey, profileKey: cfg.profileKey || undefined }
-        : { webhookUrl: cfg.webhookUrl, webhookSecret: cfg.webhookSecret || undefined },
-    }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok || data.ok === false) throw new Error(data.error || `Test failed (${res.status})`)
-  return data
+  if (!isRouteConnected(routeId, cfg)) throw new Error('Add the details first.')
+  return callPublish({ ...routeRequest(routeId, cfg), test: true })
 }

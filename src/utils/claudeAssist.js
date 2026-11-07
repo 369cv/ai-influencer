@@ -1,6 +1,7 @@
 // Small helper for the "Draft with a skill" buttons in Plan and Content.
 // Calls the existing /api/claude proxy with the user's own Anthropic key.
 import { getClaudeKey } from './connections'
+import { loadSkill } from './skills'
 
 export const ASSIST_MODEL = 'claude-sonnet-5-5'
 
@@ -9,6 +10,7 @@ export function hasClaude() { return !!getClaudeKey() }
 export async function runSkill({ skill, task, context = '', maxTokens = 1200 }) {
   const key = getClaudeKey()
   if (!key) throw new Error('Add your Anthropic API key in Settings → Connections first.')
+  skill = await loadSkill(skill)
   const system = [
     'You help a creator run AI influencer accounts in Muse Studio.',
     skill ? `Follow this skill exactly.\n\n# Skill: ${skill.name}\n${skill.instructions}` : '',

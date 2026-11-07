@@ -5,21 +5,24 @@
 // auth:  oauth   — Higgsfield sign-in
 //        claude  — Anthropic key (CLAUDE_KEY)
 //        key     — bring-your-own key in API_KEYS_KEY under `service` (live: a feature uses it)
-//        posting — posting provider in PUBLISHING_KEY (`provider`)
+//        posting — a posting route in PUBLISHING_KEY (`provider` = route id)
+//        social  — a social platform; accounts live in Settings → Social accounts
 //        mcp     — saved as a remote MCP server (MCP_KEY), prefilled `mcpUrl`
 //        soon    — listed so you can see where Muse is heading; not built
+// can:   what Muse does with it — [dir 'read'|'write', label, 'live'|'planned']
 // Logo: `logo` = mark in connectorLogos.js (white on brand colour), `asset` =
 // full-colour SVG in src/assets/connectors/, `image` = file in public/, else
 // `mono` letters on `color`.
 import { isHFConnected } from './higgsfieldAuth'
-import { getClaudeKey, getApiKeys, getPublishing, isPublishingConnected, getMcpServers } from './connections'
+import { getClaudeKey, getApiKeys, isRouteConnected, getMcpServers } from './connections'
 
 export const CATEGORIES = [
   { id: 'think', label: 'Think & write' },
   { id: 'create', label: 'Create · photo & video' },
   { id: 'edit', label: 'Edit & design' },
   { id: 'voice', label: 'Voice & music' },
-  { id: 'publish', label: 'Publish' },
+  { id: 'social', label: 'Social accounts' },
+  { id: 'publish', label: 'Publish & automate' },
   { id: 'engage', label: 'Messages & community' },
   { id: 'research', label: 'Research & trends' },
   { id: 'grow', label: 'Grow & monetize' },
@@ -33,7 +36,8 @@ export const CONNECTORS = [
   { id: 'claude', name: 'Claude', by: 'Anthropic', category: 'think', auth: 'claude', logo: 'claude', featured: true,
     use: 'Captions, weekly ideas, remixes and prompt Enhance.',
     usedBy: [{ label: 'Weekly ideas', to: '/' }, { label: 'Remix a video', to: '/studio' }, { label: 'Captions', to: '/content?compose=1' }, { label: 'Skills', to: '/settings?section=skills' }],
-    docs: 'https://console.anthropic.com/settings/keys', keyHint: 'sk-ant-…' },
+    docs: 'https://console.anthropic.com/settings/keys', keyHint: 'sk-ant-…',
+    can: [['write', 'Draft captions, hooks and scripts with your skills', 'live'], ['write', 'Weekly ideas on Home', 'live'], ['write', 'Remix a video into a new script', 'live'], ['write', 'Enhance or write Studio prompts with a skill', 'live']] },
   { id: 'openai', name: 'OpenAI', category: 'think', auth: 'key', service: 'openai', logo: 'openai',
     use: 'GPT models and GPT Image. Saved for skills and workflows.', docs: 'https://platform.openai.com/api-keys' },
   { id: 'gemini', name: 'Gemini', by: 'Google', category: 'think', auth: 'key', service: 'gemini', logo: 'googlegemini',
@@ -46,7 +50,8 @@ export const CONNECTORS = [
   // Create · photo & video
   { id: 'higgsfield', name: 'Higgsfield', category: 'create', auth: 'oauth', image: '/hf-icon.png', tile: '#D7F94B', featured: true,
     use: 'Photos and videos with your own Higgsfield credits.',
-    usedBy: [{ label: 'Studio', to: '/studio' }, { label: 'Create', to: '/create' }, { label: 'Influencer studios', to: '/influencers' }] },
+    usedBy: [{ label: 'Studio', to: '/studio' }, { label: 'Create', to: '/create' }, { label: 'Influencer studios', to: '/influencers' }],
+    can: [['write', 'Generate photos (Soul, GPT Image 2, Nano Banana)', 'live'], ['write', 'Generate videos (Seedance)', 'live'], ['write', 'Upload your reference images', 'live'], ['read', 'Job progress and finished media', 'live']] },
   { id: 'heygen', name: 'HeyGen', category: 'create', auth: 'key', service: 'heygen', mono: 'H', color: '#2F2F2F',
     use: 'Talking avatars. Saved for workflows; the steps that use it aren’t built yet.', docs: 'https://app.heygen.com/settings?nav=API' },
   { id: 'runway', name: 'Runway', category: 'create', auth: 'key', service: 'runway', logo: 'runway',
@@ -70,7 +75,7 @@ export const CONNECTORS = [
 
   // Edit & design
   soon('canva', 'Canva', 'edit', 'Carousels, thumbnails and brand kits.', { asset: 'canva' }),
-  soon('capcut', 'CapCut', 'edit', 'Edit and caption Reels.', { mono: 'Cc', color: '#111111' }),
+  soon('capcut', 'CapCut', 'edit', 'Edit and caption Reels.', { logo: 'capcut' }),
   soon('photoshop', 'Photoshop', 'edit', 'Retouch and composite.', { asset: 'photoshop' }),
   soon('aftereffects', 'After Effects', 'edit', 'Motion graphics.', { asset: 'aftereffects' }),
   soon('figma', 'Figma', 'edit', 'Templates and brand assets.', { logo: 'figma' }),
@@ -78,17 +83,44 @@ export const CONNECTORS = [
   // Voice & music
   { id: 'elevenlabs', name: 'ElevenLabs', category: 'voice', auth: 'key', service: 'elevenlabs', logo: 'elevenlabs', featured: true, live: true,
     use: 'One consistent voice per influencer, with previews.',
-    usedBy: [{ label: 'Persona voice', to: '/influencers' }], docs: 'https://elevenlabs.io/app/settings/api-keys' },
+    usedBy: [{ label: 'Persona voice', to: '/influencers' }], docs: 'https://elevenlabs.io/app/settings/api-keys',
+    can: [['read', 'Your voice library', 'live'], ['write', 'Voice previews with locked settings', 'live'], ['write', 'Voiceovers for finished videos', 'planned']] },
   soon('suno', 'Suno', 'voice', 'Original music for Reels.', { logo: 'suno' }),
   soon('udio', 'Udio', 'voice', 'Original music for Reels.', { asset: 'udio' }),
 
+  // Social accounts (handles live per workspace; posting goes through a route under Publish & automate)
+  ...[
+    ['instagram', 'Instagram', 'instagram', 'instagram'], ['tiktok', 'TikTok', 'tiktok', 'tiktok'], ['youtube', 'YouTube Shorts', 'youtube', 'youtube'],
+    ['x', 'X', 'x', 'twitter'], ['threads', 'Threads', 'threads', 'threads'], ['facebook', 'Facebook', 'facebook', 'facebook'],
+    ['linkedin', 'LinkedIn', null, 'linkedin'], ['pinterest', 'Pinterest', 'pinterest', 'pinterest'], ['bluesky', 'Bluesky', 'bluesky', 'bluesky'],
+  ].map(([id, name, logo, platform]) => ({
+    id, name, category: 'social', auth: 'social', platform, ...(logo ? { logo } : { asset: 'linkedin' }),
+    use: `${name} handles for your influencers, posted through your chosen route.`,
+    usedBy: [{ label: 'Content', to: '/content' }, { label: 'Plan', to: '/plan' }],
+    can: [['write', 'Publish and schedule posts (through Ayrshare, Zapier, Make, n8n or a webhook)', 'live'], ['read', 'Post stats', 'planned'], ['write', `Direct ${name} sign-in`, 'planned']],
+  })),
+
   // Publish
-  { id: 'ayrshare', name: 'Ayrshare', category: 'publish', auth: 'posting', provider: 'ayrshare', mono: 'Ay', color: '#1A73E8',
-    use: 'One key posts to Instagram, TikTok, YouTube, X, LinkedIn, Facebook, Threads and Pinterest.',
-    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://www.ayrshare.com/docs/apis/post/overview' },
-  { id: 'webhook', name: 'Zapier, Make or n8n', category: 'publish', auth: 'posting', provider: 'webhook', logo: 'zapier', logos: ['zapier', 'make', 'n8n'],
-    use: 'Sends each post to your automation, which does the posting.',
-    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://zapier.com/apps/webhook/integrations' },
+  { id: 'ayrshare', name: 'Ayrshare', category: 'publish', auth: 'posting', provider: 'ayrshare', mono: 'Ay', color: '#1A73E8', featured: false,
+    use: 'One key posts to Instagram, TikTok, YouTube, X, LinkedIn, Facebook, Threads, Pinterest and Bluesky.',
+    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://www.ayrshare.com/docs/apis/post/overview',
+    can: [['write', 'Publish and schedule posts', 'live'], ['read', 'Linked social accounts (Test)', 'live'], ['read', 'Post analytics', 'planned'], ['read', 'Comments', 'planned']] },
+  { id: 'zapier', name: 'Zapier', category: 'publish', auth: 'posting', provider: 'zapier', asset: 'zapier',
+    use: 'Each post goes to your Zap, which posts it or does anything else you set up.',
+    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://zapier.com/apps/webhook/integrations',
+    can: [['write', 'Send posts (caption, media, accounts, time)', 'live'], ['write', 'Test event', 'live']] },
+  { id: 'make', name: 'Make', category: 'publish', auth: 'posting', provider: 'make', logo: 'make',
+    use: 'Each post goes to your Make scenario, which posts it or does anything else you set up.',
+    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://www.make.com/en/help/tools/webhooks',
+    can: [['write', 'Send posts (caption, media, accounts, time)', 'live'], ['write', 'Test event', 'live']] },
+  { id: 'n8n', name: 'n8n', category: 'publish', auth: 'posting', provider: 'n8n', logo: 'n8n',
+    use: 'Each post goes to your n8n workflow (cloud or self-hosted), which posts it or does anything else.',
+    usedBy: [{ label: 'Content', to: '/content' }], docs: 'https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/',
+    can: [['write', 'Send posts (caption, media, accounts, time)', 'live'], ['write', 'Test event', 'live']] },
+  { id: 'webhook', name: 'Custom webhook', category: 'publish', auth: 'posting', provider: 'webhook', mono: '{ }', color: '#3F3F46',
+    use: 'Each post goes as signed JSON to any https endpoint you run.',
+    usedBy: [{ label: 'Content', to: '/content' }],
+    can: [['write', 'Send posts (caption, media, accounts, time)', 'live'], ['write', 'Test event', 'live']] },
   soon('buffer', 'Buffer', 'publish', 'Schedule through your Buffer queue.', { logo: 'buffer' }),
   soon('hootsuite', 'Hootsuite', 'publish', 'Schedule through Hootsuite.', { logo: 'hootsuite' }),
   soon('postiz', 'Postiz', 'publish', 'Open-source scheduler.', { logo: 'postiz' }),
@@ -130,7 +162,7 @@ export const CONNECTORS = [
   soon('googlesheets', 'Google Sheets', 'files', 'Export calendars and stats.', { logo: 'googlesheets' }),
 ]
 
-// Platforms reached through the posting service (shown under Publish).
+// Platforms reached through Ayrshare (shown on its page).
 export const PLATFORMS = [
   { logo: 'instagram' }, { logo: 'tiktok' }, { logo: 'youtube' }, { logo: 'x' }, { logo: 'threads' },
   { logo: 'facebook' }, { logo: 'pinterest' }, { asset: 'linkedin', name: 'LinkedIn' }, { logo: 'bluesky' },
@@ -142,7 +174,7 @@ export function statusOf(c) {
     case 'oauth': return isHFConnected() ? 'connected' : 'off'
     case 'claude': return getClaudeKey() ? 'connected' : 'off'
     case 'key': return getApiKeys().some(k => k.service === c.service && k.key) ? (c.live ? 'connected' : 'saved') : 'off'
-    case 'posting': { const p = getPublishing(); return p.provider === c.provider && isPublishingConnected(p) ? 'connected' : 'off' }
+    case 'posting': return isRouteConnected(c.provider) ? 'connected' : 'off'
     case 'mcp': return getMcpServers().some(m => m.url === c.mcpUrl) ? 'saved' : 'off'
     default: return 'soon'
   }

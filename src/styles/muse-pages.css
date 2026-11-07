@@ -533,5 +533,21 @@ li.done .muse-checklist-dot { background: var(--accent); border-color: var(--acc
 .muse-conn-detail-use { font-size: 15px; line-height: 1.55; color: var(--text-secondary); max-width: 60ch; margin: 0; }
 .muse-conn-setup { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); }
 .muse-conn-setup:empty { display: none; }
+a.muse-conn-row { text-decoration: none; }
+.muse-conn-caps ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); overflow: hidden; }
+.muse-conn-caps li { display: flex; align-items: center; gap: var(--space-3); padding: 12px var(--space-4); font-size: 14px; }
+.muse-conn-caps li + li { border-top: 1px solid var(--border-subtle); }
+.muse-conn-dir { flex-shrink: 0; width: 48px; text-align: center; font-size: 11px; font-weight: var(--font-weight-semibold); letter-spacing: .04em; text-transform: uppercase; padding: 3px 0; border-radius: 999px; background: var(--tonal); color: var(--on-tonal); }
+.muse-conn-dir.read { background: #E3F4EA; color: #145C38; }
+.muse-conn-cap { flex: 1; min-width: 0; color: var(--text-primary); }
+.muse-conn-capstate { flex-shrink: 0; font-size: 13px; font-weight: var(--font-weight-semibold); color: var(--text-tertiary); }
+.muse-conn-capstate.live { color: #1E7A47; }
+.muse-conn-capstate.setup { color: var(--accent); }
+.muse-conn-skills .muse-conn-group { margin-top: var(--space-2); }
+.muse-conn-skill-mark { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; background: var(--tonal); color: var(--on-tonal); font-size: 16px; }
+.muse-conn-privacy { font-size: 13px; line-height: 1.5; color: var(--text-tertiary); max-width: 70ch; margin: 0; }
+.muse-conn-privacy strong { color: var(--text-secondary); }
+.muse-conn-steps { margin: 0 0 var(--space-1); padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+.muse-conn-steps code { font-size: 12.5px; background: var(--bg); padding: 1px 5px; border-radius: 6px; }
 @media (max-width: 600px) { .muse-conn-row { padding: 10px var(--space-3); } .muse-conn-featured { grid-template-columns: 1fr; } .muse-conn-feature { flex-direction: row; flex-wrap: wrap; align-items: center; padding: var(--space-4); } .muse-conn-feature small { flex-basis: 100%; } }
 @media (prefers-reduced-motion: reduce) { .muse-conn-row, .muse-conn-feature { transition: none; } }
