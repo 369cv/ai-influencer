@@ -6,6 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 // ~500 MB of seed media in public/ is cached on first view instead.
 const pwa = VitePWA({
   registerType: 'autoUpdate',
+  // Registered from src/main.jsx via virtual:pwa-register, which reloads the
+  // page when a new version takes over (the injected script did not, so a new
+  // deploy only showed after a second reload).
+  injectRegister: false,
   includeAssets: ['icon.svg', 'apple-touch-icon.png', 'hf-icon.png'],
   manifest: {
     name: 'Muse Studio',
@@ -29,6 +33,8 @@ const pwa = VitePWA({
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
     cleanupOutdatedCaches: true,
+    clientsClaim: true,
+    skipWaiting: true,
     runtimeCaching: [
       {
         // API traffic (Higgsfield proxy, Claude, search) is never cached
