@@ -1,30 +1,51 @@
 import { LOGOS } from '../utils/connectorLogos'
 
-// A connector's logo on a white tile. Brand mark from Simple Icons when we
-// have one, the service's own image (Higgsfield), or a lettered tile.
-export default function ConnectorLogo({ c, slug, size = 40 }) {
+// Full-colour brand SVGs (lobe-icons / svgl), bundled as URLs.
+const ASSETS = Object.fromEntries(
+  Object.entries(import.meta.glob('../assets/connectors/*.svg', { eager: true, query: '?url', import: 'default' }))
+    .map(([path, url]) => [path.split('/').pop().replace('.svg', ''), url]),
+)
+
+// Light brand colours (Snapchat yellow, Gumroad pink…) get a dark glyph.
+const isLight = hex => {
+  const n = parseInt(hex, 16)
+  const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45
+}
+
+const Glyph = ({ logo, size, fill }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ fill }} aria-hidden>
+    <path d={logo.path} fillRule={logo.evenodd ? 'evenodd' : undefined} clipRule={logo.evenodd ? 'evenodd' : undefined} />
+  </svg>
+)
+
+// A connector's app icon: brand mark in white on its brand colour (Simple Icons /
+// lobe-icons path), a full-colour SVG on white (`asset`), the service's own image,
+// or a lettered tile. Rounded like an app icon so every row lines up.
+export default function ConnectorLogo({ c, slug, asset, size = 40 }) {
   const logo = LOGOS[slug || c?.logo]
-  const inner = Math.round(size * 0.56)
-  const tile = { width: size, height: size, borderRadius: Math.round(size * 0.28), flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }
+  const assetUrl = ASSETS[asset || c?.asset]
+  const radius = Math.round(size * 0.26)
+  const tile = { width: size, height: size, borderRadius: radius, flexShrink: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }
+  const white = { ...tile, background: '#fff', boxShadow: 'inset 0 0 0 1px var(--border-subtle)' }
+
   if (c?.logos?.length) {
-    const mini = Math.round(size * 0.4)
+    const mini = Math.round(size * 0.38)
     return (
-      <span style={{ ...tile, display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center' }} aria-hidden>
-        {c.logos.map(sl => { const l = LOGOS[sl]; return l ? <svg key={sl} width={mini} height={mini} viewBox="0 0 24 24" style={{ fill: l.hex === '000000' ? 'var(--text-primary)' : `#${l.hex}` }}><path d={l.path} /></svg> : null })}
+      <span style={{ ...white, display: 'flex', gap: Math.max(1, Math.round(size * 0.04)), justifyContent: 'center', alignItems: 'center' }} aria-hidden>
+        {c.logos.map(sl => LOGOS[sl] && <Glyph key={sl} logo={LOGOS[sl]} size={mini} fill={`#${LOGOS[sl].hex}`} />)}
       </span>
     )
   }
+  if (assetUrl) return <span style={white} aria-hidden><img src={assetUrl} alt="" width={Math.round(size * 0.62)} height={Math.round(size * 0.62)} style={{ objectFit: 'contain' }} /></span>
   if (logo) {
-    const fill = logo.hex === '000000' ? 'var(--text-primary)' : `#${logo.hex}`
-    return (
-      <span style={tile} aria-hidden>
-        <svg width={inner} height={inner} viewBox="0 0 24 24" role="img" style={{ fill }}><path d={logo.path} /></svg>
-      </span>
-    )
+    const bg = logo.hex === '000000' ? '#111111' : `#${logo.hex}`
+    return <span style={{ ...tile, background: bg }} aria-hidden><Glyph logo={logo} size={Math.round(size * 0.56)} fill={isLight(logo.hex) ? '#111111' : '#ffffff'} /></span>
   }
-  if (c?.image) return <span style={tile} aria-hidden><img src={c.image} alt="" width={inner} height={inner} style={{ objectFit: 'contain' }} /></span>
+  if (c?.image) return <span style={{ ...(c.tile ? { ...tile, background: c.tile } : white) }} aria-hidden><img src={c.image} alt="" width={Math.round(size * 0.66)} height={Math.round(size * 0.66)} style={{ objectFit: 'contain' }} /></span>
+  const bg = c?.color || 'var(--accent)'
   return (
-    <span style={{ ...tile, background: c?.color || 'var(--tonal)', border: 'none', color: '#fff', fontWeight: 700, fontSize: Math.round(size * 0.36), letterSpacing: '-0.02em' }} aria-hidden>
+    <span style={{ ...tile, background: bg, color: '#fff', fontWeight: 700, fontSize: Math.round(size * (String(c?.mono || '').length > 1 ? 0.36 : 0.44)), letterSpacing: '-0.02em' }} aria-hidden>
       {c?.mono || (c?.name || '?').slice(0, 2)}
     </span>
   )

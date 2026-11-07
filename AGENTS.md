@@ -79,12 +79,12 @@ at vercel.com/new.
 | `src/components/NewMenu.jsx` | The one **New** menu (grouped: Create · Content · Plan · From a template). `openNewMenu(anchorEl?)` opens it as a popover next to the anchor, or centered on narrow screens |
 | `src/context/workspace.jsx` | Workspaces + `useWorkspaceStore(base)`: localStorage key `${base}__${workspaceId}` for `muse_ideas`, `muse_projects`, `muse_posts`, `muse_accounts`, `muse_tracked` |
 | `src/pages/Plan.jsx` · `src/utils/planning.js` | Views Board · Creators · Inspiration. Board columns Ideas · To do · Doing · Done (`normalizeStatus()` maps older statuses); ideas and projects open in a side panel (`Panel` in `ui.jsx`). Brand-deal projects carry brand, fee, deliverables, paid. `/tracking` and `/inspiration` redirect here |
-| `src/pages/Content.jsx` · `src/utils/publishing.js` | Views Calendar · List · Media (`Library embedded`), status/account filters, two-pane composer (editor + live preview, Schedule / Post now split button). `publishPost()` → `/api/publish`. `/library` redirects to `?view=media`. Social accounts are in `src/components/SocialAccounts.jsx` (Settings) |
+| `src/pages/Content.jsx` · `src/utils/publishing.js` | Views Calendar · List · Media (`Library embedded`), status/account filters, two-pane composer (editor + live preview, Schedule / Post now split button). `publishPost()` groups accounts by posting route (Ayrshare, Zapier, Make, n8n, custom webhook) and sends one `/api/publish` request per route. `/library` redirects to `?view=media`. Social accounts are in `src/components/SocialAccounts.jsx` (Settings) |
 | `api/elevenlabs.js` · `src/utils/elevenlabs.js` · `src/components/PersonaVoice.jsx` | ElevenLabs BYOK (key from Settings → API keys, service `elevenlabs`): list voices and ≤600-char previews only. Persona voice lives on `influencer.voiceProfile` `{ provider, voiceId, voiceName, model, settings, seed }` |
-| `src/utils/connectors.js` · `src/components/ConnectorLogo.jsx` · `src/utils/connectorLogos.js` | Connector registry for Settings → Connections: categories (Think & write, Create, Voice, Publish, Research & trends, Grow & monetize, Files), each connector's auth type, "used by" links and honest status (Connected / Saved / Not connected / Coming soon). Add a connector here, not in Settings |
+| `src/utils/connectors.js` · `src/components/ConnectorLogo.jsx` · `src/utils/connectorLogos.js` | Connector registry for Settings → Connections: categories (Think & write, Create, Edit & design, Voice & music, Publish, Messages & community, Research & trends, Grow & monetize, Files & data), each connector's auth type, "used by" links and honest status (Connected / Saved / Not connected / Coming soon). Add a connector here, not in Settings |
 | `api/publish.js` | Posting proxy, user's own credentials per request: Ayrshare (`/api/post`, `/api/user` for the test) or a public https webhook (SSRF-guarded via `img-proxy` helpers, optional HMAC `X-Muse-Signature`) |
 | `src/pages/Tracking.jsx` | `TrackingView`: tracked creators with manual snapshots and 30-day growth (rendered inside Plan) |
-| `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting), skills (built-ins + imported SKILL.md), and `runSkill()` over `/api/claude` |
+| `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting routes: `POSTING_ROUTES`, `normalizePublishing()` upgrades the old single-provider shape, `routeForAccount()`), skills (built-ins, the skill library in `src/skills/*.md` loaded lazily by `loadSkill()`, imported SKILL.md), and `runSkill()` over `/api/claude`. Skill `uses`: ideas · caption · photo · video (Studio skill chip) · reference |
 | `src/pages/Studio.jsx` · `src/utils/studio.js` | Studio page and its data: `STUDIO_TEMPLATES` (one list for Home, New → From a template and the Studio empty state), model/ratio/resolution options, `estimate()`, the job feed (`muse_studio_jobs`, this browser only), `buildStudioPrompt()` (@image tags follow the upload order face → references → close-ups). Results are also written to `photo_studio_history` so Content → Media shows them. The old Photo/Video tabs in `Influencers.jsx` stay until each Studio flow is verified with a live Higgsfield account |
 | `vite.config.js` | PWA config (precaches the app shell only) plus local mirrors of `api/*` |
 
@@ -108,7 +108,8 @@ at vercel.com/new.
   is inspired by them, but the brand is original.
   Exception: a connector tile in Settings → Connections may show that service's own
   logo (Google Drive included), only to identify it. Marks come from Simple Icons
-  (CC0) in `src/utils/connectorLogos.js`; never use them as Muse branding.
+  (CC0) and lobe-icons (MIT) in `src/utils/connectorLogos.js`, plus full-colour SVGs from
+  lobe-icons / svgl (MIT) in `src/assets/connectors/`; check any new SVG has no scripts or external refs; never use them as Muse branding.
 - **Chrome extension:** reuse the same `tokens.css` (copy it, or import it from the
   repo) so the extension looks native to the app.
 

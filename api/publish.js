@@ -27,6 +27,7 @@ function cleanPost(p = {}) {
     caption: String(p.caption || '').slice(0, MAX_CAPTION),
     mediaUrls, platforms, scheduledAt,
     title: p.title ? String(p.title).slice(0, 100) : undefined,
+    via: ['zapier', 'make', 'n8n', 'webhook', 'ayrshare'].includes(p.via) ? p.via : undefined,
     accounts: Array.isArray(p.accounts) ? p.accounts.slice(0, 20).map(a => ({ platform: String(a.platform || ''), handle: String(a.handle || '').slice(0, 100) })) : [],
   }
 }
