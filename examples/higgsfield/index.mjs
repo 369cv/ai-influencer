@@ -53,7 +53,7 @@ async function main() {
       return 0
     }
     case 'nsfw': console.error(`Rejected by content moderation${id}. Not charged.`); return 1
-    case 'failed': console.error(`Generation failed${id}: ${result.error || 'no error message'}. Not charged.`); return 1
+    case 'failed': console.error(`Generation failed${id}: ${String(result.error || 'no error message').replace(/\.+$/, '')}. Not charged.`); return 1
     case 'canceled': console.error(`Request was canceled${id}.`); return 1
     default: console.error(`Unexpected status "${result?.status}"${id}.`); return 1
   }
