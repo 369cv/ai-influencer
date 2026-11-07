@@ -15,6 +15,7 @@ import { buildCharSheetPrompt, buildCharSheetPromptWithClaude } from '../utils/c
 import PhotoStudioPanel from './PhotoStudio'
 import { exportPersonaBible } from '../utils/personaBible'
 import PersonaVoice from '../components/PersonaVoice'
+import PostingSchedule from '../components/PostingSchedule'
 import WardrobeDrawer from '../components/WardrobeDrawer'
 
 function useMobile() {
@@ -6333,6 +6334,7 @@ export default function Influencers() {
 
             {activeTab==='Overview' && <DescriptionForm influencer={influencer} onUpdate={upd}/>}
             {activeTab==='Overview' && <div style={{marginTop:16}}><PersonaVoice key={influencer.id} influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
+            {activeTab==='Overview' && <div style={{marginTop:16}} id="posting-schedule"><PostingSchedule key={influencer.id} influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
             {activeTab==='Scripts' && (
               <ScriptsSection
                 scripts={influencer.scripts??[]}
