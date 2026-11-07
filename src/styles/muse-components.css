@@ -204,7 +204,7 @@
 .muse-viewer-action { min-width: 72px; min-height: 56px; padding: var(--space-1) var(--space-2); border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--on-viewer); font-size: var(--font-size-caption); }
 .muse-viewer-action-icon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--viewer-control); transition: background .15s; }
 .muse-viewer-action:hover .muse-viewer-action-icon, .muse-viewer-action.on .muse-viewer-action-icon { background: var(--accent); color: var(--on-accent); }
-.muse-viewer-post { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(400px, calc(100% - 24px)); background: var(--surface); color: var(--text-primary); border-radius: var(--radius-xl); padding: var(--space-5); box-shadow: var(--shadow-lg); animation: muse-sheet-up .25s ease-out both; }
+.muse-viewer-post { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 96px; width: min(400px, calc(100% - 24px)); max-height: calc(100% - 176px); overflow: auto; background: var(--surface); color: var(--text-primary); border-radius: var(--radius-xl); padding: var(--space-5); box-shadow: var(--shadow-lg); animation: muse-sheet-up .25s ease-out both; }
 .muse-viewer-post h3 { font-size: var(--font-size-title); font-weight: var(--font-weight-medium); }
 .muse-viewer-post > p { margin-top: var(--space-1); color: var(--text-secondary); font-size: var(--font-size-label); line-height: 1.5; }
 .muse-connect-list { list-style: none; margin-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }

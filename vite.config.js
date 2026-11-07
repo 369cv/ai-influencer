@@ -6,6 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 // ~500 MB of seed media in public/ is cached on first view instead.
 const pwa = VitePWA({
   registerType: 'autoUpdate',
+  // Registered from src/main.jsx via virtual:pwa-register, which reloads the
+  // page when a new version takes over (the injected script did not, so a new
+  // deploy only showed after a second reload).
+  injectRegister: false,
   includeAssets: ['icon.svg', 'apple-touch-icon.png', 'hf-icon.png'],
   manifest: {
     name: 'Muse Studio',
@@ -29,6 +33,8 @@ const pwa = VitePWA({
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
     cleanupOutdatedCaches: true,
+    clientsClaim: true,
+    skipWaiting: true,
     runtimeCaching: [
       {
         // API traffic (Higgsfield proxy, Claude, search) is never cached
@@ -167,6 +173,29 @@ const claudePlugin = {
   },
 }
 
+// Local dev ElevenLabs proxy — mirrors api/elevenlabs.js for Vercel production
+const elevenPlugin = {
+  name: 'elevenlabs-proxy',
+  configureServer(server) {
+    server.middlewares.use('/api/elevenlabs', async (req, res) => {
+      const url = new URL(req.url, 'http://local')
+      const chunks = []
+      req.on('data', c => chunks.push(c))
+      await new Promise(r => req.on('end', r))
+      let body = {}
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch {}
+      const { handleElevenLabs } = await import('./api/elevenlabs.js')
+      try {
+        const out = await handleElevenLabs({ method: req.method, op: url.searchParams.get('op'), voice: url.searchParams.get('voice'), key: req.headers['x-api-key'], body })
+        if (out.audio) { res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(out.audio); return }
+        res.writeHead(out.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(out.json))
+      } catch {
+        res.writeHead(502, { 'Content-Type': 'application/json' }); res.end('{"error":"Could not reach ElevenLabs."}')
+      }
+    })
+  },
+}
+
 // Local dev posting proxy — mirrors api/publish.js for Vercel production
 const publishPlugin = {
   name: 'publish-proxy',
@@ -187,7 +216,7 @@ const publishPlugin = {
 }
 
 export default defineConfig({
-  plugins: [react(), pwa, searchPlugin, imgProxyPlugin, claudePlugin, publishPlugin],
+  plugins: [react(), pwa, searchPlugin, imgProxyPlugin, claudePlugin, publishPlugin, elevenPlugin],
   server: {
     proxy: {
       '/api/hf': {

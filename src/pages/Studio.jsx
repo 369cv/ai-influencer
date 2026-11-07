@@ -7,9 +7,10 @@ import { generateNImages, generateVideo } from '../utils/higgsfieldGenerate'
 import { downloadImage } from '../utils/imageUtils'
 import { hasClaude, runSkill } from '../utils/claudeAssist'
 import { MODEL_LABELS } from '../utils/creditEstimate'
+import RemixVideo from '../components/RemixVideo'
 import {
   PHOTO_MODELS, VIDEO_MODELS, PHOTO_RATIOS, VIDEO_RATIOS, PHOTO_RES, VIDEO_RES, VIDEO_SECONDS, MAX_SHOTS,
-  DEFAULTS, STUDIO_TEMPLATES, estimate, readJobs, writeJobs, SESSION, addToMediaHistory, uploadable, buildStudioPrompt,
+  DEFAULTS, STUDIO_TEMPLATES, estimate, readJobs, writeJobs, SESSION, addToMediaHistory, uploadable, buildStudioPrompt, toRecipe, RECIPE_KEYS,
 } from '../utils/studio'
 import { newId } from '../utils/localJson'
 
@@ -31,7 +32,7 @@ const ENHANCE_SKILL = {
 }
 
 function blankSettings(mode = 'photo') {
-  return { mode, prompt: '', influencerId: null, refs: [], shots: [], ...DEFAULTS[mode] }
+  return { mode, prompt: '', motion: '', influencerId: null, refs: [], shots: [], ...DEFAULTS[mode] }
 }
 
 export default function Studio() {
@@ -43,6 +44,8 @@ export default function Studio() {
   const [s, setS] = useState(() => blankSettings(params.get('mode') === 'video' ? 'video' : 'photo'))
   const [hf, setHf] = useState(isHFConnected)
   const [enhance, setEnhance] = useState(false)
+  const [showMotion, setShowMotion] = useState(false)
+  const [showRemix, setShowRemix] = useState(false)
   const [editingShots, setEditingShots] = useState(false)
   const [notice, setNotice] = useState('')
   const [showTemplates, setShowTemplates] = useState(params.get('templates') === '1')
@@ -61,11 +64,23 @@ export default function Studio() {
     // Only one-shot navigation state triggers this; ?mode= is read once in the initial state.
     const st = location.state || {}
     const mode = st.mode || null
+    if (st.recipe && typeof st.recipe === 'object') {
+      // Content → Recreate: reopen with the exact settings that made the item.
+      const r = st.recipe
+      const m = r.mode === 'video' ? 'video' : 'photo'
+      const next = blankSettings(m)
+      RECIPE_KEYS.forEach(k => { if (k !== 'mode' && r[k] != null) next[k] = r[k] })
+      next.refs = (Array.isArray(r.refs) ? r.refs : []).slice(0, 4)
+      setS(next)
+      navigate(location.pathname, { replace: true, state: {} })
+      return
+    }
     if (st.influencerId || st.ref || st.template || mode) {
       setS(x => {
         let next = mode && mode !== x.mode ? { ...blankSettings(mode), influencerId: x.influencerId } : { ...x }
         if (st.influencerId) next.influencerId = st.influencerId
         if (st.ref) next.refs = [...new Set([st.ref, ...next.refs])].slice(0, 4)
+        if (st.motion && (mode || next.mode) === 'video') next.prompt = st.motion
         return next
       })
       if (st.template) applyTemplate(STUDIO_TEMPLATES.find(t => t.id === st.template))
@@ -131,6 +146,7 @@ export default function Studio() {
     const job = { id, sessionId: SESSION, status: 'running', progress: 2, urls: [], createdAt: Date.now(), credits: estimate({ ...settings, count }),
       settings: { ...settings, prompt, shots, count, refs: settings.refs.filter(r => !r.startsWith('data:')) }, refCount: settings.refs.length, influencerName: who?.name || null }
     setJobs(l => [job, ...l])
+    const recipe = toRecipe({ ...job.settings, count: 1 }, estimate({ ...settings, count: 1 }))
     cancels.current[id] = false
     const isCancelled = () => cancels.current[id]
     const onProgress = p => updateJob(id, j => ({ progress: Math.max(j.progress || 0, Math.round(p)) }))
@@ -147,7 +163,7 @@ export default function Studio() {
           onPartialResults: urls => updateJob(id, { urls: [...new Set(urls.filter(Boolean))] }),
         })
         const urls = [...new Set((result?.urls || []).filter(Boolean))]
-        urls.forEach(url => addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id }))
+        urls.forEach(url => addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id, recipe }))
         updateJob(id, { status: urls.length ? 'done' : 'failed', urls, progress: 100, error: urls.length ? '' : 'No video came back. Check your Higgsfield dashboard.' })
       } else {
         const face = who?.mainImage ? uploadable(who.mainImage) : null
@@ -163,7 +179,7 @@ export default function Studio() {
           onProgress, isCancelled,
           onResult: url => {
             updateJob(id, j => ({ urls: [...new Set([...(j.urls || []), url])] }))
-            addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id })
+            addToMediaHistory({ url, influencer: who, ratio: settings.ratio, jobId: id, recipe })
           },
         })
         updateJob(id, j => ({ status: j.urls.length ? 'done' : 'failed', progress: 100, error: j.urls.length ? '' : 'Nothing came back. Check your Higgsfield dashboard.' }))
@@ -184,7 +200,7 @@ export default function Studio() {
     setTimeout(() => promptRef.current?.focus(), 50)
   }
   const useAsRef = url => { set({ refs: [...new Set([url, ...s.refs])].slice(0, 4) }); setNotice('Added as a reference.') }
-  const makeVideo = (url, j) => { setS({ ...blankSettings('video'), influencerId: j?.settings?.influencerId || s.influencerId, prompt: j?.settings?.prompt || '', refs: [url] }); setParams(p => { p.set('mode', 'video'); return p }, { replace: true }); setNotice('The photo is the start frame. Describe the motion.') }
+  const makeVideo = (url, j) => { const motion = j?.settings?.motion || ''; setS({ ...blankSettings('video'), influencerId: j?.settings?.influencerId || s.influencerId, prompt: motion, refs: [url] }); setParams(p => { p.set('mode', 'video'); return p }, { replace: true }); setNotice(motion ? 'The photo is the start frame, and its motion prompt is filled in.' : 'The photo is the start frame. Describe the motion.') }
   const post = (url, j) => navigate('/content?compose=1', { state: { prefillMedia: url, influencerId: j?.settings?.influencerId } })
 
   const models = s.mode === 'video' ? VIDEO_MODELS : PHOTO_MODELS
@@ -198,11 +214,13 @@ export default function Studio() {
       <header className="muse-studio-head">
         <h1>Studio</h1>
         <Seg options={MODES} value={s.mode} onChange={switchMode} label="Mode" />
+        <button type="button" className="muse-btn muse-btn-text" onClick={() => setShowRemix(true)}>Remix a video</button>
         <button type="button" className="muse-btn muse-btn-text" onClick={() => setShowTemplates(v => !v)} aria-expanded={showTemplates}>Templates</button>
       </header>
 
       {(showTemplates || jobs.length === 0) && <TemplateGrid onPick={applyTemplate} />}
 
+      {showRemix && <RemixVideo onClose={() => setShowRemix(false)} defaultInfluencerId={s.influencerId} />}
       <section className="muse-feed" aria-label="Your generations">
         {jobs.map(j => (
           <JobRow key={j.id} job={j}
@@ -246,6 +264,17 @@ export default function Studio() {
           aria-label="Prompt"
         />
 
+        {s.mode === 'photo' && (showMotion || s.motion) && (
+          <input
+            className="muse-input muse-input-sm"
+            value={s.motion}
+            onChange={e => set({ motion: e.target.value })}
+            placeholder="Motion for when you animate it: slow turn to camera, hair in the wind…"
+            aria-label="Motion prompt"
+            style={{ marginTop: 2 }}
+          />
+        )}
+
         {editingShots && s.mode === 'photo' && (
           <div className="muse-shots" aria-label="Shot list">
             {s.shots.map((shot, i) => (
@@ -287,6 +316,7 @@ export default function Studio() {
             )}
           {s.mode === 'photo' && !s.shots.length && <button type="button" className="muse-pchip" onClick={() => { set({ shots: Array.from({ length: s.count }, () => '') }); setEditingShots(true) }} title="Write a different shot for each image">Shot list</button>}
 
+          {s.mode === 'photo' && <button type="button" className={`muse-pchip${showMotion || s.motion ? ' on' : ''}`} aria-pressed={showMotion || !!s.motion} onClick={() => { if (showMotion || s.motion) { setShowMotion(false); set({ motion: '' }) } else setShowMotion(true) }} title="Save a motion prompt with these photos, used when you animate them">Motion</button>}
           <button type="button" className={`muse-pchip${enhance ? ' on' : ''}`} aria-pressed={enhance} disabled={!hasClaude()} onClick={() => setEnhance(v => !v)} title={hasClaude() ? 'Rewrite the prompt with Claude before generating' : 'Add your Anthropic key in Settings → Connections to use this'}>✦ Enhance</button>
 
           <button type="submit" className="muse-pbar-go" disabled={!hf}>
