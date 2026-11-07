@@ -81,6 +81,7 @@ at vercel.com/new.
 | `src/pages/Plan.jsx` · `src/utils/planning.js` | Views Board · Creators · Inspiration. Board columns Ideas · To do · Doing · Done (`normalizeStatus()` maps older statuses); ideas and projects open in a side panel (`Panel` in `ui.jsx`). Brand-deal projects carry brand, fee, deliverables, paid. `/tracking` and `/inspiration` redirect here |
 | `src/pages/Content.jsx` · `src/utils/publishing.js` | Views Calendar · List · Media (`Library embedded`), status/account filters, two-pane composer (editor + live preview, Schedule / Post now split button). `publishPost()` → `/api/publish`. `/library` redirects to `?view=media`. Social accounts are in `src/components/SocialAccounts.jsx` (Settings) |
 | `api/elevenlabs.js` · `src/utils/elevenlabs.js` · `src/components/PersonaVoice.jsx` | ElevenLabs BYOK (key from Settings → API keys, service `elevenlabs`): list voices and ≤600-char previews only. Persona voice lives on `influencer.voiceProfile` `{ provider, voiceId, voiceName, model, settings, seed }` |
+| `src/utils/connectors.js` · `src/components/ConnectorLogo.jsx` · `src/utils/connectorLogos.js` | Connector registry for Settings → Connections: categories (Think & write, Create, Voice, Publish, Research & trends, Grow & monetize, Files), each connector's auth type, "used by" links and honest status (Connected / Saved / Not connected / Coming soon). Add a connector here, not in Settings |
 | `api/publish.js` | Posting proxy, user's own credentials per request: Ayrshare (`/api/post`, `/api/user` for the test) or a public https webhook (SSRF-guarded via `img-proxy` helpers, optional HMAC `X-Muse-Signature`) |
 | `src/pages/Tracking.jsx` | `TrackingView`: tracked creators with manual snapshots and 30-day growth (rendered inside Plan) |
 | `src/utils/connections.js` · `src/utils/skills.js` · `src/utils/claudeAssist.js` | Settings data (keys, MCP servers, posting), skills (built-ins + imported SKILL.md), and `runSkill()` over `/api/claude` |
@@ -105,6 +106,9 @@ at vercel.com/new.
 - **Brand:** the name is "Muse Studio" and the logo is `public/icon.svg`. Never use
   Google, Gemini or Workspace names, logos, colors or the Google Sans font. The style
   is inspired by them, but the brand is original.
+  Exception: a connector tile in Settings → Connections may show that service's own
+  logo (Google Drive included), only to identify it. Marks come from Simple Icons
+  (CC0) in `src/utils/connectorLogos.js`; never use them as Muse branding.
 - **Chrome extension:** reuse the same `tokens.css` (copy it, or import it from the
   repo) so the extension looks native to the app.
 
