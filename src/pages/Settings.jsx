@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import SocialAccounts from '../components/SocialAccounts'
+import PostingSchedule from '../components/PostingSchedule'
+import { slotsPerWeek } from '../utils/schedule'
+import { useInfluencers } from '../store'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { startHiggsfieldOAuthPopup, disconnectHF, isHFConnected } from '../utils/higgsfieldAuth'
 import { useWorkspace } from '../context/workspace'
@@ -69,11 +72,37 @@ export default function Settings() {
         <div className="muse-settings-body">
           {section === 'workspace' && <WorkspaceSection />}
           {section === 'connections' && <ConnectionsSection connectedParam={new URLSearchParams(location.search).get('connected') === '1'} />}
-          {section === 'accounts' && <Section id="accounts" title="Social accounts" sub="Where each influencer posts, per workspace."><SocialAccounts /></Section>}
+          {section === 'accounts' && <Section id="accounts" title="Social accounts" sub="Where each influencer posts, per workspace."><SocialAccounts /><ScheduleList /></Section>}
           {section === 'skills' && <SkillsSection />}
         </div>
       </div>
     </Page>
+  )
+}
+
+// Posting schedules, one per influencer (edited in a dialog; also on each influencer's profile).
+function ScheduleList() {
+  const [influencers, setInfluencers] = useInfluencers()
+  const [editing, setEditing] = useState(null)
+  const inf = (influencers || []).find(i => i.id === editing)
+  return (
+    <div className="muse-stack" style={{ marginTop: 'var(--space-5)' }}>
+      <h3 className="muse-group-title">Posting schedules</h3>
+      <p className="muse-muted">Time slots for each influencer. “Add to queue” in Content fills the next free one.</p>
+      {(influencers || []).map(i => {
+        const s = i.postingSchedule
+        return (
+          <Row key={i.id} title={i.name || 'Untitled'} sub={s ? `${slotsPerWeek(s)} slots a week · goal ${s.weeklyGoal || 1} · ${(s.tz || '').replace(/_/g, ' ')}` : 'No schedule yet'}>
+            <button type="button" className="muse-btn muse-btn-text" onClick={() => setEditing(i.id)}>{s ? 'Edit' : 'Set up'}</button>
+          </Row>
+        )
+      })}
+      {inf && (
+        <Dialog title={`${inf.name || 'Influencer'} · Posting schedule`} wide onClose={() => setEditing(null)} actions={<button type="button" className="muse-btn muse-btn-tonal" onClick={() => setEditing(null)}>Done</button>}>
+          <PostingSchedule bare influencer={inf} onUpdate={patch => setInfluencers(prev => prev.map(x => x.id === inf.id ? { ...x, ...patch } : x))} />
+        </Dialog>
+      )}
+    </div>
   )
 }
 

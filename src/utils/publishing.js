@@ -59,36 +59,53 @@ async function callPublish(body) {
 }
 
 // Sends a post now, or for a future time when post.scheduledAt is set. Accounts are
-// grouped by their posting route, one request per route.
-// Resolves { status: 'posted'|'scheduled', providerId?, links? }; throws on failure.
-export async function publishPost(post, accounts) {
+// grouped by their posting route, one request per route. `opts.routes` limits the
+// send to those routes (Retry re-sends only the routes that failed).
+// Resolves { status, routeResults, error, providerId, links } and never throws for a
+// route failure: status is 'failed' if any route failed, and routeResults say which.
+export async function publishPost(post, accounts, opts = {}) {
   const cfg = getPublishing()
   if (!isPublishingConnected(cfg)) throw new Error('Connect a posting service in Settings → Connections first.')
   const targets = accounts.filter(a => post.accountIds?.includes(a.id))
   const future = post.scheduledAt && new Date(post.scheduledAt).getTime() > Date.now() + 60_000
   const groups = {}
   for (const a of targets) (groups[routeForAccount(a, cfg)] ||= []).push(a)
-  const results = await Promise.allSettled(Object.entries(groups).map(async ([routeId, list]) => {
-    const data = await callPublish({
-      ...routeRequest(routeId, cfg),
-      post: {
-        caption: post.caption || '',
-        mediaUrls: (post.mediaUrls || []).filter(u => /^https:\/\//i.test(u)),
-        platforms: [...new Set(list.map(a => a.platform))],
-        accounts: list.map(a => ({ platform: a.platform, handle: a.handle, profileKey: a.profileKey || undefined })),
-        scheduledAt: future ? new Date(post.scheduledAt).toISOString() : undefined,
-        title: post.title || undefined,
-        via: routeId,
-      },
-    })
-    return { routeId, id: data.id, links: data.links || [] }
+  if (opts.routes) for (const r of Object.keys(groups)) if (!opts.routes.includes(r)) delete groups[r]
+  const at = new Date().toISOString()
+  const fresh = await Promise.all(Object.entries(groups).map(async ([route, list]) => {
+    try {
+      const data = await callPublish({
+        ...routeRequest(route, cfg),
+        post: {
+          caption: post.caption || '',
+          mediaUrls: (post.mediaUrls || []).filter(u => /^https:\/\//i.test(u)),
+          platforms: [...new Set(list.map(a => a.platform))],
+          accounts: list.map(a => ({ platform: a.platform, handle: a.handle, profileKey: a.profileKey || undefined })),
+          scheduledAt: future ? new Date(post.scheduledAt).toISOString() : undefined,
+          title: post.title || undefined,
+          via: route,
+        },
+      })
+      return { route, ok: true, providerId: data.id, links: data.links || [], accountIds: list.map(a => a.id), at }
+    } catch (e) {
+      return { route, ok: false, error: e.message || 'Failed', accountIds: list.map(a => a.id), at }
+    }
   }))
-  const routes = Object.keys(groups)
-  const failed = results.map((r, i) => r.status === 'rejected' && `${routeName(routes[i])}: ${r.reason?.message || 'failed'}`).filter(Boolean)
-  const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value)
-  if (failed.length) throw new Error((ok.length ? `Sent through ${ok.map(o => routeName(o.routeId)).join(', ')}, but ` : '') + failed.join(' · '))
-  return { status: future ? 'scheduled' : 'posted', providerId: ok.map(o => o.id).filter(Boolean).join(',') || undefined, links: ok.flatMap(o => o.links) }
+  // Keep earlier successes for routes not re-sent this time.
+  const routeResults = [...(post.routeResults || []).filter(r => !fresh.some(f => f.route === r.route)), ...fresh]
+  const failed = routeResults.filter(r => !r.ok)
+  const ok = routeResults.filter(r => r.ok)
+  return {
+    status: failed.length ? 'failed' : future ? 'scheduled' : 'posted',
+    routeResults,
+    error: failed.map(r => `${routeName(r.route)}: ${r.error}`).join(' · ') + (failed.length && ok.length ? ` (sent through ${ok.map(r => routeName(r.route)).join(', ')})` : ''),
+    providerId: ok.map(r => r.providerId).filter(Boolean).join(',') || undefined,
+    links: ok.flatMap(r => r.links || []),
+  }
 }
+
+// Routes a failed post still needs (for Retry).
+export const failedRoutes = post => (post.routeResults || []).filter(r => !r.ok).map(r => r.route)
 
 // Checks one route's credentials (Ayrshare: lists linked accounts; webhook: sends a test event).
 export async function testPublishing(routeId) {

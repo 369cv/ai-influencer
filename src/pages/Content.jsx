@@ -2,20 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useInfluencers } from '../store'
 import { useWorkspaceStore } from '../context/workspace'
-import { Page, Seg, Field, Empty, Dialog, InfluencerSelect, SkillAssist } from '../components/ui'
+import { Page, Seg, Field, Empty, Dialog, SkillAssist } from '../components/ui'
 import Library from './Library'
 import { collectLibrary } from '../utils/library'
-import { PLATFORMS, POST_STATUSES, platformName, validatePost, publishPost } from '../utils/publishing'
+import { PLATFORMS, POST_STATUSES, platformName, validatePost, publishPost, failedRoutes } from '../utils/publishing'
 import { downloadImage } from '../utils/imageUtils'
-import { isPublishingConnected } from '../utils/connections'
+import { isPublishingConnected, routeForAccount, routeName } from '../utils/connections'
+import { CONNECTORS } from '../utils/connectors'
+import ConnectorLogo from '../components/ConnectorLogo'
+import { freeSlots, nextFreeSlot, isSlotTime, fmtSlot, fmtTime } from '../utils/schedule'
 import { influencerContext } from '../utils/claudeAssist'
 import { newId } from '../utils/localJson'
 
-// Content: one list of posts with three views (Calendar · List · Media).
-// Status and account are filters. Social accounts live in Settings.
+// Content: posts with three views (Queue · Calendar · Media), filtered by influencer.
+// The Queue shows each influencer's time slots (Settings → Social accounts or the
+// influencer profile), with empty slots ready to fill. Social accounts live in Settings.
 
-const VIEWS = [{ id: 'calendar', label: 'Calendar' }, { id: 'list', label: 'List' }, { id: 'media', label: 'Media' }]
-const STATUS_FILTERS = [{ id: 'all', label: 'All posts' }, ...Object.entries(POST_STATUSES).map(([id, label]) => ({ id, label }))]
+const VIEWS = [{ id: 'queue', label: 'Queue' }, { id: 'calendar', label: 'Calendar' }, { id: 'media', label: 'Media' }]
+const platformLogo = id => CONNECTORS.find(c => c.auth === 'social' && c.platform === id)
+const Avatar = ({ inf, size = 22 }) => <span className="muse-q-avatar" style={{ width: size, height: size, backgroundImage: (inf?.mainImage || inf?.image) ? `url(${inf.mainImage || inf.image})` : undefined }} aria-hidden>{!(inf?.mainImage || inf?.image) && (inf?.name || '?').slice(0, 1)}</span>
 const isVideo = u => /\.(mp4|webm|mov)(\?|$)/i.test(u || '')
 const toLocalInput = iso => {
   if (!iso) return ''
@@ -28,12 +33,14 @@ const narrow = () => typeof window !== 'undefined' && window.innerWidth < 720
 export default function Content() {
   const [params, setParams] = useSearchParams()
   const location = useLocation()
-  const view = VIEWS.some(v => v.id === params.get('view')) ? params.get('view') : (narrow() ? 'list' : 'calendar')
+  const rawView = params.get('view') === 'list' ? 'queue' : params.get('view')
+  const view = VIEWS.some(v => v.id === rawView) ? rawView : (narrow() ? 'queue' : 'calendar')
+  const [influencers] = useInfluencers()
   const [posts, setPosts] = useWorkspaceStore('muse_posts')
   const [accounts] = useWorkspaceStore('muse_accounts')
-  const [status, setStatus] = useState('all')
-  const [account, setAccount] = useState('all')
+  const [who, setWho] = useState('all')
   const [composing, setComposing] = useState(null)
+  const [retrying, setRetrying] = useState('')
 
   useEffect(() => {
     const openId = params.get('open')
@@ -54,7 +61,22 @@ export default function Content() {
   }
   const setView = v => setParams(q => { q.set('view', v); return q }, { replace: true })
   const save = p => setPosts(l => l.some(x => x.id === p.id) ? l.map(x => x.id === p.id ? p : x) : [p, ...l])
-  const shown = posts.filter(p => (status === 'all' || (p.status || 'draft') === status) && (account === 'all' || p.accountIds?.includes(account)))
+  const accountsOf = id => accounts.filter(a => a.influencerId === id).map(a => a.id)
+  const newPost = (extra = {}) => {
+    const influencerId = extra.influencerId !== undefined ? extra.influencerId : who !== 'all' ? who : null
+    setComposing({ influencerId, accountIds: influencerId ? accountsOf(influencerId) : [], ...extra })
+  }
+  // Inline Retry (Queue → Failed): re-send only the routes that failed.
+  async function retry(post) {
+    setRetrying(post.id)
+    try {
+      const routes = failedRoutes(post)
+      const r = await publishPost(post, accounts, routes.length ? { routes } : {})
+      save({ ...post, status: r.status, routeResults: r.routeResults, error: r.error, providerId: r.providerId, links: r.links, postedAt: r.status === 'posted' ? new Date().toISOString() : post.postedAt, updatedAt: Date.now() })
+    } catch (e) { save({ ...post, error: e.message, updatedAt: Date.now() }) } finally { setRetrying('') }
+  }
+  const shownInfluencers = (influencers || []).filter(i => who === 'all' || i.id === who)
+  const shown = posts.filter(p => who === 'all' || p.influencerId === who)
 
   return (
     <Page
@@ -62,30 +84,35 @@ export default function Content() {
       wide
       actions={<>
         <Seg options={VIEWS} value={view} onChange={setView} label="View" />
-        {view !== 'media' && <>
-          <select className="muse-input muse-input-sm" value={status} onChange={e => setStatus(e.target.value)} aria-label="Filter by status">
-            {STATUS_FILTERS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-          {accounts.length > 0 && (
-            <select className="muse-input muse-input-sm" value={account} onChange={e => setAccount(e.target.value)} aria-label="Filter by account">
-              <option value="all">All accounts</option>
-              {accounts.map(a => <option key={a.id} value={a.id}>{platformName(a.platform)} {a.handle}</option>)}
-            </select>
-          )}
-        </>}
-        <button type="button" className="muse-btn muse-btn-filled" onClick={() => setComposing({})}>New post</button>
+        <button type="button" className="muse-btn muse-btn-filled" onClick={() => newPost()}>New post</button>
       </>}
     >
-      {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => setComposing({ scheduledAt: d.toISOString() })} />}
-      {view === 'list' && <List posts={shown} accounts={accounts} onOpen={setComposing} onNew={() => setComposing({})} filtered={shown.length !== posts.length} />}
+      {view !== 'media' && (influencers || []).length > 0 && (
+        <div className="muse-q-who" role="group" aria-label="Influencer">
+          <button type="button" className={`muse-chip${who === 'all' ? ' on' : ''}`} aria-pressed={who === 'all'} onClick={() => setWho('all')}>All influencers</button>
+          {(influencers || []).map(i => {
+            const plats = [...new Set(accounts.filter(a => a.influencerId === i.id).map(a => a.platform))]
+            return (
+              <button key={i.id} type="button" className={`muse-chip muse-q-whochip${who === i.id ? ' on' : ''}`} aria-pressed={who === i.id} onClick={() => setWho(who === i.id ? 'all' : i.id)}>
+                <Avatar inf={i} />{i.name || 'Untitled'}
+                {plats.length > 0 && <span className="muse-q-plats">{plats.map(pl => platformLogo(pl) && <ConnectorLogo key={pl} c={platformLogo(pl)} size={16} />)}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} />}
+      {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => newPost({ scheduledAt: d.toISOString() })} />}
       {view === 'media' && <Library embedded />}
 
       {composing && (
         <Composer
           initial={composing}
           accounts={accounts}
+          posts={posts}
           onClose={closeComposer}
           onSave={p => { save(p); closeComposer() }}
+          onPersist={save}
           onDelete={id => { setPosts(l => l.filter(x => x.id !== id)); closeComposer() }}
         />
       )}
@@ -93,34 +120,114 @@ export default function Content() {
   )
 }
 
-function List({ posts, accounts, onOpen, onNew, filtered }) {
-  const [influencers] = useInfluencers()
-  if (!posts.length) {
-    return filtered
-      ? <Empty title="No posts match these filters" />
-      : <Empty title="No posts yet" action={<button type="button" className="muse-btn muse-btn-filled" onClick={onNew}>New post</button>}>Compose a post from your media, or use Post on any photo in Media.</Empty>
-  }
-  const sorted = [...posts].sort((a, b) => (b.scheduledAt ? new Date(b.scheduledAt) : b.createdAt) - (a.scheduledAt ? new Date(a.scheduledAt) : a.createdAt))
+const TABS = [{ id: 'queue', label: 'Queue' }, { id: 'drafts', label: 'Drafts' }, { id: 'sent', label: 'Sent' }, { id: 'failed', label: 'Failed' }]
+const QUEUED = new Set(['planned', 'approved', 'scheduled'])
+function tabOf(p, now) {
+  const t = p.scheduledAt ? new Date(p.scheduledAt).getTime() : null
+  if (p.status === 'failed') return 'failed'
+  if (p.status === 'posted' || (p.status === 'scheduled' && t && t <= now)) return 'sent'
+  if (t && QUEUED.has(p.status)) return 'queue'
+  return 'drafts'
+}
+const dayLabel = d => {
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const x = new Date(d); x.setHours(0, 0, 0, 0)
+  const diff = Math.round((x - t) / 864e5)
+  const date = new Date(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  return diff === 0 ? ['Today', date] : diff === 1 ? ['Tomorrow', date] : [date, '']
+}
+const BADGE = { planned: 'Planned · not sent', approved: 'Approved · not sent', scheduled: 'Scheduled', posted: 'Posted', failed: 'Failed', draft: 'Draft' }
+
+function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying }) {
+  const [tab, setTab] = useState('queue')
+  const now = Date.now()
+  const byTab = useMemo(() => { const m = { queue: [], drafts: [], sent: [], failed: [] }; for (const p of posts) m[tabOf(p, now)].push(p); return m }, [posts]) // eslint-disable-line
+  const withSchedule = influencers.filter(i => i.postingSchedule)
+  const rows = useMemo(() => {
+    if (tab !== 'queue') {
+      const list = [...byTab[tab]].sort((a, b) => tab === 'drafts' ? (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0) : new Date(b.postedAt || b.scheduledAt || 0) - new Date(a.postedAt || a.scheduledAt || 0))
+      return list.map(p => ({ kind: 'post', p, at: p.postedAt || p.scheduledAt }))
+    }
+    const items = byTab.queue.map(p => ({ kind: 'post', p, at: p.scheduledAt }))
+    for (const i of withSchedule) for (const s of freeSlots(i.postingSchedule, posts, i.id, { days: 7 })) items.push({ kind: 'slot', inf: i, at: s.at.toISOString() })
+    return items.sort((a, b) => new Date(a.at) - new Date(b.at))
+  }, [tab, byTab, posts, withSchedule.map(i => i.id + JSON.stringify(i.postingSchedule)).join()]) // eslint-disable-line
+  const infOf = id => influencers.find(i => i.id === id)
+
+  let lastDay = ''
   return (
-    <ul className="muse-list muse-panel">
-      {sorted.map(p => {
-        const who = (influencers || []).find(i => i.id === p.influencerId)
+    <div className="muse-q">
+      <div className="muse-q-tabs" role="tablist" aria-label="Posts">
+        {TABS.map(t => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`${tab === t.id ? 'on' : ''}${t.id === 'failed' && byTab.failed.length ? ' warn' : ''}`} onClick={() => setTab(t.id)}>
+            {t.label}<i>{byTab[t.id].length}</i>
+          </button>
+        ))}
+        {influencers.length === 1 && influencers[0].postingSchedule && (() => {
+          const i = influencers[0]; const wk = now + 7 * 864e5
+          const n = byTab.queue.filter(p => new Date(p.scheduledAt) <= wk).length
+          return <span className="muse-q-goal">{n} of {i.postingSchedule.weeklyGoal || 1} queued this week</span>
+        })()}
+      </div>
+
+      {rows.length === 0 && (
+        tab === 'queue'
+          ? <Empty title="Nothing queued" action={<button type="button" className="muse-btn muse-btn-filled" onClick={onNew}>New post</button>}>
+              {withSchedule.length ? 'Every slot this week is free. Add a post or pick a slot.' : <>Set a posting schedule so empty slots show up here. <Link to="/settings?section=accounts">Posting schedules</Link></>}
+            </Empty>
+          : <Empty title={tab === 'drafts' ? 'No drafts' : tab === 'sent' ? 'Nothing sent yet' : 'No failed posts'} />
+      )}
+
+      {rows.map(r => {
+        const d = new Date(r.at || Date.now()).toDateString()
+        const head = r.at && d !== lastDay ? (lastDay = d, dayLabel(r.at)) : null
+        const time = r.at ? fmtTime(r.at) : ''
+        if (r.kind === 'slot') {
+          return (
+            <div key={`slot-${r.inf.id}-${r.at}`}>
+              {head && <h3 className="muse-q-day">{head[0]} {head[1] && <small>· {head[1]}</small>}</h3>}
+              <div className="muse-q-row">
+                <span className="muse-q-time">{time}</span>
+                <button type="button" className="muse-q-empty" onClick={() => onNewAt(r.inf, new Date(r.at))}>＋ Add to {r.inf.name || 'this influencer'}’s {time} slot</button>
+              </div>
+            </div>
+          )
+        }
+        const p = r.p
+        const inf = infOf(p.influencerId)
         const targets = accounts.filter(a => p.accountIds?.includes(a.id))
+        const plats = [...new Set(targets.map(a => a.platform))]
+        const routes = p.routeResults?.length ? [...new Set(p.routeResults.map(x => x.route))] : [...new Set(targets.map(a => routeForAccount(a)).filter(Boolean))]
+        const failed = p.status === 'failed'
         return (
-          <li key={p.id}>
-            <button type="button" className="muse-list-row" onClick={() => onOpen(p)}>
-              <span className="muse-thumb" style={{ backgroundImage: p.mediaUrls?.[0] && !isVideo(p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}>{p.mediaUrls?.length > 1 && <em>{p.mediaUrls.length}</em>}</span>
-              <span className="muse-list-main">
-                <strong>{p.caption?.split('\n')[0]?.slice(0, 80) || 'No caption'}</strong>
-                <small>{[p.scheduledAt && when(p.scheduledAt), targets.map(a => `${platformName(a.platform)} ${a.handle}`).join(', ') || 'No accounts', who?.name].filter(Boolean).join(' · ')}</small>
-                {p.error && <small className="muse-error">{p.error}</small>}
-              </span>
-              <span className={`muse-badge ${p.status}`}>{POST_STATUSES[p.status || 'draft']}</span>
-            </button>
-          </li>
+          <div key={p.id}>
+            {head && tab === 'queue' && <h3 className="muse-q-day">{head[0]} {head[1] && <small>· {head[1]}</small>}</h3>}
+            <div className="muse-q-row">
+              {tab === 'queue' && <span className="muse-q-time">{time}</span>}
+              <div className={`muse-q-card${failed ? ' failed' : ''}`}>
+                <button type="button" className="muse-q-open" onClick={() => onOpen(p)} aria-label={`Open post: ${p.caption?.slice(0, 40) || 'No caption'}`}>
+                  <span className="muse-thumb" style={{ backgroundImage: p.mediaUrls?.[0] && !isVideo(p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}>{isVideo(p.mediaUrls?.[0]) && <em>Video</em>}{p.mediaUrls?.length > 1 && <em>{p.mediaUrls.length}</em>}</span>
+                  <span className="muse-q-text">
+                    <strong>{p.caption?.split('\n')[0]?.slice(0, 90) || 'No caption'}</strong>
+                    <small>
+                      {inf && <><Avatar inf={inf} size={18} />{inf.name}</>}
+                      {plats.map(pl => platformLogo(pl) && <ConnectorLogo key={pl} c={platformLogo(pl)} size={16} />)}
+                      {!plats.length && <span>No accounts</span>}
+                      {tab !== 'queue' && (p.postedAt || p.scheduledAt) && <span>· {when(p.postedAt || p.scheduledAt)}</span>}
+                      {routes.length > 0 && <span>· via {routes.map(routeName).join(', ')}</span>}
+                    </small>
+                    {failed && p.error && <small className="muse-error">{p.error}</small>}
+                  </span>
+                </button>
+                <span className={`muse-badge ${p.status || 'draft'}`}>{BADGE[p.status || 'draft']}</span>
+                {failed && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => onRetry(p)} disabled={retrying === p.id || !isPublishingConnected()}>{retrying === p.id ? 'Retrying…' : failedRoutes(p).length ? `Retry ${failedRoutes(p).map(routeName).join(', ')}` : 'Retry'}</button>}
+                {p.links?.[0] && tab === 'sent' && <a className="muse-btn muse-btn-text" href={p.links[0]} target="_blank" rel="noopener noreferrer">View ↗</a>}
+              </div>
+            </div>
+          </div>
         )
       })}
-    </ul>
+    </div>
   )
 }
 
@@ -174,7 +281,7 @@ function Calendar({ posts, onOpen, onNewOn }) {
   )
 }
 
-function Composer({ initial, accounts, onClose, onSave, onDelete }) {
+function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, onDelete }) {
   const [influencers] = useInfluencers()
   const library = useMemo(() => collectLibrary(influencers || []), [influencers])
   const [p, setP] = useState(() => ({ caption: '', mediaUrls: [], accountIds: [], status: 'draft', ...initial }))
@@ -183,35 +290,55 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [menu, setMenu] = useState(false)
+  const [whenPanel, setWhenPanel] = useState('') // '' | 'slots' | 'custom'
+  const [showAll, setShowAll] = useState(false)
   const set = patch => setP(x => ({ ...x, ...patch }))
   const inf = (influencers || []).find(i => i.id === p.influencerId)
+  const schedule = inf?.postingSchedule
+  const nextSlot = schedule ? nextFreeSlot(schedule, posts, inf.id, { exceptId: p.id }) : null
+  const slotChoices = schedule ? freeSlots(schedule, posts, inf.id, { exceptId: p.id, days: 14 }).slice(0, 8) : []
+  const onSlot = schedule && p.scheduledAt && isSlotTime(schedule, p.scheduledAt)
+  // Posting as an influencer selects all of her accounts (untick to skip one); a new
+  // post also takes her next free slot, so there's no date to type.
+  const pickInfluencer = id => {
+    const mine = accounts.filter(a => a.influencerId === id).map(a => a.id)
+    const i = (influencers || []).find(x => x.id === id)
+    const slot = !p.id && !p.scheduledAt && i?.postingSchedule ? nextFreeSlot(i.postingSchedule, posts, id) : null
+    set({ influencerId: id, accountIds: mine.length || !id ? mine : p.accountIds, ...(slot ? { scheduledAt: slot.at.toISOString() } : {}) })
+  }
+  useEffect(() => { if (initial.influencerId && !initial.id && !initial.scheduledAt) pickInfluencer(initial.influencerId) }, []) // eslint-disable-line
   const libFor = library.filter(it => !p.influencerId || it.influencerId === p.influencerId).slice(0, 60)
   const connected = isPublishingConnected()
   const problems = validatePost(p, accounts)
   const future = p.scheduledAt && new Date(p.scheduledAt).getTime() > Date.now() + 60_000
   const locked = p.status === 'posted' || p.status === 'scheduled'
+  const retryRoutes = p.status === 'failed' ? failedRoutes(p) : []
   const targets = accounts.filter(a => p.accountIds.includes(a.id))
   const preview = p.mediaUrls[0]
 
-  const finalize = patch => {
+  // close = false keeps the composer open (after a failed send) while still saving.
+  const finalize = (patch, close = true) => {
     const ids = patch.accountIds || p.accountIds
     const t = accounts.filter(a => ids?.includes(a.id))
-    onSave({ ...p, ...patch, id: p.id || newId('post'), platforms: [...new Set(t.map(a => a.platform))], createdAt: p.createdAt || Date.now(), updatedAt: Date.now() })
+    const saved = { ...p, ...patch, id: p.id || newId('post'), platforms: [...new Set(t.map(a => a.platform))], createdAt: p.createdAt || Date.now(), updatedAt: Date.now() }
+    if (close) onSave(saved); else { setP(saved); onPersist(saved) }
   }
   async function send(now) {
     setBusy(true); setError(''); setMenu(false)
     const post = now ? { ...p, scheduledAt: '' } : p
     try {
-      const r = await publishPost(post, accounts)
-      finalize({ ...post, status: r.status, providerId: r.providerId, links: r.links, error: '', postedAt: r.status === 'posted' ? new Date().toISOString() : undefined })
+      // A failed post re-sends only the routes that failed, so nothing posts twice.
+      const r = await publishPost(post, accounts, retryRoutes.length ? { routes: retryRoutes } : {})
+      if (r.status === 'failed') setError(r.error)
+      finalize({ ...post, status: r.status, routeResults: r.routeResults, providerId: r.providerId, links: r.links, error: r.error, postedAt: r.status === 'posted' ? new Date().toISOString() : undefined }, r.status !== 'failed')
     } catch (e) {
       setError(e.message)
-      finalize({ ...post, status: 'failed', error: e.message })
+      finalize({ ...post, status: 'failed', error: e.message }, false)
     } finally { setBusy(false) }
   }
   const blocker = !connected ? 'connect' : problems[0]
   const approved = p.status === 'approved'
-  const canApprove = !locked && !approved && (p.caption.trim() || p.mediaUrls.length)
+  const canApprove = !locked && !approved && !!(p.caption.trim() || p.mediaUrls.length)
   // Post pack: everything needed to post by hand or in another scheduler.
   function downloadPack() {
     const base = `${(inf?.name || 'post').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`
@@ -235,12 +362,29 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
           </div>
           {locked && <p className="muse-notice">This post is {POST_STATUSES[p.status].toLowerCase()} with your posting service{p.links?.length ? <>: {p.links.map(l => <a key={l} href={l} target="_blank" rel="noopener noreferrer">{l}</a>)}</> : ''}. Change it in the provider’s dashboard.</p>}
 
-          <div className="muse-chip-row" role="group" aria-label="Post to">
-            {accounts.map(a => {
-              const on = p.accountIds.includes(a.id)
-              return <button key={a.id} type="button" className={`muse-chip${on ? ' on' : ''}`} aria-pressed={on} onClick={() => set({ accountIds: on ? p.accountIds.filter(x => x !== a.id) : [...p.accountIds, a.id] })}>{platformName(a.platform)} {a.handle}</button>
-            })}
-            <Link to="/settings?section=accounts" className="muse-chip" title="Add a social account">＋ Account</Link>
+          <div className="muse-cs-as">
+            <span className="muse-field-label">Posting as</span>
+            <div className="muse-chip-row" role="group" aria-label="Post to">
+              <label className={`muse-chip muse-cs-who${inf ? ' on' : ''}`}>
+                <Avatar inf={inf} />
+                <select value={p.influencerId || ''} onChange={e => pickInfluencer(e.target.value || null)} aria-label="Influencer">
+                  <option value="">No influencer</option>
+                  {(influencers || []).map(i => <option key={i.id} value={i.id}>{i.name || 'Untitled'}</option>)}
+                </select>
+              </label>
+              {accounts.filter(a => showAll || !inf || a.influencerId === inf.id || p.accountIds.includes(a.id)).map(a => {
+                const on = p.accountIds.includes(a.id)
+                const pc = platformLogo(a.platform)
+                return (
+                  <button key={a.id} type="button" className={`muse-chip muse-cs-acct${on ? ' on' : ''}`} aria-pressed={on} onClick={() => set({ accountIds: on ? p.accountIds.filter(x => x !== a.id) : [...p.accountIds, a.id] })} title={`${platformName(a.platform)} ${a.handle}`}>
+                    {pc ? <ConnectorLogo c={pc} size={18} /> : platformName(a.platform)} {a.handle}
+                  </button>
+                )
+              })}
+              {inf && !showAll && accounts.some(a => a.influencerId !== inf.id && !p.accountIds.includes(a.id)) && <button type="button" className="muse-chip" onClick={() => setShowAll(true)}>Other accounts</button>}
+              <Link to="/settings?section=accounts" className="muse-chip" title="Add a social account">＋ Account</Link>
+            </div>
+            {inf && !accounts.some(a => a.influencerId === inf.id) && <p className="muse-field-hint">{inf.name} has no accounts yet. Link one in <Link to="/settings?section=accounts">Social accounts</Link>.</p>}
           </div>
 
           <textarea className="muse-input muse-cs-caption" rows={6} value={p.caption} onChange={e => set({ caption: e.target.value })} placeholder="Hook line, story, call to action, hashtags…" aria-label="Caption" />
@@ -282,9 +426,25 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
             </div>
           )}
 
-          <div className="muse-form-grid">
-            <Field label="Influencer"><InfluencerSelect value={p.influencerId} onChange={v => set({ influencerId: v })} /></Field>
-            <Field label="Date and time"><input className="muse-input" type="datetime-local" value={toLocalInput(p.scheduledAt)} onChange={e => set({ scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : '' })} /></Field>
+          <div className="muse-cs-when">
+            <span className="muse-field-label">When</span>
+            <div className="muse-chip-row">
+              <span className="muse-cs-when-now">{p.scheduledAt ? <>{when(p.scheduledAt)}{onSlot && <small> · {inf.name}’s slot</small>}</> : 'Not scheduled'}</span>
+              {!locked && nextSlot && !(p.scheduledAt && new Date(p.scheduledAt).getTime() === nextSlot.at.getTime()) && <button type="button" className="muse-chip" onClick={() => { set({ scheduledAt: nextSlot.at.toISOString() }); setWhenPanel('') }}>Next free slot · {fmtSlot(nextSlot.at)}</button>}
+              {!locked && slotChoices.length > 0 && <button type="button" className={`muse-chip${whenPanel === 'slots' ? ' on' : ''}`} aria-expanded={whenPanel === 'slots'} onClick={() => setWhenPanel(w => w === 'slots' ? '' : 'slots')}>Pick a slot</button>}
+              {!locked && <button type="button" className={`muse-chip${whenPanel === 'custom' ? ' on' : ''}`} aria-expanded={whenPanel === 'custom'} onClick={() => setWhenPanel(w => w === 'custom' ? '' : 'custom')}>Custom time</button>}
+              {!locked && p.scheduledAt && <button type="button" className="muse-chip" onClick={() => set({ scheduledAt: '' })}>Clear</button>}
+            </div>
+            {whenPanel === 'slots' && (
+              <div className="muse-chip-row" role="group" aria-label="Free slots">
+                {slotChoices.map(sl => {
+                  const on = p.scheduledAt && new Date(p.scheduledAt).getTime() === sl.at.getTime()
+                  return <button key={sl.at.toISOString()} type="button" className={`muse-chip${on ? ' on' : ''}`} aria-pressed={on} onClick={() => { set({ scheduledAt: sl.at.toISOString() }); setWhenPanel('') }}>{fmtSlot(sl.at)}</button>
+                })}
+              </div>
+            )}
+            {whenPanel === 'custom' && <input className="muse-input" type="datetime-local" value={toLocalInput(p.scheduledAt)} onChange={e => set({ scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : '' })} aria-label="Date and time" style={{ maxWidth: 280 }} />}
+            {inf && !schedule && <p className="muse-field-hint">Set {inf.name}’s <Link to="/settings?section=accounts">posting schedule</Link> to get slots and “Add to queue”.</p>}
           </div>
 
           <div className="muse-cs-foot">
@@ -300,7 +460,7 @@ function Composer({ initial, accounts, onClose, onSave, onDelete }) {
             {canApprove && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: 'approved', approvedAt: new Date().toISOString() })}>Approve</button>}
             <div className="muse-split">
               <button type="button" className="muse-btn muse-btn-filled" disabled={!!blocker || busy || locked} onClick={() => send(false)}>
-                {busy ? 'Sending…' : future ? `Schedule · ${when(p.scheduledAt)}` : 'Post now'}
+                {busy ? 'Sending…' : retryRoutes.length ? `Retry ${retryRoutes.map(routeName).join(', ')}` : future ? `${onSlot ? 'Add to queue' : 'Schedule'} · ${when(p.scheduledAt)}` : 'Post now'}
               </button>
               {future && <button type="button" className="muse-btn muse-btn-filled muse-split-more" disabled={!!blocker || busy || locked} aria-label="More options" aria-expanded={menu} onClick={() => setMenu(m => !m)}>▾</button>}
               {menu && <div className="muse-split-menu" role="menu"><button type="button" role="menuitem" onClick={() => send(true)}>Post now instead</button></div>}
