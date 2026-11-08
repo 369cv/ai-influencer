@@ -15,6 +15,7 @@ import Create from './pages/Create'
 import Settings from './pages/Settings'
 import Help from './pages/Help'
 import TalkingVideo from './pages/TalkingVideo'
+import DesignInfluencer from './pages/DesignInfluencer'
 import Inspiration from './pages/Inspiration'
 import Workflows from './pages/Workflows'
 import Import from './pages/Import'
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/create" element={<Create />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/talk" element={<TalkingVideo />} />
+        <Route path="/design" element={<DesignInfluencer />} />
         <Route path="/help" element={<Help />} />
         <Route path="/help/c/:id" element={<Help />} />
         <Route path="/help/a/:slug" element={<Help />} />
