@@ -1096,3 +1096,14 @@ export async function generatePosePreviews(influencer, onPoseComplete, { stance 
     console.warn('[HF] generatePosePreviews failed:', e.message)
   }
 }
+
+// System check: proves the Higgsfield sign-in works without spending credits
+// (opens an MCP session and lists the tools). Resolves the number of tools.
+export async function checkHiggsfield() {
+  if (!getHFToken()) throw new Error('Not signed in.')
+  await initSession()
+  const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
+  const tools = (res?.result ?? res)?.tools
+  if (!Array.isArray(tools)) throw new Error('Higgsfield answered without a tool list.')
+  return tools.length
+}

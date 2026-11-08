@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import SocialAccounts from '../components/SocialAccounts'
+import SystemCheck from '../components/SystemCheck'
 import PostingSchedule from '../components/PostingSchedule'
 import { slotsPerWeek } from '../utils/schedule'
 import { useInfluencers } from '../store'
@@ -29,6 +30,7 @@ const SECTIONS = [
   { id: 'connections', label: 'Connections' },
   { id: 'accounts', label: 'Social accounts' },
   { id: 'skills', label: 'Skills' },
+  { id: 'check', label: 'System check' },
 ]
 
 function Section({ id, title, sub, children }) {
@@ -77,6 +79,7 @@ export default function Settings() {
           {section === 'connections' && <ConnectionsSection connectedParam={new URLSearchParams(location.search).get('connected') === '1'} />}
           {section === 'accounts' && <Section id="accounts" title="Social accounts" sub="Where each influencer posts, per workspace."><SocialAccounts /><ScheduleList /></Section>}
           {section === 'skills' && <SkillsSection />}
+          {section === 'check' && <Section id="check" title="System check" sub="Test every connection with one small real request."><SystemCheck /></Section>}
         </div>
       </div>
     </Page>

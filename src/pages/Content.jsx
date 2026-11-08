@@ -5,7 +5,7 @@ import { useWorkspaceStore } from '../context/workspace'
 import { Page, Seg, Field, Empty, Dialog, SkillAssist } from '../components/ui'
 import Library from './Library'
 import { collectLibrary } from '../utils/library'
-import { PLATFORMS, POST_STATUSES, platformName, validatePost, publishPost, failedRoutes } from '../utils/publishing'
+import { PLATFORMS, POST_STATUSES, IG_FORMATS, platformName, validatePost, platformChecks, captionFor, hasOwnCaption, publishPost, cancelPost, failedRoutes, refreshStats, canHaveStats, statsLine } from '../utils/publishing'
 import { downloadImage } from '../utils/imageUtils'
 import { isPublishingConnected, routeForAccount, routeName } from '../utils/connections'
 import { CONNECTORS } from '../utils/connectors'
@@ -41,6 +41,16 @@ export default function Content() {
   const [who, setWho] = useState('all')
   const [composing, setComposing] = useState(null)
   const [retrying, setRetrying] = useState('')
+  const [statsState, setStatsState] = useState({ busy: false, error: '', at: 0 })
+  // Sent → Refresh stats: one read per Ayrshare post, saved on the post.
+  async function loadStats(list) {
+    setStatsState(s => ({ ...s, busy: true, error: '' }))
+    try {
+      const byId = await refreshStats(list)
+      setPosts(l => l.map(x => byId[x.id] ? { ...x, stats: byId[x.id] } : x))
+      setStatsState({ busy: false, error: '', at: Date.now() })
+    } catch (e) { setStatsState(s => ({ ...s, busy: false, error: e.message })) }
+  }
 
   useEffect(() => {
     const openId = params.get('open')
@@ -101,7 +111,7 @@ export default function Content() {
           })}
         </div>
       )}
-      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} />}
+      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} onRefreshStats={loadStats} statsState={statsState} />}
       {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => newPost({ scheduledAt: d.toISOString() })} />}
       {view === 'media' && <Library embedded />}
 
@@ -138,7 +148,7 @@ const dayLabel = d => {
 }
 const BADGE = { planned: 'Planned · not sent', approved: 'Approved · not sent', scheduled: 'Scheduled', posted: 'Posted', failed: 'Failed', draft: 'Draft' }
 
-function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying }) {
+function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying, onRefreshStats, statsState }) {
   const [tab, setTab] = useState('queue')
   const now = Date.now()
   const byTab = useMemo(() => { const m = { queue: [], drafts: [], sent: [], failed: [] }; for (const p of posts) m[tabOf(p, now)].push(p); return m }, [posts]) // eslint-disable-line
@@ -168,6 +178,12 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
           const n = byTab.queue.filter(p => new Date(p.scheduledAt) <= wk).length
           return <span className="muse-q-goal">{n} of {i.postingSchedule.weeklyGoal || 1} queued this week</span>
         })()}
+        {tab === 'sent' && byTab.sent.some(canHaveStats) && (
+          <span className="muse-q-goal muse-q-stats-ctl">
+            {statsState.error ? <span className="muse-error">{statsState.error}</span> : statsState.at ? <span>Stats updated {when(new Date(statsState.at).toISOString())}</span> : null}
+            <button type="button" className="muse-btn muse-btn-text" disabled={statsState.busy} onClick={() => onRefreshStats(byTab.sent.filter(canHaveStats))}>{statsState.busy ? 'Reading stats…' : 'Refresh stats'}</button>
+          </span>
+        )}
       </div>
 
       {rows.length === 0 && (
@@ -217,6 +233,13 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
                       {routes.length > 0 && <span>· via {routes.map(routeName).join(', ')}</span>}
                     </small>
                     {failed && p.error && <small className="muse-error">{p.error}</small>}
+                    {tab === 'sent' && (
+                      p.stats && statsLine(p.stats.totals)
+                        ? <small className="muse-q-stats">{statsLine(p.stats.totals)}</small>
+                        : p.stats?.error ? <small className="muse-muted">{p.stats.error}</small>
+                        : !canHaveStats(p) && routes.length > 0 ? <small className="muse-muted">No stats: {routes.map(routeName).join(', ')} can’t report back</small>
+                        : null
+                    )}
                   </span>
                 </button>
                 <span className={`muse-badge ${p.status || 'draft'}`}>{BADGE[p.status || 'draft']}</span>
@@ -292,6 +315,10 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
   const [menu, setMenu] = useState(false)
   const [whenPanel, setWhenPanel] = useState('') // '' | 'slots' | 'custom'
   const [showAll, setShowAll] = useState(false)
+  const [capTab, setCapTab] = useState('all')       // 'all' or a platform id
+  const [editing, setEditing] = useState(false)     // unlocks a scheduled post
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [notice, setNotice] = useState('')
   const set = patch => setP(x => ({ ...x, ...patch }))
   const inf = (influencers || []).find(i => i.id === p.influencerId)
   const schedule = inf?.postingSchedule
@@ -311,10 +338,23 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
   const connected = isPublishingConnected()
   const problems = validatePost(p, accounts)
   const future = p.scheduledAt && new Date(p.scheduledAt).getTime() > Date.now() + 60_000
-  const locked = p.status === 'posted' || p.status === 'scheduled'
+  const scheduledOut = p.status === 'scheduled'
+  const locked = p.status === 'posted' || (scheduledOut && !editing)
   const retryRoutes = p.status === 'failed' ? failedRoutes(p) : []
   const targets = accounts.filter(a => p.accountIds.includes(a.id))
   const preview = p.mediaUrls[0]
+  // Captions per platform: "All platforms" edits the shared caption; a platform tab
+  // edits that platform's own version (typing there creates it).
+  const targetPlatforms = [...new Set(targets.map(a => a.platform))]
+  const tab = capTab !== 'all' && targetPlatforms.includes(capTab) ? capTab : 'all'
+  const tabText = tab === 'all' ? p.caption : captionFor(p, tab)
+  const setTabText = v => tab === 'all' ? set({ caption: v }) : set({ captions: { ...(p.captions || {}), [tab]: v } })
+  const resetTab = () => { const c = { ...(p.captions || {}) }; delete c[tab]; set({ captions: c }) }
+  const checks = platformChecks(p, accounts)
+  const tabLimit = tab === 'all'
+    ? Math.min(...targetPlatforms.filter(pl => !hasOwnCaption(p, pl)).map(pl => PLATFORMS.find(x => x.id === pl)?.limit || Infinity))
+    : PLATFORMS.find(x => x.id === tab)?.limit || Infinity
+  const sentRoutes = (p.routeResults || []).filter(r => r.ok || r.partial).map(r => routeName(r.route))
 
   // close = false keeps the composer open (after a failed send) while still saving.
   const finalize = (patch, close = true) => {
@@ -324,16 +364,37 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
     if (close) onSave(saved); else { setP(saved); onPersist(saved) }
   }
   async function send(now) {
-    setBusy(true); setError(''); setMenu(false)
-    const post = now ? { ...p, scheduledAt: '' } : p
+    setBusy(true); setError(''); setMenu(false); setNotice('')
+    const post = { ...p, id: p.id || newId('post'), ...(now ? { scheduledAt: '' } : {}) }
     try {
+      // Editing a scheduled post: pull it back from every route first, then send the
+      // new version. If any route can't cancel, nothing is re-sent (no double posts).
+      if (editing && scheduledOut) {
+        const res = await cancelPost(post)
+        const bad = res.filter(r => !r.ok)
+        if (bad.length) { setError(bad.map(r => `${routeName(r.route)}: ${r.error}`).join(' · ') + ' Nothing was changed.'); return }
+        post.routeResults = []
+      }
       // A failed post re-sends only the routes that failed, so nothing posts twice.
       const r = await publishPost(post, accounts, retryRoutes.length ? { routes: retryRoutes } : {})
       if (r.status === 'failed') setError(r.error)
+      if (r.status !== 'failed') setEditing(false)
       finalize({ ...post, status: r.status, routeResults: r.routeResults, providerId: r.providerId, links: r.links, error: r.error, postedAt: r.status === 'posted' ? new Date().toISOString() : undefined }, r.status !== 'failed')
     } catch (e) {
       setError(e.message)
       finalize({ ...post, status: 'failed', error: e.message }, false)
+    } finally { setBusy(false) }
+  }
+  // Cancel a scheduled post everywhere it was sent; it stays here as a draft.
+  async function cancelScheduled() {
+    setBusy(true); setError(''); setConfirmCancel(false)
+    try {
+      const res = await cancelPost(p)
+      const bad = res.filter(r => !r.ok)
+      if (bad.length) { setError(bad.map(r => `${routeName(r.route)}: ${r.error}`).join(' · ')); return }
+      setEditing(false)
+      setNotice(`Cancelled on ${res.map(r => routeName(r.route)).join(', ')}. It’s kept here as a draft.`)
+      finalize({ status: p.scheduledAt ? 'planned' : 'draft', routeResults: undefined, providerId: undefined, links: undefined, error: undefined }, false)
     } finally { setBusy(false) }
   }
   const blocker = !connected ? 'connect' : problems[0]
@@ -345,6 +406,8 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
     const lines = [
       p.caption,
       '',
+      ...targetPlatforms.filter(pl => hasOwnCaption(p, pl)).flatMap(pl => [`${platformName(pl)} version:`, p.captions[pl], '']),
+      p.firstComment?.trim() ? `First comment: ${p.firstComment.trim()}` : '',
       targets.length ? `Accounts: ${targets.map(a => `${platformName(a.platform)} ${a.handle || ''}`.trim()).join(', ')}` : '',
       p.scheduledAt ? `When: ${new Date(p.scheduledAt).toLocaleString()}` : '',
     ].filter((l, i) => i < 2 || l)
@@ -360,7 +423,26 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             <h3>{p.id ? 'Edit post' : 'New post'}</h3>
             <button type="button" className="muse-btn muse-btn-text" onClick={onClose} aria-label="Close">✕</button>
           </div>
-          {locked && <p className="muse-notice">This post is {POST_STATUSES[p.status].toLowerCase()} with your posting service{p.links?.length ? <>: {p.links.map(l => <a key={l} href={l} target="_blank" rel="noopener noreferrer">{l}</a>)}</> : ''}. Change it in the provider’s dashboard.</p>}
+          {p.status === 'posted' && <p className="muse-notice">This post is posted{p.links?.length ? <>: {p.links.map(l => <a key={l} href={l} target="_blank" rel="noopener noreferrer">{l}</a>)}</> : ''}. Change or delete it on the platform itself.</p>}
+          {scheduledOut && !editing && (
+            <div className="muse-notice muse-cs-sched">
+              <span>Scheduled with {sentRoutes.join(', ') || 'your posting service'}. Editing or cancelling updates {sentRoutes.length > 1 ? 'them' : 'it'} too.</span>
+              {!confirmCancel ? (
+                <span className="muse-cs-sched-actions">
+                  <button type="button" className="muse-btn muse-btn-text muse-danger" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel post</button>
+                  <button type="button" className="muse-btn muse-btn-tonal" disabled={busy} onClick={() => { setEditing(true); setNotice('') }}>Edit</button>
+                </span>
+              ) : (
+                <span className="muse-cs-sched-actions" role="group" aria-label="Confirm cancel">
+                  <span>Cancel on {sentRoutes.join(', ') || 'your posting service'}?</span>
+                  <button type="button" className="muse-btn muse-btn-text" onClick={() => setConfirmCancel(false)}>Keep it</button>
+                  <button type="button" className="muse-btn muse-btn-filled muse-btn-danger" disabled={busy} onClick={cancelScheduled}>{busy ? 'Cancelling…' : 'Cancel post'}</button>
+                </span>
+              )}
+            </div>
+          )}
+          {editing && <p className="muse-notice">Editing a scheduled post. Saving cancels it on {sentRoutes.join(', ')} and sends the new version{sentRoutes.some(r => r !== 'Ayrshare') ? '; automations receive muse.post.cancelled, then muse.post with the same postId' : ''}. <button type="button" className="muse-btn muse-btn-text" onClick={() => { setEditing(false); setP(x => ({ ...initial, ...posts.find(y => y.id === x.id) })); setError('') }}>Discard changes</button></p>}
+          {notice && <p className="muse-notice" role="status">{notice}</p>}
 
           <div className="muse-cs-as">
             <span className="muse-field-label">Posting as</span>
@@ -387,13 +469,36 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             {inf && !accounts.some(a => a.influencerId === inf.id) && <p className="muse-field-hint">{inf.name} has no accounts yet. Link one in <Link to="/settings?section=accounts">Social accounts</Link>.</p>}
           </div>
 
-          <textarea className="muse-input muse-cs-caption" rows={6} value={p.caption} onChange={e => set({ caption: e.target.value })} placeholder="Hook line, story, call to action, hashtags…" aria-label="Caption" />
+          {targetPlatforms.length > 1 && (
+            <div className="muse-chip-row muse-cs-captabs" role="tablist" aria-label="Caption for">
+              <button type="button" role="tab" aria-selected={tab === 'all'} className={`muse-chip${tab === 'all' ? ' on' : ''}`} onClick={() => setCapTab('all')}>All platforms</button>
+              {targetPlatforms.map(pl => {
+                const pc = platformLogo(pl)
+                return (
+                  <button key={pl} type="button" role="tab" aria-selected={tab === pl} className={`muse-chip${tab === pl ? ' on' : ''}`} onClick={() => setCapTab(pl)}>
+                    {pc && <ConnectorLogo c={pc} size={16} />}{platformName(pl)}{hasOwnCaption(p, pl) && <span className="muse-cs-own" title="Has its own caption" aria-label="has its own caption" />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <textarea className="muse-input muse-cs-caption" rows={6} value={tabText} onChange={e => setTabText(e.target.value)} disabled={locked} placeholder={tab === 'all' ? 'Hook line, story, call to action, hashtags…' : `A ${platformName(tab)}-only caption`} aria-label={tab === 'all' ? 'Caption' : `${platformName(tab)} caption`} />
+          <div className="muse-cs-capmeta">
+            <span>
+              {tab === 'all'
+                ? (targetPlatforms.length > 1 ? 'Applies to every platform without its own version.' : '')
+                : hasOwnCaption(p, tab)
+                  ? <button type="button" className="muse-btn muse-btn-text" disabled={locked} onClick={resetTab}>Reset to the shared caption</button>
+                  : `Typing here makes a ${platformName(tab)}-only version.`}
+            </span>
+            <span className={tabText.length > tabLimit ? 'muse-error' : ''}>{Number.isFinite(tabLimit) ? `${tabText.length.toLocaleString()} / ${tabLimit.toLocaleString()}` : `${tabText.length.toLocaleString()} characters`}</span>
+          </div>
           <SkillAssist
             use="caption"
             label="Write caption"
             task={() => `Write the caption for this post.${p.caption ? ` Draft or brief: ${p.caption}` : ''} Platforms: ${targets.map(a => platformName(a.platform)).join(', ') || 'Instagram'}.`}
             context={() => influencerContext(inf)}
-            onResult={r => set({ caption: r })}
+            onResult={r => setTabText(r)}
           />
 
           <div className="muse-media-row">
@@ -426,6 +531,36 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             </div>
           )}
 
+          {targetPlatforms.includes('instagram') && (
+            <div className="muse-cs-opt">
+              <span className="muse-field-label">Instagram as</span>
+              <div className="muse-chip-row" role="radiogroup" aria-label="Instagram format">
+                {IG_FORMATS.map(f => {
+                  const on = (p.igFormat || 'post') === f.id
+                  return <button key={f.id} type="button" role="radio" aria-checked={on} disabled={locked} className={`muse-chip${on ? ' on' : ''}`} onClick={() => set({ igFormat: f.id })}>{f.label}</button>
+                })}
+              </div>
+              {p.igFormat === 'story' && <p className="muse-field-hint">Stories show no caption and disappear after 24 hours.</p>}
+            </div>
+          )}
+          <div className="muse-cs-opt">
+            <label className="muse-field-label" htmlFor="muse-first-comment">First comment <span className="muse-muted">· optional</span></label>
+            <input id="muse-first-comment" className="muse-input" value={p.firstComment || ''} disabled={locked} onChange={e => set({ firstComment: e.target.value })} placeholder="Posted as the first comment right after the post" />
+            <p className="muse-field-hint">Ayrshare adds it after posting; webhook routes receive it in the JSON.{/#\w/.test(p.caption) && !p.firstComment ? <> <button type="button" className="muse-btn muse-btn-text" onClick={() => { const tags = p.caption.match(/#[\p{L}\p{N}_]+/gu) || []; set({ firstComment: tags.join(' '), caption: p.caption.replace(/(\s*#[\p{L}\p{N}_]+)+\s*$/u, '').trimEnd() }) }}>Move hashtags here</button></> : null}</p>
+          </div>
+
+          {checks.length > 0 && (
+            <ul className="muse-cs-checks" aria-label="Checks per platform">
+              {checks.map(c => (
+                <li key={c.platform}>
+                  <span className={`muse-sc-dot ${c.problems.length ? 'fail' : 'ok'}`} aria-hidden />
+                  <strong>{c.name}</strong>
+                  <span className="muse-muted">{c.problems.length ? c.problems.join(' ') : `Ready${c.limit ? ` · ${c.length.toLocaleString()} / ${c.limit.toLocaleString()}` : ''}`}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="muse-cs-when">
             <span className="muse-field-label">When</span>
             <div className="muse-chip-row">
@@ -453,16 +588,16 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
                 {error || (blocker === 'connect' ? <>Connect a posting service to post. <Link to="/settings?section=connections">Connect</Link></> : blocker)}
               </p>
             )}
-            {p.id && <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => onDelete(p.id)}>Delete</button>}
+            {p.id && !scheduledOut && <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => onDelete(p.id)}>Delete</button>}
             {approved && <span className="muse-badge approved" title={p.approvedAt ? `Approved ${new Date(p.approvedAt).toLocaleString()}` : undefined}>Approved ✓</span>}
             <button type="button" className="muse-btn muse-btn-text" onClick={downloadPack} disabled={!p.caption.trim() && !p.mediaUrls.length} title="Download the caption and media to post by hand">Download pack</button>
-            <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: p.scheduledAt ? 'planned' : 'draft', approvedAt: undefined })} disabled={locked} title={approved ? 'Saving an edit moves it back to draft so it can be approved again' : undefined}>Save draft</button>
-            {canApprove && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: 'approved', approvedAt: new Date().toISOString() })}>Approve</button>}
+            {!editing && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: p.scheduledAt ? 'planned' : 'draft', approvedAt: undefined })} disabled={locked} title={approved ? 'Saving an edit moves it back to draft so it can be approved again' : undefined}>Save draft</button>}
+            {canApprove && !editing && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: 'approved', approvedAt: new Date().toISOString() })}>Approve</button>}
             <div className="muse-split">
               <button type="button" className="muse-btn muse-btn-filled" disabled={!!blocker || busy || locked} onClick={() => send(false)}>
-                {busy ? 'Sending…' : retryRoutes.length ? `Retry ${retryRoutes.map(routeName).join(', ')}` : future ? `${onSlot ? 'Add to queue' : 'Schedule'} · ${when(p.scheduledAt)}` : 'Post now'}
+                {busy ? 'Sending…' : editing ? (future ? `Save changes · ${when(p.scheduledAt)}` : 'Save and post now') : retryRoutes.length ? `Retry ${retryRoutes.map(routeName).join(', ')}` : future ? `${onSlot ? 'Add to queue' : 'Schedule'} · ${when(p.scheduledAt)}` : 'Post now'}
               </button>
-              {future && <button type="button" className="muse-btn muse-btn-filled muse-split-more" disabled={!!blocker || busy || locked} aria-label="More options" aria-expanded={menu} onClick={() => setMenu(m => !m)}>▾</button>}
+              {future && !editing && <button type="button" className="muse-btn muse-btn-filled muse-split-more" disabled={!!blocker || busy || locked} aria-label="More options" aria-expanded={menu} onClick={() => setMenu(m => !m)}>▾</button>}
               {menu && <div className="muse-split-menu" role="menu"><button type="button" role="menuitem" onClick={() => send(true)}>Post now instead</button></div>}
             </div>
           </div>
@@ -473,7 +608,7 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
           <div className="muse-preview-card">
             <div className="muse-preview-head"><span className="muse-rail-avatar" style={{ backgroundImage: (inf?.mainImage || inf?.image) ? `url(${inf.mainImage || inf.image})` : undefined }} /><strong>{targets[0]?.handle?.replace(/^@/, '') || inf?.name || 'your account'}</strong></div>
             <div className="muse-preview-media" style={{ backgroundImage: preview && !isVideo(preview) ? `url(${preview})` : undefined }}>{!preview ? <span>No media yet</span> : isVideo(preview) ? <span>Video</span> : null}</div>
-            <p className="muse-preview-cap"><strong>{targets[0]?.handle?.replace(/^@/, '') || ''}</strong> {p.caption || <em>Your caption shows here.</em>}</p>
+            <p className="muse-preview-cap"><strong>{targets[0]?.handle?.replace(/^@/, '') || ''}</strong> {(tab === 'all' ? p.caption : tabText) || <em>{p.igFormat === 'story' && tab === 'instagram' ? 'Stories show no caption.' : 'Your caption shows here.'}</em>}</p>
           </div>
           {targets.some(a => PLATFORMS.find(x => x.id === a.platform)?.videoOnly) && <p className="muse-field-hint">TikTok and YouTube Shorts accept video only.</p>}
         </aside>
