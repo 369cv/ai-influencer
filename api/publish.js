@@ -27,11 +27,56 @@ function cleanPost(p = {}) {
     caption: String(p.caption || '').slice(0, MAX_CAPTION),
     mediaUrls, platforms, scheduledAt,
     title: p.title ? String(p.title).slice(0, 100) : undefined,
+    via: ['zapier', 'make', 'n8n', 'webhook', 'ayrshare'].includes(p.via) ? p.via : undefined,
+    postId: p.postId ? String(p.postId).slice(0, 80) : undefined,
+    instagramFormat: ['post', 'reel', 'story'].includes(p.instagramFormat) ? p.instagramFormat : undefined,
+    firstComment: p.firstComment ? String(p.firstComment).slice(0, 2200) : undefined,
     accounts: Array.isArray(p.accounts) ? p.accounts.slice(0, 20).map(a => ({ platform: String(a.platform || ''), handle: String(a.handle || '').slice(0, 100) })) : [],
   }
 }
 
-async function ayrshare(creds, post, test) {
+// Ayrshare names metrics differently per network; map them onto one small set.
+// Only numbers the network returned are kept; a missing metric stays missing.
+const METRICS = {
+  views: ['viewsCount', 'videoViews', 'views', 'viewCount', 'playsCount', 'igReelsAggregatedAllPlaysCount', 'mediaView', 'impressionCount', 'impressions'],
+  reach: ['reachCount', 'reach', 'uniqueImpressionsCount'],
+  likes: ['likeCount', 'likes', 'likesCount', 'favoriteCount'],
+  comments: ['commentsCount', 'commentCount', 'comments', 'replyCount'],
+  shares: ['sharesCount', 'shareCount', 'shares', 'retweetCount', 'repostCount'],
+  saves: ['savedCount', 'saves', 'saveCount'],
+}
+export function normalizeStats(platformBlock) {
+  const a = platformBlock?.analytics || {}
+  const out = {}
+  for (const [k, keys] of Object.entries(METRICS)) {
+    const key = keys.find(x => typeof a[x] === 'number' && isFinite(a[x]))
+    if (key) out[k] = a[key]
+  }
+  if (typeof platformBlock?.postUrl === 'string' && /^https:\/\//.test(platformBlock.postUrl)) out.url = platformBlock.postUrl
+  return out
+}
+
+// Ayrshare returns comments grouped by platform; keep the fields the inbox shows.
+export function normalizeComments(d = {}) {
+  const out = []
+  for (const [platform, list] of Object.entries(d || {})) {
+    if (!AYRSHARE_PLATFORMS.has(platform) || !Array.isArray(list)) continue
+    for (const c of list) {
+      if (!c || typeof c.comment !== 'string') continue
+      out.push({
+        id: String(c.commentId || c.id || ''), platform, text: c.comment.slice(0, 2000),
+        author: String(c.displayName || c.username || c.userName || c.from?.name || '').slice(0, 80),
+        at: c.created || c.createdTime || '', likes: typeof c.likeCount === 'number' ? c.likeCount : null,
+        own: !!c.owner, replies: Array.isArray(c.replies) ? c.replies.length : (typeof c.replyCount === 'number' ? c.replyCount : 0),
+      })
+    }
+  }
+  return out.filter(c => c.id).sort((a, b) => String(b.at).localeCompare(String(a.at)))
+}
+
+const cleanIds = ids => (Array.isArray(ids) ? ids : []).map(String).filter(x => /^[A-Za-z0-9_-]{4,80}$/.test(x)).slice(0, 20)
+
+async function ayrshare(creds, post, test, cancel, stats, comments, reply) {
   if (!creds?.apiKey) return { status: 400, json: { ok: false, error: 'Missing Ayrshare API key.' } }
   const headers = { Authorization: `Bearer ${creds.apiKey}`, 'Content-Type': 'application/json' }
   if (creds.profileKey) headers['Profile-Key'] = String(creds.profileKey)
@@ -41,8 +86,56 @@ async function ayrshare(creds, post, test) {
     if (!r.ok) return { status: r.status, json: { ok: false, error: d.message || 'Ayrshare rejected the key.' } }
     return { status: 200, json: { ok: true, accounts: d.activeSocialAccounts || [] } }
   }
+  if (stats) {
+    // Analytics per Ayrshare post id (docs: POST /api/analytics/post), one request each.
+    const ids = cleanIds(stats.ids)
+    if (!ids.length) return { status: 400, json: { ok: false, error: 'No Ayrshare post id to read.' } }
+    const posts = {}
+    for (const id of ids) {
+      const r = await fetch(`${AYRSHARE}/analytics/post`, { method: 'POST', headers, body: JSON.stringify({ id }) })
+      const d = await r.json().catch(() => ({}))
+      const platforms = {}
+      for (const [k, v] of Object.entries(d || {})) if (AYRSHARE_PLATFORMS.has(k) && v && typeof v === 'object' && !Array.isArray(v)) platforms[k] = normalizeStats(v)
+      const errors = (d.errors || []).map(e => `${e.platform || ''}${e.platform ? ': ' : ''}${e.message || 'No stats'}`)
+      posts[id] = { platforms, error: Object.keys(platforms).length ? (errors.join(' · ') || undefined) : (errors.join(' · ') || d.message || (r.ok ? 'No stats yet.' : 'Ayrshare could not read stats.')) }
+    }
+    return { status: 200, json: { ok: true, posts } }
+  }
+  if (comments) {
+    // Comments on one Ayrshare post (docs: GET /api/comments/:id), flattened and normalised.
+    const [id] = cleanIds([comments.id])
+    if (!id) return { status: 400, json: { ok: false, error: 'No Ayrshare post id to read.' } }
+    const r = await fetch(`${AYRSHARE}/comments/${id}`, { headers })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || d.status === 'error') return { status: r.ok ? 502 : r.status, json: { ok: false, error: d.message || 'Ayrshare could not read comments.' } }
+    return { status: 200, json: { ok: true, comments: normalizeComments(d) } }
+  }
+  if (reply) {
+    // Reply to a comment by its social comment id (docs: POST /api/comments/reply/:id).
+    const cid = String(reply.commentId || '')
+    const text = String(reply.comment || '').trim().slice(0, 2000)
+    const platform = String(reply.platform || '')
+    if (!/^[A-Za-z0-9_:.\/-]{4,200}$/.test(cid) || !text || !AYRSHARE_PLATFORMS.has(platform)) return { status: 400, json: { ok: false, error: 'Write a reply first.' } }
+    const r = await fetch(`${AYRSHARE}/comments/reply/${encodeURIComponent(cid)}`, { method: 'POST', headers, body: JSON.stringify({ comment: text, platforms: [platform], searchPlatformId: true }) })
+    const d = await r.json().catch(() => ({}))
+    const res = d[platform]
+    if (!r.ok || d.status === 'error' || (res && res.status === 'error')) return { status: r.ok ? 502 : r.status, json: { ok: false, error: res?.message || d.message || 'Ayrshare could not post the reply.' } }
+    return { status: 200, json: { ok: true, commentId: res?.commentId || d.commentId || '' } }
+  }
+  if (cancel) {
+    // Scheduled posts are deleted before they go out (docs: DELETE /api/post).
+    const ids = cleanIds(cancel.ids)
+    if (!ids.length) return { status: 400, json: { ok: false, error: 'No Ayrshare post id to cancel.' } }
+    const r = await fetch(`${AYRSHARE}/post`, { method: 'DELETE', headers, body: JSON.stringify(ids.length === 1 ? { id: ids[0] } : { bulk: ids }) })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || d.status === 'error') return { status: r.ok ? 502 : r.status, json: { ok: false, error: d.message || 'Ayrshare could not cancel this post.' } }
+    return { status: 200, json: { ok: true } }
+  }
   if (!post.platforms.length) return { status: 400, json: { ok: false, error: 'No supported platforms selected.' } }
   const body = { post: post.caption, platforms: post.platforms }
+  if (post.platforms.includes('instagram') && post.instagramFormat === 'story') body.instagramOptions = { stories: true }
+  if (post.platforms.includes('instagram') && post.instagramFormat === 'reel') body.instagramOptions = { reels: true, shareReelsFeed: true }
+  if (post.firstComment) body.firstComment = { comment: post.firstComment }
   if (post.mediaUrls.length) body.mediaUrls = post.mediaUrls
   if (post.scheduledAt) body.scheduleDate = post.scheduledAt
   if (post.platforms.includes('youtube')) body.youTubeOptions = { title: post.title || post.caption.slice(0, 90) || 'New video', shorts: true }
@@ -56,13 +149,16 @@ async function ayrshare(creds, post, test) {
   return { status: 200, json: { ok: true, id: p0.id || d.id, links: (p0.postIds || []).map(x => x.postUrl).filter(Boolean) } }
 }
 
-async function webhook(creds, post, test) {
+async function webhook(creds, post, test, cancel) {
   const url = creds?.webhookUrl
   if (!url || !isSafeImportUrl(url)) return { status: 400, json: { ok: false, error: 'The webhook URL must be a public https address.' } }
   if (!(await resolvesPublic(url))) return { status: 400, json: { ok: false, error: 'The webhook URL must point to a public host.' } }
+  const sentAt = new Date().toISOString()
   const payload = JSON.stringify(test
-    ? { type: 'muse.test', sentAt: new Date().toISOString() }
-    : { type: 'muse.post', sentAt: new Date().toISOString(), ...post })
+    ? { type: 'muse.test', sentAt }
+    : cancel
+      ? { type: 'muse.post.cancelled', sentAt, postId: cancel.postId ? String(cancel.postId).slice(0, 80) : undefined }
+      : { type: 'muse.post', sentAt, ...post })
   const headers = { 'Content-Type': 'application/json', 'User-Agent': 'MuseStudio-Publisher/1.0' }
   if (creds.webhookSecret) headers['X-Muse-Signature'] = 'sha256=' + createHmac('sha256', String(creds.webhookSecret)).update(payload).digest('hex')
   const r = await fetch(url, { method: 'POST', headers, body: payload, redirect: 'manual' })
@@ -73,10 +169,15 @@ async function webhook(creds, post, test) {
 
 export async function handlePublish(body = {}) {
   const { provider, credentials, test } = body
+  const cancel = body.cancel && typeof body.cancel === 'object' ? body.cancel : null
+  const stats = body.stats && typeof body.stats === 'object' ? body.stats : null
+  const comments = body.comments && typeof body.comments === 'object' ? body.comments : null
+  const reply = body.reply && typeof body.reply === 'object' ? body.reply : null
   const post = cleanPost(body.post)
   try {
-    if (provider === 'ayrshare') return await ayrshare(credentials, post, !!test)
-    if (provider === 'webhook') return await webhook(credentials, post, !!test)
+    if (provider === 'ayrshare') return await ayrshare(credentials, post, !!test, cancel, stats, comments, reply)
+    if (stats || comments || reply) return { status: 400, json: { ok: false, error: 'Stats and comments come from Ayrshare only.' } }
+    if (provider === 'webhook') return await webhook(credentials, post, !!test, cancel)
     return { status: 400, json: { ok: false, error: 'Unknown posting provider.' } }
   } catch (e) {
     return { status: 502, json: { ok: false, error: 'Could not reach the posting service.' } }

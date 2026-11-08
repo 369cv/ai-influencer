@@ -1,5 +1,6 @@
 import { getHFToken, refreshHFToken, disconnectHF } from './higgsfieldAuth'
 import { whenOnline, isOnline } from './network'
+import { readScores } from './viralityScores.js'
 
 const MCP_URL = '/api/hf/mcp'
 const PENDING_KEY = 'hf_pending_gens'
@@ -52,8 +53,6 @@ const PENDING_PHOTO_KEY = 'hf_pending_photos_v2'
 // the pending entry is discarded so stale entries never block the Generate button.
 const PHOTO_SESSION_KEY = 'hf_photo_gen_session'
 export function markPhotoGenSession() { try { sessionStorage.setItem(PHOTO_SESSION_KEY, '1') } catch {} }
-export function hasPhotoGenSession()  { try { return !!sessionStorage.getItem(PHOTO_SESSION_KEY) } catch { return false } }
-
 export function savePendingVideo(influencerId, jobIds, count) {
   const list = JSON.parse(localStorage.getItem(PENDING_VIDEO_KEY) || '[]')
   const next = list.filter(j => j.influencerId !== influencerId)
@@ -68,31 +67,12 @@ export function clearPendingVideo(influencerId) {
   ))
 }
 
-export function getPendingVideo(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_VIDEO_KEY) || '[]')
-  return list.find(j => j.influencerId === influencerId) || null
-}
-
 export function savePendingPhoto(influencerId, jobIds) {
   const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
   const next = list.filter(j => j.influencerId !== influencerId)
   next.push({ influencerId, jobIds, startedAt: Date.now() })
   localStorage.setItem(PENDING_PHOTO_KEY, JSON.stringify(next))
 }
-export function clearPendingPhoto(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
-  localStorage.setItem(PENDING_PHOTO_KEY, JSON.stringify(list.filter(j => j.influencerId !== influencerId)))
-}
-export function getPendingPhoto(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
-  return list.find(j => j.influencerId === influencerId) || null
-}
-
-export async function resumeVideoJob(jobIds, count, onProgress, onPartialResults, isCancelled) {
-  await initSession()
-  return pollVideoJobs(jobIds, count, onProgress, onPartialResults, isCancelled)
-}
-
 async function mcpPost(body, isRetry = false) {
   // Offline: hold the request until the connection returns instead of failing.
   await whenOnline()
@@ -467,7 +447,7 @@ const uploadAudioFile = dataUrl => uploadMedia(dataUrl, {
   prefix: 'audio',
 })
 
-export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', onProgress, onPartialResults, isCancelled, pendingKey = null }) {
+export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', elementId = null, onProgress, onPartialResults, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -507,7 +487,7 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8
 
   const params = {
     model,
-    prompt,
+    prompt: withElement(prompt, elementId, model),
     aspect_ratio: aspectRatio,
     duration,
     resolution,
@@ -602,16 +582,6 @@ function extractImageUrls(result) {
   const byCDN = (str.match(/https:\/\/[a-z0-9]+\.cloudfront\.net\/[^\s"'\\}]*/gi) || [])
     .map(u => u.replace(/[\\}"',]+$/, ''))
   return [...new Set(byCDN)]
-}
-
-function countTerminalJobs(result) {
-  const data = unwrapMCP(result)
-  if (!Array.isArray(data?.results)) return 0
-  return data.results.filter(r => {
-    if (r?.results?.rawUrl || r?.results?.minUrl || r?.result_url) return true
-    const s = (r?.status || r?.job_status || '').toLowerCase()
-    return ['done', 'completed', 'failed', 'error', 'nsfw', 'content_filtered', 'rejected', 'cancelled'].includes(s)
-  }).length
 }
 
 // When the user's style ref note mentions pose or scene/location, replace those text prompt
@@ -879,10 +849,10 @@ export async function generateSingleImage({ prompt, aspectRatio = '16:9', resolu
   }
 }
 
-// ── Photo Studio batch generation ────────────────────────────────────────────
+// ── Batch image generation (Studio, Create, recipes) ────────────────────────────────────────────
 // Uploads refs once, launches all N jobs in parallel, polls together, and streams
 // results via onResult(url) as each image completes.
-export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], onProgress, onResult, isCancelled, pendingKey = null }) {
+export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', model = 'gpt_image_2', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], elementId = null, onProgress, onResult, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -908,14 +878,15 @@ export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16',
   uploaded.filter(Boolean).forEach(m => medias.push(m))
   onProgress?.(18)
 
-  const baseParams = { ...modelBaseParams('gpt_image_2', aspectRatio), resolution }
+  // Soul sets its own quality in modelBaseParams; the other models take resolution.
+  const baseParams = model === 'soul_2' ? modelBaseParams(model, aspectRatio) : { ...modelBaseParams(model, aspectRatio), resolution }
   if (medias.length) baseParams.medias = medias
 
   // Launch jobs sequentially — parallel calls conflict over the shared MCP session
   // (same reason video generation uses a sequential loop)
-  const prompts = Array.isArray(prompt)
+  const prompts = (Array.isArray(prompt)
     ? prompt
-    : Array.from({ length: count }, () => prompt)
+    : Array.from({ length: count }, () => prompt)).map(p => withElement(p, elementId, model))
   const jobResults = []
   for (const p of prompts) {
     jobResults.push(await callTool('generate_image', { params: { ...baseParams, prompt: p } }))
@@ -969,129 +940,260 @@ export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16',
   throw new Error('Generation timed out — check Higgsfield dashboard')
 }
 
-// ── Pose preview generation ──────────────────────────────────────────────────
-// Previews are stored as `standing_${poseId}` or `sitting_${poseId}` in
-// influencer.posePreviews. Old keys without a prefix are treated as standing
-// for backward compatibility.
-
-const POSE_PREVIEW_DESCS_STANDING = {
-  plandid:         'Body angled 25–30 degrees to the camera, weight shifted to back leg, eyes glancing slightly off to the side — relaxed and candid, caught half a second before noticing the camera.',
-  candid:          'Mid-laugh at the apex — eyes lit up with genuine joy, head tilted slightly back, one hand raised naturally toward the mouth or chest, body animated and relaxed.',
-  'cute-posed':    'Three-quarter turn toward camera, soft warm smile, one hand gently raised near the face or lightly touching the hair, shoulders relaxed and easy, chin slightly tilted down — approachable and poised.',
-  walking:         'Mid-stride, weight naturally transferring from one foot to the other, arms swinging relaxed, hair slightly lifted from movement, gaze forward with calm confidence.',
-  'mid-turn':      'Body turned 45 degrees away from camera, head turning back over the shoulder with a soft beginning smile, hair sweeping slightly from the turn — caught in the middle of the motion.',
-  front:           'Body and head squared directly to the lens, weight shifted onto one hip with the opposite knee slightly bent, arms relaxed at sides, confident direct gaze straight into the camera.',
-  'hip-pop':       'Standing, weight fully on one straight leg, the other knee bent causing the hip to drop on that side. One hand on the lower hip, fingers forward, elbow back. A visible gap of air between both arms and the torso. Full body head to toe.',
-  triangle:        'Standing at 45 degrees to camera. Near arm raised to hip — elbow bent at 90 degrees, hand resting on hip bone, fingers forward, elbow back — creating a clear triangular gap between arm and body. Far arm relaxed. Gaze slightly downward.',
-  'over-shoulder': 'Body turned 50 to 60 degrees away from the camera. Head rotated back over the near shoulder toward the lens — expression of soft surprise, lips gently parted. One hand near the back of the hair, the other mid-swing.',
-  'long-line':     'Posture erect from crown to feet. Back foot carries all weight, front leg extended toward camera with knee slightly bent and foot pointed toward the lens. Hips shifted toward the standing leg. Back shoulder dropped down, creating a diagonal from front foot through dropped shoulder. Fingers fully relaxed.',
-  'hands-pockets': 'Standing at 30 to 45 degrees to camera. Thumbs hooked into front pockets, shoulders dropped, back leg bearing slightly more weight. Head turned toward camera, chin slightly down and forward.',
-  'crossed-arms':  'Standing at 30 degrees to camera. Arms crossed, right forearm resting over left, hands relaxed and not gripping. Elbows at mid-chest height. Chin slightly down and forward, jaw defined. Gaze direct and settled.',
-  lean:            'One shoulder resting against a wall or door frame. Body at 60 to 70 degrees to camera, weight fully on wall-side shoulder. Near knee slightly bent, far leg crossed loosely at the ankle. Chin slightly down, gaze direct or into distance.',
+// System check: proves the Higgsfield sign-in works without spending credits
+// (opens an MCP session and lists the tools). Resolves the number of tools.
+export async function checkHiggsfield() {
+  if (!getHFToken()) throw new Error('Not signed in.')
+  await initSession()
+  const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
+  const tools = (res?.result ?? res)?.tools
+  if (!Array.isArray(tools)) throw new Error('Higgsfield answered without a tool list.')
+  return tools.length
 }
 
-export async function generatePosePreviews(influencer, onPoseComplete, { stance = 'standing' } = {}) {
-  try {
-    await initSession()
-    const gender = influencer.gender === 'Male' ? 'man' : 'woman'
-    const physDesc = (influencer.physicalDesc || '').trim()
-    const subjectLine = physDesc ? `${gender}, ${physDesc}` : gender
-    const baseParams = {
-      model: 'gpt_image_2',
-      aspect_ratio: '9:16',
-      quality: 'high',
-      resolution: '4k',
-      count: 1,
-    }
-    const POSE_IDS = Object.keys(POSE_PREVIEW_DESCS_STANDING)
-    const stancePrefix = stance
+// ── Photo edits (Upscale, Expand, Remove background) ─────────────────────────
+// Each runs a Higgsfield tool on one image. Tools take a media_id, so the image is
+// uploaded once (cached by URL for this tab) and its media_id reused.
+let _toolNames = null
+export async function hfToolNames() {
+  if (_toolNames) return _toolNames
+  if (!getHFToken()) return new Set()
+  await initSession()
+  const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
+  const tools = (res?.result ?? res)?.tools
+  _toolNames = new Set(Array.isArray(tools) ? tools.map(t => t.name) : [])
+  _toolSchemas = Object.fromEntries((Array.isArray(tools) ? tools : []).map(t => [t.name, t.inputSchema || null]))
+  return _toolNames
+}
+let _toolSchemas = {}
+// Fields of a tool's `params` object, from the tool list Higgsfield returned.
+export function hfToolFields(name) {
+  const sc = _toolSchemas[name]
+  const params = sc?.properties?.params
+  const props = params?.properties || sc?.properties || {}
+  const required = new Set(params?.required || sc?.required || [])
+  return { wrapped: !!params, required, props }
+}
+const IMAGE_FIELD = ['image_id', 'media_id', 'input_image_id', 'source_image_id']
 
-    const launched = await Promise.all(POSE_IDS.map(async (poseId) => {
-      const stancedId = `${stancePrefix}_${poseId}`
-      try {
-        let medias = []
+// Options a person can set for a schema-described edit (Relight): enums become choices,
+// free text fields become inputs. The image field and get_cost are filled in by Muse.
+export function editOptions(name) {
+  const { props, required } = hfToolFields(name)
+  return Object.entries(props)
+    .filter(([k, v]) => !IMAGE_FIELD.includes(k) && k !== 'get_cost' && k !== 'count' && (Array.isArray(v.enum) ? v.enum.length > 1 : v.type === 'string'))
+    .map(([k, v]) => ({ key: k, label: k.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()), enum: Array.isArray(v.enum) ? v.enum : null, def: v.default, hint: v.description || '', required: required.has(k) }))
+}
 
-        if (stance === 'sitting') {
-          // Use the standing preview as a pose reference so the body matches
-          const standingUrl = influencer.posePreviews?.[`standing_${poseId}`]
-            || influencer.posePreviews?.[poseId]
-          // Always include the identity reference images
-          for (const img of [influencer.mainImage, influencer.characterSheetImage].filter(Boolean)) {
-            if (medias.length >= 2) break
-            try {
-              const value = (typeof img === 'string' && img.startsWith('data:'))
-                ? await uploadRefImage(img) : img
-              medias.push({ value, role: 'image' })
-            } catch (e) { console.warn('[HF] pose preview ref upload failed:', e.message) }
-          }
-          if (standingUrl && medias.length < 3) {
-            medias.push({ value: standingUrl, role: 'image' })
-          }
-          const poseDesc = POSE_PREVIEW_DESCS_STANDING[poseId]
-          const prompt = `${subjectLine}. Pure white seamless studio backdrop. Clean flat even studio lighting, no shadows on background. The subject is seated on a white stool or low chair, chest-up framing, closer to camera. Same pose energy as: ${poseDesc} — adapted to a seated position. Photorealistic, 4K.`
-          const params = { ...baseParams, prompt }
-          if (medias.length) params.medias = medias
-          const result = await callTool('generate_image', { params })
-          const directUrls = extractImageUrls(result)
-          if (directUrls.length > 0) return { stancedId, jobId: null, url: directUrls[0] }
-          const ids = extractJobIds(result)
-          return { stancedId, jobId: ids[0] || null, url: null }
-        } else {
-          // Standing: upload identity refs, generate full-body preview
-          for (const img of [influencer.mainImage, influencer.characterSheetImage].filter(Boolean)) {
-            if (medias.length >= 2) break
-            try {
-              const value = (typeof img === 'string' && img.startsWith('data:'))
-                ? await uploadRefImage(img) : img
-              medias.push({ value, role: 'image' })
-            } catch (e) { console.warn('[HF] pose preview ref upload failed:', e.message) }
-          }
-          const prompt = `${subjectLine}. Pure white seamless studio backdrop. Clean flat even studio lighting, no shadows on background, no lighting equipment visible. Full body visible head to toe, standing. ${POSE_PREVIEW_DESCS_STANDING[poseId]} Photorealistic, 4K.`
-          const params = { ...baseParams, prompt }
-          if (medias.length) params.medias = medias
-          const result = await callTool('generate_image', { params })
-          const directUrls = extractImageUrls(result)
-          if (directUrls.length > 0) return { stancedId, jobId: null, url: directUrls[0] }
-          const ids = extractJobIds(result)
-          return { stancedId, jobId: ids[0] || null, url: null }
-        }
-      } catch (e) {
-        console.warn(`[HF] pose preview launch failed (${stancedId}):`, e.message)
-        return { stancedId, jobId: null, url: null }
-      }
-    }))
-    for (const { stancedId, url } of launched) {
-      if (url) onPoseComplete(stancedId, url)
-    }
-    const pending = launched.filter(r => r.jobId)
-    if (!pending.length) return
-    const jobIds = pending.map(r => r.jobId)
-    const delivered = new Set()
-    for (let i = 0; i < 120; i++) {
-      if (i > 0) await new Promise(r => setTimeout(r, 2500))
-      try {
-        const displays = await Promise.all(jobIds.map(id => callTool('job_display', { id })))
-        const mergedResults = displays.flatMap(d => { const data = unwrapMCP(d); return Array.isArray(data?.results) ? data.results : [] })
-        const display = { results: mergedResults }
-        const data = unwrapMCP(display)
-        if (!Array.isArray(data?.results)) continue
-        for (const r of data.results) {
-          const rId = r?.id || r?.job_id
-          const url = r?.results?.rawUrl || r?.results?.minUrl || r?.result_url
-          if (!url || !rId) continue
-          const match = pending.find(p => p.jobId === rId)
-          if (match && !delivered.has(match.stancedId)) {
-            delivered.add(match.stancedId)
-            onPoseComplete(match.stancedId, url)
-          }
-        }
-        if (delivered.size >= pending.length) break
-        if (countTerminalJobs(display) >= jobIds.length) break
-      } catch (e) {
-        console.warn('[HF] pose preview poll error:', e.message)
-      }
-    }
-  } catch (e) {
-    console.warn('[HF] generatePosePreviews failed:', e.message)
+const _editIds = new Map()
+// Reads a file the browser can see: directly first (most CDNs allow it), then through
+// the app's proxy, which only serves allowlisted hosts.
+async function readMedia(url) {
+  if (!/^https?:/.test(url || '')) return (await fetch(url)).blob()
+  try { const d = await fetch(url, { mode: 'cors' }); if (d.ok) return d.blob() } catch {}
+  const p = await fetch(proxied(url))
+  if (!p.ok) throw new Error(p.status === 403 ? 'This file’s host isn’t one Muse can read. Download it and add it from your device.' : `Couldn’t read the file (${p.status}).`)
+  return p.blob()
+}
+async function mediaIdFor(url, type = 'image') {
+  if (_editIds.has(url)) return _editIds.get(url)
+  await whenOnline()
+  const blob = await readMedia(url)
+  const contentType = blob.type || (type === 'video' ? 'video/mp4' : 'image/png')
+  const ext = type === 'video' ? (contentType.includes('webm') ? 'webm' : contentType.includes('quicktime') ? 'mov' : 'mp4') : contentType.includes('png') ? 'png' : 'jpeg'
+  const up = unwrapMCP(await callTool('media_upload', { method: 'upload_url', filename: `edit_${Date.now()}.${ext}`, content_type: contentType }))
+  const f0 = up?.uploads?.[0] ?? up?.files?.[0] ?? up?.data?.[0]
+  let uploadUrl = up?.upload_url || up?.url || f0?.upload_url || f0?.url
+  let mediaId = up?.media_id || up?.id || f0?.media_id || f0?.id
+  if (!uploadUrl || !mediaId) {
+    const text = typeof up === 'string' ? up : JSON.stringify(up ?? '')
+    mediaId = mediaId || (text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i) || [])[0]
+    uploadUrl = uploadUrl || (text.match(/https:\/\/[^\s"'\\]+/) || [])[0]
   }
+  if (!uploadUrl || !mediaId) throw new Error('Higgsfield didn’t return an upload address.')
+  const put = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } })
+  if (!put.ok) throw new Error(`Upload failed (${put.status}).`)
+  const confirmed = unwrapMCP(await callTool('media_confirm', { media_id: mediaId, type }))
+  const cdn = confirmed?.url || confirmed?.media_url || confirmed?.rawUrl || confirmed?.cdn_url
+    || (typeof confirmed === 'string' ? (confirmed.match(/https:\/\/[^\s"'\\]+/) || [])[0] : null)
+  _editIds.set(url, mediaId)
+  _editUrls.set(url, cdn || (/^https:/.test(url) ? url : null))
+  return mediaId
+}
+const _editUrls = new Map()
+async function uploadForElement(url) {
+  const mediaId = await mediaIdFor(url)
+  const cdn = _editUrls.get(url)
+  if (!cdn) throw new Error('Higgsfield didn’t return a link for the uploaded photo.')
+  return { mediaId, url: cdn }
+}
+
+const imageSize = url => new Promise((resolve, reject) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+  img.onerror = () => reject(new Error('Couldn’t read the image size.'))
+  img.src = proxied(url)
+})
+// Remote images go through the app's image proxy so the browser can read them.
+const proxied = url => (/^https?:/.test(url || '') ? `/api/img-proxy?url=${encodeURIComponent(url)}` : url)
+
+// op: 'upscale' | 'expand' | 'removebg'. opts: { resolution: '2k'|'4k', aspectRatio }
+export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background', relight: 'relight_image' }
+async function editArgs(op, url, opts) {
+  if (op === 'upscale') {
+    const { width, height } = await imageSize(url)
+    return { params: { image_id: await mediaIdFor(url), width, height, resolution: opts.resolution || '4k' } }
+  }
+  if (op === 'expand') return { params: { image_id: await mediaIdFor(url), aspect_ratio: opts.aspectRatio || 'auto' } }
+  if (op === 'removebg') return { params: { media_id: await mediaIdFor(url), media_type: 'image' } }
+  if (op === 'relight') {
+    const { props, wrapped } = hfToolFields(EDIT_TOOLS.relight)
+    const field = IMAGE_FIELD.find(k => props[k]) || 'image_id'
+    const defaults = Object.fromEntries(editOptions(EDIT_TOOLS.relight).filter(o => o.required && o.def !== undefined).map(o => [o.key, o.def]))
+    const params = { [field]: await mediaIdFor(url), ...(props.media_type ? { media_type: 'image' } : {}), ...defaults, ...(opts.fields || {}) }
+    return wrapped ? { params } : params
+  }
+  throw new Error(`Unknown edit: ${op}`)
+}
+
+function creditsIn(data) {
+  if (data && typeof data === 'object') {
+    for (const k of ['credits', 'cost', 'total_credits', 'credit_cost', 'price']) if (typeof data[k] === 'number') return data[k]
+    if (data.cost && typeof data.cost === 'object') return creditsIn(data.cost)
+  }
+  const m = (typeof data === 'string' ? data : JSON.stringify(data ?? '')).match(/(\d+(?:\.\d+)?)\s*credits?/i)
+  return m ? Number(m[1]) : null
+}
+
+// Higgsfield's own quote (get_cost). Only Upscale and Expand support it; null otherwise.
+export async function editCost(op, url, opts = {}) {
+  if (op === 'removebg') return null
+  if (op === 'relight' && !hfToolFields(EDIT_TOOLS.relight).props.get_cost) return null
+  const args = await editArgs(op, url, opts)
+  ;(args.params || args).get_cost = true
+  return creditsIn(unwrapMCP(await callTool(EDIT_TOOLS[op], args)))
+}
+
+export async function editImage(op, url, opts = {}) {
+  const args = await editArgs(op, url, opts)
+  const a = args.params || args
+  const input = IMAGE_FIELD.map(k => a[k]).find(Boolean)
+  const result = await callTool(EDIT_TOOLS[op], args)
+  const direct = extractImageUrls(result)
+  if (direct.length) return direct[0]
+  const ids = extractJobIds(result).filter(id => id !== input)
+  if (!ids.length) {
+    const d = unwrapMCP(result)
+    throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'Higgsfield didn’t start the edit.')
+  }
+  const [out] = await pollAllJobs(ids.slice(0, 1), 1, opts.onProgress)
+  return out
+}
+
+// ── Elements: one saved face per influencer ("Consistent face") ──────────────
+// Higgsfield injects the Element's images wherever <<<id>>> appears in a prompt.
+export const ELEMENT_MODELS = new Set(['gpt_image_2', 'gpt_image_2_6', 'nano_banana_2', 'nano_banana_pro', 'seedream_v4_5', 'seedance_2_0'])
+export function withElement(prompt, elementId, model) {
+  if (!elementId || !ELEMENT_MODELS.has(model) || String(prompt).includes(`<<<${elementId}>>>`)) return prompt
+  return `The person in this image is <<<${elementId}>>>; keep this exact face and identity.\n\n${prompt}`
+}
+// The id to send for an influencer, only once Higgsfield has finished the Element.
+export const elementFor = inf => (inf?.hfElement?.status === 'completed' ? inf.hfElement.id : null)
+
+function elementOf(data) {
+  const e = data?.element || data?.data || data
+  const id = e?.id || e?.element_id || (JSON.stringify(data ?? '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i) || [])[0]
+  return { id, status: String(e?.status || '').toLowerCase() || 'processing', name: e?.name || '' }
+}
+
+export async function createFaceElement(imageUrl, name) {
+  await initSession()
+  const { mediaId, url } = await uploadForElement(imageUrl)
+  const data = unwrapMCP(await callTool('manage_reference_elements', { action: 'create', category: 'character', name: String(name || 'influencer').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 32) || undefined, medias: [{ id: mediaId, url, type: 'media_input' }] }))
+  const el = elementOf(data)
+  if (!el.id) throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t create the Element.')
+  return el
+}
+
+export async function getElement(id) {
+  await initSession()
+  return elementOf(unwrapMCP(await callTool('manage_reference_elements', { action: 'get', element_id: id })))
+}
+
+// ── Video tools: Reframe and Virality Predictor ──────────────────────────────
+export const videoDuration = url => new Promise((resolve, reject) => {
+  const v = document.createElement('video')
+  v.preload = 'metadata'
+  v.onloadedmetadata = () => resolve(v.duration)
+  v.onerror = () => reject(new Error('Couldn’t read the video length.'))
+  v.src = url
+})
+
+// Higgsfield's quote for a reframe (needs the length and an output resolution).
+export async function reframeCost({ seconds, resolution = '1080p' }) {
+  await initSession()
+  return creditsIn(unwrapMCP(await callTool('reframe', { params: { get_cost: true, duration_seconds: Math.max(1, Math.min(60, Math.ceil(seconds))), resolution } })))
+}
+
+export async function reframeVideo(url, { aspectRatio, resolution = '1080p', seconds, onProgress, isCancelled }) {
+  await initSession()
+  const id = await mediaIdFor(url, 'video')
+  const result = await callTool('reframe', { params: { medias: [{ role: 'video', value: id }], aspect_ratio: aspectRatio, resolution, duration_seconds: Math.max(1, Math.min(60, Math.ceil(seconds))) } })
+  const direct = extractVideoUrls(result)
+  if (direct.length) return direct[0]
+  const ids = extractJobIds(result).filter(j => j !== id)
+  if (!ids.length) { const d = unwrapMCP(result); throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'Higgsfield didn’t start the reframe.') }
+  const { urls } = await pollVideoJobs(ids.slice(0, 1), 1, onProgress, null, isCancelled)
+  return urls[0]
+}
+
+// Virality Predictor: starts an analysis of a video and waits for it. Returns whatever
+// scores Higgsfield reports ({ scores: [{ key, value }], summary, url }), never made up.
+export async function predictVirality(url, { onProgress, isCancelled } = {}) {
+  await initSession()
+  const id = await mediaIdFor(url, 'video')
+  const started = await callTool('virality_predictor', { action: 'create', params: { model: 'virality_predictor', medias: [{ role: 'video', id }] } })
+  let data = unwrapMCP(started)
+  const jobs = extractJobIds(started).filter(j => j !== id)
+  for (let round = 0; round < 90 && jobs.length; round++) {
+    if (isCancelled?.()) throw new Error('CANCELLED')
+    const st = unwrapMCP(await callTool('job_status', { jobId: jobs[0] }))
+    const status = String(st?.status || st?.results?.[0]?.status || '').toLowerCase()
+    onProgress?.(Math.min(95, 10 + round * 3))
+    if (['completed', 'done'].includes(status)) { data = st; break }
+    if (['failed', 'error', 'cancelled', 'rejected', 'nsfw'].includes(status)) throw new Error(`Higgsfield couldn’t analyse this video (${status}).`)
+    await new Promise(r => setTimeout(r, 4000))
+  }
+  onProgress?.(100)
+  return readScores(data)
+}
+
+
+// ── AI Influencer: design a new character from traits (quote first) ──────────
+// ai_influencer_prepare returns the exact params and a price without generating;
+// ai_influencer_generate runs those params unchanged, capped at the quoted price.
+export async function prepareInfluencer({ brief, gender }) {
+  await hfToolNames()
+  const { props, required, wrapped } = hfToolFields('ai_influencer_prepare')
+  const known = { brief, tier: 'normal', selection: {}, medias: [], randomize: false, ...(props.gender ? { gender } : {}) }
+  const missing = [...required].filter(k => !(k in known))
+  if (missing.length) throw new Error(`Higgsfield’s AI Influencer now needs ${missing.join(', ')}, which Muse can’t fill in yet.`)
+  const args = Object.fromEntries(Object.keys(known).filter(k => props[k] || required.has(k)).map(k => [k, known[k]]))
+  if (!('brief' in args)) args.brief = brief
+  const data = unwrapMCP(await callTool('ai_influencer_prepare', wrapped ? { params: args } : args))
+  const params = data?.params || data?.prepared?.params || data?.generate_params || null
+  if (!params || typeof params !== 'object') throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t return a design.')
+  const price = typeof data?.price === 'number' ? data.price : creditsIn(data?.price ?? data?.cost ?? data)
+  const free = Number(data?.free_gens_remaining ?? data?.free_generations_remaining ?? 0) || 0
+  return { params, price, free, summary: typeof data?.summary === 'string' ? data.summary : (typeof data?.design === 'string' ? data.design : '') }
+}
+
+export async function generateInfluencer({ params, maxCredits, useFree = false, onProgress, isCancelled }) {
+  const result = await callTool('ai_influencer_generate', { params, max_credits: useFree ? 0 : maxCredits, ...(useFree ? { use_free_gens: true } : {}) })
+  const data = unwrapMCP(result)
+  const ids = [...new Set([data?.job_id, ...(data?.job_ids || [])].filter(Boolean))]
+  const jobIds = ids.length ? ids : extractJobIds(result)
+  if (!jobIds.length) throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t start the character sheet.')
+  return pollAllJobs(jobIds, jobIds.length, onProgress, 8, isCancelled)
 }

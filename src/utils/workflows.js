@@ -1,5 +1,5 @@
-// Workflow templates: data only. The gallery and the trigger → steps view
-// render these; nothing here runs anything yet.
+// Workflow templates: data only. The gallery and the trigger → steps view render
+// these; utils/workflowRun.js runs them. `setup` says what a run asks for first.
 //
 // An integration is "connected" only when the app can actually reach it today.
 // Anything else shows a Connect step — never a fake result.
@@ -44,8 +44,9 @@ export const TEMPLATES = [
     blurb: 'A fresh photo, a caption, a voiceover and a talking clip, posted to TikTok.',
     trigger: 'manual',
     featured: true,
+    setup: {},
     steps: [
-      { kind: 'photo',   app: 'higgsfield', title: 'Generate a photo',          detail: 'Photo Studio, using the influencer’s saved look' },
+      { kind: 'photo',   app: 'higgsfield', title: 'Generate a photo',          detail: 'Studio, using the influencer’s saved look' },
       { kind: 'caption', app: 'claude',     title: 'Write caption and script',  detail: 'In the influencer’s voice, 1–2 sentences' },
       { kind: 'voice',   app: 'elevenlabs', title: 'Record the voiceover',      detail: 'Text to speech from the script' },
       { kind: 'talking', app: 'heygen',     title: 'Make a talking clip',       detail: 'Lip-synced to the voiceover, 9:16' },
@@ -57,10 +58,11 @@ export const TEMPLATES = [
     title: 'Daily photo post',
     blurb: 'Every morning: one new photo with a caption, posted to Instagram.',
     trigger: 'schedule',
+    setup: { scene: true, ratio: '4:5', defaultScene: 'Morning coffee at a sunny café table, candid, natural light' },
     steps: [
       { kind: 'photo',   app: 'higgsfield', title: 'Generate a photo',  detail: 'Random scene from the influencer’s niche' },
       { kind: 'caption', app: 'claude',     title: 'Write a caption',   detail: 'Short, with 3–5 hashtags' },
-      { kind: 'post',    app: 'instagram',  title: 'Post to Instagram', detail: 'Feed post, 4:5 crop' },
+      { kind: 'post',    app: 'instagram',  title: 'Post to Instagram', detail: 'Feed post, 4:5 crop, after you review it' },
     ],
   },
   {
@@ -68,8 +70,9 @@ export const TEMPLATES = [
     title: 'Brand deal shoot',
     blurb: 'Turn a new brand deal into a product photo and a ready-to-post caption.',
     trigger: 'deal',
+    setup: { deal: true, scene: true, defaultScene: 'Holding the product toward the camera, bright home setting, natural daylight' },
     steps: [
-      { kind: 'photo',   app: 'higgsfield', title: 'Shoot with the product', detail: 'Photo Studio, product as a prop' },
+      { kind: 'photo',   app: 'higgsfield', title: 'Shoot with the product', detail: 'Studio, product as a prop' },
       { kind: 'caption', app: 'claude',     title: 'Write a sponsored caption', detail: 'Includes #ad and the brand handle' },
       { kind: 'save',    app: 'muse',       title: 'Save to Library',        detail: 'For review before posting' },
     ],
@@ -79,11 +82,12 @@ export const TEMPLATES = [
     title: 'Photo to video reel',
     blurb: 'Animate a photo into a short reel, caption it and post it.',
     trigger: 'manual',
+    setup: { startPhoto: true, scene: true, motion: true, defaultScene: 'Walking through a sunny street market, candid, golden hour', defaultMotion: 'She turns toward the camera and smiles, slow push-in, natural movement' },
     steps: [
       { kind: 'photo',   app: 'higgsfield', title: 'Pick or generate a photo', detail: 'Used as the start frame' },
-      { kind: 'video',   app: 'higgsfield', title: 'Animate it',              detail: 'Seedance 2.0, 5–8 seconds' },
+      { kind: 'video',   app: 'higgsfield', title: 'Animate it',              detail: 'Seedance 2.0, 5 seconds, 720p' },
       { kind: 'caption', app: 'claude',     title: 'Write a caption',         detail: 'Hook first, then hashtags' },
-      { kind: 'post',    app: 'tiktok',     title: 'Post to TikTok',          detail: 'With the caption' },
+      { kind: 'post',    app: 'tiktok',     title: 'Post to TikTok',          detail: 'With the caption, after you review it' },
     ],
   },
   {
@@ -91,6 +95,7 @@ export const TEMPLATES = [
     title: 'Inspiration to new look',
     blurb: 'When you save an outfit you like, try it on your influencer.',
     trigger: 'inspo',
+    setup: { reference: true, scene: true, defaultScene: 'Full-body photo wearing the outfit from the reference, city street, golden hour' },
     steps: [
       { kind: 'photo', app: 'higgsfield', title: 'Try on the outfit', detail: 'Inspiration image as the style reference' },
       { kind: 'save',  app: 'muse',       title: 'Save to Library',   detail: 'Tagged with the inspiration board' },

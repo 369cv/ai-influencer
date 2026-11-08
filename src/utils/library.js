@@ -1,6 +1,6 @@
 // Library — one flat, read-only list of every generated photo and video,
 // merged from the two places the app already stores them:
-//   1. localStorage 'photo_studio_history'   (Photo Studio shots)
+//   1. localStorage 'photo_studio_history'   (Studio and Create shots; the key name is historical)
 //   2. influencer.generationHistory           (videos, sheets, close-ups, wardrobe)
 // Nothing new is persisted here; handoffs reuse the keys the studios already read.
 
@@ -25,7 +25,7 @@ export function collectLibrary(influencers = [], photoHistory = readPhotoHistory
     push({
       id: h.histId || h.url, url: h.url, kind: isVideoUrl(h.url) ? 'video' : 'photo',
       influencerId: h.influencerId, influencerName: inf?.name || h.influencerName || 'Unknown',
-      label: 'Photo Studio', date: h.createdAt || 0, aspectRatio: h.aspectRatio || h.settings?.aspectRatio || '9:16',
+      label: 'Studio', date: h.createdAt || 0, aspectRatio: h.aspectRatio || h.settings?.aspectRatio || '9:16',
       settings: h.settings || null, source: 'photo-studio',
     })
   }
@@ -42,21 +42,3 @@ export function collectLibrary(influencers = [], photoHistory = readPhotoHistory
   return items.sort((a, b) => b.date - a.date)
 }
 
-// ── Handoffs into the existing studios ───────────────────────
-// Photo Studio already restores settings from `ps_restore_pending_<id>` (History → Reuse settings).
-// `ps_handoff_<id>` adds two extras Photo Studio reads once: a reference image and auto-opening the plan.
-export function handoffToPhotoStudio(item, { useAsReference = false, openPlan = false } = {}) {
-  try {
-    if (item.settings && item.source === 'photo-studio') {
-      localStorage.setItem(`ps_restore_pending_${item.influencerId}`, JSON.stringify(item.settings))
-    }
-    localStorage.setItem(`ps_handoff_${item.influencerId}`, JSON.stringify({ ref: useAsReference ? item.url : null, openPlan }))
-  } catch {}
-  return { pathname: '/influencers', state: { selectId: item.influencerId, studioTab: 'photo' } }
-}
-
-// Video Studio already reads its start frame from `hf_start_frame_<id>`.
-export function handoffToVideoStudio(item) {
-  try { localStorage.setItem(`hf_start_frame_${item.influencerId}`, item.url) } catch {}
-  return { pathname: '/influencers', state: { selectId: item.influencerId, studioTab: 'content' } }
-}

@@ -1,5 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useInspirationBoards, generateId } from '../store'
+import { useWorkspaceStore } from '../context/workspace'
+import { newId } from '../utils/localJson'
 import { compressImage } from '../utils/imageUtils'
 import Lightbox from '../components/Lightbox'
 
@@ -71,12 +73,82 @@ function BoardCard({ board, onSelect, onRename, onDelete }) {
   )
 }
 
+// Two tag axes (niche × shoot type) and one status per image, kept in
+// board.meta — an array parallel to board.images so existing image strings
+// stay untouched. "To create" sends the image to Plan as an idea.
+export const NICHES = ['Lifestyle', 'Fashion', 'Beauty', 'Fitness', 'Portrait', 'Podcast']
+export const SHOOTS = ['Editorial', 'UGC', 'Streetstyle', 'Headshot', 'Studio', 'Motion']
+
+function ChipRow({ label, options, value, onChange, counts }) {
+  return (
+    <div className="muse-chip-row" role="group" aria-label={label} style={{ flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 2 }}>
+      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', minWidth: 44 }}>{label}</span>
+      <button type="button" className={`muse-pchip${value == null ? ' on' : ''}`} aria-pressed={value == null} onClick={() => onChange(null)}>All</button>
+      {options.map(o => (
+        <button key={o} type="button" className={`muse-pchip${value === o ? ' on' : ''}`} aria-pressed={value === o} onClick={() => onChange(value === o ? null : o)}>
+          {o}{counts[o] ? <span style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}>{counts[o]}</span> : null}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+const tagSelect = { height: 26, borderRadius: 'var(--radius-pill)', border: 'none', background: 'rgba(255,255,255,0.92)', color: 'var(--text-primary)', fontSize: 11.5, fontWeight: 600, padding: '0 8px', maxWidth: '50%' }
+const overlayBtn = { height: 26, padding: '0 10px', borderRadius: 'var(--radius-pill)', fontSize: 11.5, fontWeight: 600 }
+
 function BoardDetail({ board, onBack, onUpdate }) {
   const fileRef = useRef()
   const [lightboxIdx, setLightboxIdx] = useState(null)
+  const [, setIdeas] = useWorkspaceStore('muse_ideas')
+  const [niche, setNiche] = useState(null)
+  const [shoot, setShoot] = useState(null)
+  const [showSkipped, setShowSkipped] = useState(false)
+  const [surprise, setSurprise] = useState(null)
 
   const boardImagesRef = useRef(board.images)
   boardImagesRef.current = board.images
+  const boardMetaRef = useRef(board.meta)
+  boardMetaRef.current = board.meta
+
+  const images = board.images || []
+  const meta = images.map((_, i) => (board.meta || [])[i] || {})
+  const counts = useMemo(() => {
+    const c = {}
+    meta.forEach(m => { if (m.status !== 'skipped') { if (m.niche) c[m.niche] = (c[m.niche] || 0) + 1; if (m.shoot) c[m.shoot] = (c[m.shoot] || 0) + 1 } })
+    return c
+  }, [board.meta, images.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const matches = images.map((_, i) => i).filter(i => {
+    const m = meta[i]
+    if (!showSkipped && m.status === 'skipped') return false
+    if (niche && m.niche !== niche) return false
+    if (shoot && m.shoot !== shoot) return false
+    return true
+  })
+  const visible = surprise ? surprise.filter(i => i < images.length) : matches
+  const filtered = niche || shoot || surprise
+
+  function setMeta(idx, patch) {
+    const next = images.map((_, i) => ({ ...((boardMetaRef.current || [])[i] || {}) }))
+    next[idx] = { ...next[idx], ...patch }
+    onUpdate(board.id, { meta: next })
+  }
+
+  function toCreate(idx) {
+    const m = meta[idx]
+    if (m.ideaId) return
+    const id = newId('idea')
+    const tags = [m.niche, m.shoot].filter(Boolean).join(' · ')
+    setIdeas(l => [{ id, title: `${board.name}${tags ? ` — ${tags}` : ''}`.slice(0, 300), notes: 'From Inspiration', images: [images[idx]], source: { type: 'inspiration', boardId: board.id }, status: 'inbox', createdAt: Date.now() }, ...l])
+    setMeta(idx, { status: 'todo', ideaId: id })
+  }
+
+  function surpriseMe() {
+    if (surprise) { setSurprise(null); return }
+    const pool = [...matches]
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]] }
+    setSurprise(pool.slice(0, 6))
+  }
 
   function addImages(files) {
     const readers = Array.from(files).map(file => new Promise(resolve => {
@@ -85,13 +157,16 @@ function BoardDetail({ board, onBack, onUpdate }) {
       r.readAsDataURL(file)
     }))
     Promise.all(readers).then(results => {
-      onUpdate(board.id, { images: [...(boardImagesRef.current ?? []), ...results] })
+      const prev = boardImagesRef.current ?? []
+      const prevMeta = prev.map((_, i) => (boardMetaRef.current || [])[i] || {})
+      onUpdate(board.id, { images: [...prev, ...results], meta: [...prevMeta, ...results.map(() => ({}))] })
     }).catch(console.error)
   }
 
   function removeImage(idx) {
     const next = board.images.filter((_, i) => i !== idx)
-    onUpdate(board.id, { images: next })
+    const nextMeta = board.images.map((_, i) => (board.meta || [])[i] || {}).filter((_, i) => i !== idx)
+    onUpdate(board.id, { images: next, meta: nextMeta })
   }
 
   function downloadAll() {
@@ -139,19 +214,44 @@ function BoardDetail({ board, onBack, onUpdate }) {
           onChange={e => addImages(e.target.files)} />
       </div>
 
-      {board.images?.length > 0 && (
-        <div style={{ columns: 3, gap: 12 }}>
-          {board.images.map((img, i) => (
+      {images.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          <ChipRow label="Niche" options={NICHES} value={niche} onChange={v => { setNiche(v); setSurprise(null) }} counts={counts} />
+          <ChipRow label="Shoot" options={SHOOTS} value={shoot} onChange={v => { setShoot(v); setSurprise(null) }} counts={counts} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+            <span aria-live="polite">{visible.length} {visible.length === 1 ? 'result' : 'results'}</span>
+            {filtered && <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 32 }} onClick={() => { setNiche(null); setShoot(null); setSurprise(null) }}>Clear all</button>}
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input type="checkbox" checked={showSkipped} onChange={e => setShowSkipped(e.target.checked)} /> Show skipped
+            </label>
+            <span style={{ flex: 1 }} />
+            <button type="button" className={`muse-pchip${surprise ? ' on' : ''}`} aria-pressed={!!surprise} onClick={surpriseMe} disabled={!surprise && matches.length === 0}>{surprise ? 'Show all' : '✦ Surprise me'}</button>
+          </div>
+        </div>
+      )}
+
+      {images.length > 0 && visible.length === 0 && (
+        <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-tertiary)', fontSize: 14 }}>No images match these filters.</p>
+      )}
+
+      {visible.length > 0 && (
+        <div style={{ columns: '3 200px', gap: 12 }}>
+          {visible.map(i => {
+            const img = images[i]
+            const m = meta[i]
+            return (
             <div
               key={i}
-              style={{ breakInside: 'avoid', marginBottom: 12, borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
+              style={{ breakInside: 'avoid', marginBottom: 12, borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', cursor: 'zoom-in', opacity: m.status === 'skipped' ? 0.5 : 1 }}
               onClick={() => setLightboxIdx(i)}
             >
               <img src={img} alt="" style={{ width: '100%', display: 'block', transition: 'transform 0.3s' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
               />
-              {/* Overlay buttons — shown on hover via pointer-events */}
+              {m.status === 'todo' && (
+                <span style={{ position: 'absolute', top: 8, left: 8, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 11.5, fontWeight: 600 }}>In Plan</span>
+              )}
               <div style={{
                 position: 'absolute', top: 8, right: 8,
                 display: 'flex', gap: 6,
@@ -159,6 +259,7 @@ function BoardDetail({ board, onBack, onUpdate }) {
                 <button
                   onClick={e => { e.stopPropagation(); downloadImage(img, `${board.name}-${i + 1}.jpg`) }}
                   title="Download"
+                  aria-label="Download"
                   style={{
                     width: 26, height: 26, borderRadius: '50%',
                     background: 'rgba(0,0,0,0.5)', color: '#fff',
@@ -167,6 +268,8 @@ function BoardDetail({ board, onBack, onUpdate }) {
                 >↓</button>
                 <button
                   onClick={e => { e.stopPropagation(); removeImage(i) }}
+                  title="Remove"
+                  aria-label="Remove"
                   style={{
                     width: 26, height: 26, borderRadius: '50%',
                     background: 'rgba(0,0,0,0.5)', color: '#fff',
@@ -174,8 +277,23 @@ function BoardDetail({ board, onBack, onUpdate }) {
                   }}
                 >×</button>
               </div>
+              <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 8, right: 8, bottom: 8, display: 'flex', flexWrap: 'wrap', gap: 6, cursor: 'default' }}>
+                <select aria-label="Niche" value={m.niche || ''} onChange={e => setMeta(i, { niche: e.target.value || undefined })} style={tagSelect}>
+                  <option value="">Niche</option>{NICHES.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <select aria-label="Shoot type" value={m.shoot || ''} onChange={e => setMeta(i, { shoot: e.target.value || undefined })} style={tagSelect}>
+                  <option value="">Shoot</option>{SHOOTS.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+                {m.status !== 'todo' && (
+                  <button type="button" onClick={() => toCreate(i)} style={{ ...overlayBtn, background: 'var(--accent)', color: 'var(--on-accent)' }}>To create</button>
+                )}
+                {m.status !== 'todo' && (
+                  <button type="button" onClick={() => setMeta(i, { status: m.status === 'skipped' ? undefined : 'skipped' })} style={{ ...overlayBtn, background: 'rgba(255,255,255,0.92)', color: 'var(--text-primary)' }}>{m.status === 'skipped' ? 'Unskip' : 'Skip'}</button>
+                )}
+              </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

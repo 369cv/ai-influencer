@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useInfluencers } from '../store'
 import MediaViewer from '../components/MediaViewer'
-import { collectLibrary, readPhotoHistory, handoffToPhotoStudio, handoffToVideoStudio } from '../utils/library'
+import { collectLibrary, readPhotoHistory } from '../utils/library'
 
 // Library: every generated photo and video in one media grid.
 const KINDS = [{ id: 'all', label: 'All' }, { id: 'photo', label: 'Photos' }, { id: 'video', label: 'Videos' }]
@@ -30,7 +30,6 @@ export default function Library({ embedded = false }) {
   }, [all, influencers])
   const items = all.filter(i => (kind === 'all' || i.kind === kind) && (who === 'all' || i.influencerId === who))
 
-  const go = to => { setOpen(null); navigate(to.pathname, { state: to.state }) }
 
   return (
     <div className={embedded ? 'muse-embed' : 'muse-page'}>
@@ -81,9 +80,10 @@ export default function Library({ embedded = false }) {
       {open != null && items[open] && (
         <MediaViewer
           items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)}
-          onModify={it => go(handoffToPhotoStudio(it, { useAsReference: true }))}
-          onMoreLikeThis={it => go(handoffToPhotoStudio(it, { openPlan: true }))}
-          onMakeVideo={it => go(handoffToVideoStudio(it))}
+          onModify={it => { setOpen(null); navigate('/studio', { state: { ref: it.url, influencerId: it.influencerId } }) }}
+          onMoreLikeThis={it => { setOpen(null); navigate('/studio', { state: { ref: it.url, influencerId: it.influencerId } }) }}
+          onMakeVideo={it => { setOpen(null); navigate('/studio?mode=video', { state: { ref: it.url, influencerId: it.influencerId, mode: 'video', motion: it.settings?.recipe?.motion || undefined } }) }}
+          onRecreate={it => { const r = it.settings?.recipe; if (!r) return; setOpen(null); navigate(r.mode === 'video' ? '/studio?mode=video' : '/studio', { state: { recipe: r } }) }}
         />
       )}
     </div>

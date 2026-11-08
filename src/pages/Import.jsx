@@ -128,7 +128,7 @@ export default function Import() {
         {saved ? (
           <div className="muse-plan-actions">
             <Link to="/" className="muse-btn muse-btn-tonal">Done</Link>
-            <Link to="/plan?view=inspiration" className="muse-btn muse-btn-filled">Open Inspiration</Link>
+            <Link to="/inspiration" className="muse-btn muse-btn-filled">Open Inspiration</Link>
           </div>
         ) : (
           <div className="muse-plan-actions">

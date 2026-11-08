@@ -4,6 +4,8 @@ const ALLOWED_HOSTS = [
   'media.higgsfield.ai',
   'storage.higgsfield.ai',
   'files.higgsfield.ai',
+  // Higgsfield's generation CDN (results are named hf_<date>_<id>); exact host only.
+  'd8j0ntlcm91z4.cloudfront.net',
   'oaidalleapiprodscus.blob.core.windows.net',
   'oaidallexprodscus.blob.core.windows.net',
 ]

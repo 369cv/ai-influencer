@@ -53,7 +53,7 @@ export const PROJECT_TEMPLATES = [
     id: 'brand-deal', name: 'Brand deal campaign', blurb: 'Brief, concept, approvals, delivery and the report.',
     steps: [
       { label: 'Log the brand, fee, deliverables and dates' },
-      { label: 'Make the product sheet', to: '/brand-deals' },
+      { label: 'Make the product sheet', to: '/content?view=deals' },
       { label: 'Concept and talking points', assist: 'ideas' },
       { label: 'Produce drafts', to: '/influencers' },
       { label: 'Send for brand approval' },
@@ -72,7 +72,7 @@ export const PROJECT_TEMPLATES = [
       { label: 'Set up the social accounts', to: '/settings?section=accounts' },
       { label: 'Produce the first 9 posts', to: '/influencers' },
       { label: 'Schedule launch week', to: '/content?view=calendar' },
-      { label: 'Track similar creators for benchmarks', to: '/plan?view=creators' },
+      { label: 'Track similar creators for benchmarks', to: '/content?view=ideas' },
     ],
   },
   { id: 'blank', name: 'Blank project', blurb: 'Start empty and add your own steps.', steps: [] },

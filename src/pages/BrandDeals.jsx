@@ -1,10 +1,14 @@
-import { useState, useRef } from 'react'
-import { useBrandDeals, generateId } from '../store'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useBrandDeals, useInfluencers, generateId } from '../store'
 import { compressImage, downloadImage } from '../utils/imageUtils'
 import { generateSingleImage } from '../utils/higgsfieldGenerate'
 import { isHFConnected } from '../utils/higgsfieldAuth'
 import { buildCharSheetPrompt, buildCharSheetPromptWithClaude } from '../utils/charSheetPrompt'
 import Lightbox from '../components/Lightbox'
+import DealPanel from '../components/DealPanel'
+import { useWorkspaceStore } from '../context/workspace'
+import { dealProgress, DEAL_STATUSES } from '../utils/deals'
 
 function NewDealModal({ onClose, onSave }) {
   const [brand, setBrand] = useState('')
@@ -115,7 +119,7 @@ function NewDealModal({ onClose, onSave }) {
   )
 }
 
-function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGenerate }) {
+function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGenerate, onDeliverables, summary }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(deal.brand)
   const [showSheet, setShowSheet] = useState(true)
@@ -219,8 +223,8 @@ function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGe
       </div>
 
       {/* Info row */}
-      <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ flex: summary ? '1 1 100%' : 1, minWidth: 0 }}>
           {editing ? (
             <input
               autoFocus
@@ -235,9 +239,11 @@ function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGe
             <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.brand}</div>
           )}
           {deal.category && <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{deal.category}</div>}
+          {summary && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{summary}</div>}
         </div>
 
         <div style={{ display: 'flex', gap: 5, flexShrink: 0, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+          <button type="button" disabled={generating} onClick={onDeliverables} style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-light)', opacity: generating ? 0.4 : 1 }}>Deliverables</button>
           {/* Rename */}
           <button
             disabled={generating}
@@ -288,12 +294,28 @@ function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGe
   )
 }
 
-export default function BrandDeals() {
+export default function BrandDeals({ embedded = false }) {
   const [deals, setDeals] = useBrandDeals()
   const [showNew, setShowNew] = useState(false)
   const [lightboxDeal, setLightboxDeal] = useState(null)
   const [generating, setGenerating] = useState({})   // { [id]: bool }
   const [genProgress, setGenProgress] = useState({}) // { [id]: 0–100 }
+  const [openDeal, setOpenDeal] = useState(null)
+  // ?deal=<id> (from Home → Needs you) opens that deal's deliverables.
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    const id = params.get('deal')
+    if (id && deals.some(d => d.id === id)) setOpenDeal(id)
+    if (id) setParams(q => { q.delete('deal'); return q }, { replace: true })
+  }, [params]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [posts] = useWorkspaceStore('muse_posts')
+  const [influencers] = useInfluencers()
+  const updateDeal = (id, patch) => setDeals(prev => prev.map(d => (d.id === id ? { ...d, ...patch } : d)))
+  const summaryOf = deal => {
+    const inf = (influencers || []).find(i => i.id === deal.influencerId)
+    const status = DEAL_STATUSES.find(x => x.id === deal.status)?.label
+    return [inf?.name, status, deal.fee ? '$' + Number(deal.fee).toLocaleString() : '', dealProgress(deal, posts || [])].filter(Boolean).join(' · ')
+  }
 
   function addDeal({ brand, category, image }) {
     setDeals(prev => [...prev, { id: generateId(), brand, category, image, createdAt: Date.now() }])
@@ -361,8 +383,9 @@ export default function BrandDeals() {
   }
 
   return (
-    <div style={{ paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={embedded ? undefined : { paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
       {showNew && <NewDealModal onClose={() => setShowNew(false)} onSave={addDeal} />}
+      {openDeal && deals.find(d => d.id === openDeal) && <DealPanel deal={deals.find(d => d.id === openDeal)} onChange={patch => updateDeal(openDeal, patch)} onClose={() => setOpenDeal(null)} />}
 
       {lightboxDeal && (
         <Lightbox
@@ -372,7 +395,7 @@ export default function BrandDeals() {
         />
       )}
 
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px' }}>
+      <div style={embedded ? undefined : { maxWidth: 960, margin: '0 auto', padding: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.6px' }}>Brand Deals</h1>
@@ -409,6 +432,8 @@ export default function BrandDeals() {
                 onRename={renameDeal}
                 onOpen={() => setLightboxDeal(deal)}
                 onGenerate={handleGenerate}
+                onDeliverables={() => setOpenDeal(deal.id)}
+                summary={summaryOf(deal)}
               />
             ))}
           </div>

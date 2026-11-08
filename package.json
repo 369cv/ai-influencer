@@ -11,11 +11,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "tokens": "node scripts/build-tokens.mjs",
-    "prebuild": "node scripts/build-tokens.mjs"
+    "prebuild": "node scripts/build-tokens.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "hf:example": "node examples/higgsfield/index.mjs"
   },
   "dependencies": {
     "@fontsource/figtree": "^5.3.0",
+    "@higgsfield/client": "^0.2.6",
     "@vercel/analytics": "^2.0.1",
+    "dotenv": "^18.0.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0"

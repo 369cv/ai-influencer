@@ -125,8 +125,8 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
         <Lbl>Gender</Lbl>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
           {[
-            { g: 'Female', color: 'var(--accent)', glow: 'var(--accent-light)', icon: '♀' },
-            { g: 'Male',   color: 'var(--accent)', glow: 'var(--accent-light)', icon: '♂' },
+            { g: 'Female', color: 'var(--accent)', glow: 'var(--accent-light)', icon: '' },
+            { g: 'Male',   color: 'var(--accent)', glow: 'var(--accent-light)', icon: '' },
           ].map(({ g, color, glow, icon }) => {
             const on = data.gender === g
             return (
@@ -139,7 +139,7 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
                 boxShadow: on ? L.card : 'none',
                 transition: 'all 0.18s',
               }}>
-                <span style={{ fontSize: 20, opacity: on ? 1 : 0.3, transition: 'opacity 0.15s' }}>{icon}</span>
+                {icon && <span style={{ fontSize: 20, opacity: on ? 1 : 0.3, transition: 'opacity 0.15s' }}>{icon}</span>}
                 {g}
               </button>
             )
@@ -901,7 +901,7 @@ function VariationCard({ url, selected, gc, onSelect, index, landscape, onExpand
 function ProviderIcon({ provider, version }) {
   if (provider === 'banana') return (
     <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, lineHeight: 1 }}>🍌</div>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--tonal)', color: 'var(--on-tonal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>NB</div>
       <div style={{ position: 'absolute', bottom: -3, right: -5, background: '#D97706', color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 6, lineHeight: 1.6, whiteSpace: 'nowrap', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{version}</div>
     </div>
   )
