@@ -8,6 +8,7 @@ const CHIPS = [
   { label: 'New influencer', to: '/create' },
   { label: 'Photo shoot', to: '/influencers' },
   { label: 'Video', to: '/influencers' },
+  { label: 'Workflows', to: '/workflows' },
   { label: 'Brand deal', to: '/brand-deals' },
   { label: 'Inspiration', to: '/inspiration' },
 ]
