@@ -102,7 +102,9 @@ export default function Studio() {
   }, [urlMode]) // eslint-disable-line
 
   useEffect(() => {
-    if (!s.influencerId && influencers?.length) set({ influencerId: influencers[influencers.length - 1].id })
+    // Default to the newest influencer only if nothing chose one. Reads the latest state, so it
+    // never overrides an influencer passed in from a profile (Create ▾ → Photo/Video in Studio).
+    if (influencers?.length) setS(x => (x.influencerId ? x : { ...x, influencerId: influencers[influencers.length - 1].id }))
   }, [influencers?.length]) // eslint-disable-line
 
   function switchMode(mode) {

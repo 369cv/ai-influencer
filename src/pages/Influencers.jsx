@@ -16,6 +16,7 @@ import PhotoStudioPanel from './PhotoStudio'
 import { exportPersonaBible } from '../utils/personaBible'
 import PersonaVoice from '../components/PersonaVoice'
 import PostingSchedule from '../components/PostingSchedule'
+import ProfileActions from '../components/ProfileActions'
 import WardrobeDrawer from '../components/WardrobeDrawer'
 
 function useMobile() {
@@ -215,7 +216,14 @@ function CtxMenu({ x, y, items, onClose }) {
 
 // ─────────────────────────────────────────────
 // Hero banner — clean profile card
-function HeroBanner({ influencer, onDelete, pct, onUpdate }) {
+// Avatar image that falls back to the influencer's initial when the image fails to load
+// (expired or blocked URL), instead of the browser's broken-image icon.
+function AvatarImg({ src, fallback }) {
+  const [bad, setBad] = useState(false)
+  return src && !bad ? <img src={src} alt="" onError={() => setBad(true)} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : fallback
+}
+
+function HeroBanner({ influencer, pct, onUpdate }) {
   const ac = accent(influencer)
   const gc = gColor(influencer.gender)
   const r = 33, c = 2*Math.PI*r, off = c*(1-pct/100)
@@ -254,12 +262,7 @@ function HeroBanner({ influencer, onDelete, pct, onUpdate }) {
             display:'flex',alignItems:'center',justifyContent:'center',
             transition:'border-radius 0.2s',
           }}>
-            {influencer.mainImage
-              ?<img src={influencer.mainImage} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-              :<span style={{fontSize:24,fontWeight:800,color:ac,letterSpacing:'-1px'}}>
-                {influencer.name[0]?.toUpperCase()}
-              </span>
-            }
+            <AvatarImg key={influencer.mainImage} src={influencer.mainImage} fallback={<span style={{fontSize:24,fontWeight:800,color:ac,letterSpacing:'-1px'}}>{influencer.name[0]?.toUpperCase()}</span>}/>
           </div>
         </div>
 
@@ -313,17 +316,6 @@ function HeroBanner({ influencer, onDelete, pct, onUpdate }) {
           </div>
         </div>
 
-        {/* Actions */}
-        <div style={{display:'flex',gap:8,flexShrink:0,marginLeft:isMobile?'auto':0}}>
-          <button onClick={onDelete} style={{
-            padding:'8px 14px',borderRadius:8,fontSize:12,fontWeight:600,
-            background:'color-mix(in srgb, var(--color-status-danger) 8%, transparent)',color:'var(--color-status-danger)',border:'1.5px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',
-            transition:'background 0.15s',
-          }}
-            onMouseEnter={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--color-status-danger) 15%, transparent)'}}
-            onMouseLeave={e=>{e.currentTarget.style.background='color-mix(in srgb, var(--color-status-danger) 8%, transparent)'}}
-          >Delete</button>
-        </div>
       </div>
     </div>
   )
@@ -926,8 +918,8 @@ function FTA({ value, onChange, placeholder, rows=3 }) {
 // ─────────────────────────────────────────────
 // Gender buttons
 const GM = {
-  Female: {icon:'♀',color:'#EC4899',bg:'rgba(236,72,153,0.08)',border:'#EC4899'},
-  Male:   {icon:'♂',color:'#3B82F6',bg:'rgba(59,130,246,0.08)',border:'#3B82F6'},
+  Female: {icon: '',color:'#EC4899',bg:'rgba(236,72,153,0.08)',border:'#EC4899'},
+  Male:   {icon: '',color:'#3B82F6',bg:'rgba(59,130,246,0.08)',border:'#3B82F6'},
 }
 function GenderButtons({ value, onChange }) {
   return (
@@ -1132,7 +1124,6 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
       {/* ── Empty state ── */}
       {scripts.length===0 && (
         <div style={{textAlign:'center',padding:'52px 0',color:'var(--text-tertiary)'}}>
-          <div style={{fontSize:36,marginBottom:10,opacity:.2}}>🎬</div>
           <div style={{fontSize:14,fontWeight:600,color:'var(--text-secondary)',marginBottom:6}}>No scripts yet</div>
           <div style={{fontSize:13}}>Save videos from the Videos tab to track them here.</div>
         </div>
@@ -1254,7 +1245,7 @@ function ScriptsSection({ scripts=[], influencerPrompt='', onChange, initialExpa
                   onClick={e=>{e.stopPropagation();del(s.id)}}
                   title="Delete script"
                   style={{width:28,height:28,borderRadius:7,border:'1px solid color-mix(in srgb, var(--color-status-danger) 20%, transparent)',background:'color-mix(in srgb, var(--color-status-danger) 7%, transparent)',color:'var(--color-status-danger)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}
-                >🗑</button>
+                >×</button>
                 <button onClick={()=>setSelectedId(null)} style={{
                   width:28,height:28,borderRadius:7,border:'1.5px solid var(--border)',
                   background:'var(--bg-tertiary)',color:'var(--text-secondary)',
@@ -1528,7 +1519,7 @@ function DescriptionForm({ influencer, onUpdate }) {
       </div>
 
       {/* ── Backstory ── */}
-      <InfoCell label="Backstory" icon="✦">
+      <InfoCell label="Backstory" icon="">
         <BareInput
           value={influencer.backstory ?? ''}
           onChange={e => u('backstory', e.target.value)}
@@ -1553,43 +1544,43 @@ function DescriptionForm({ influencer, onUpdate }) {
       </div>
 
       {/* ── Target Audience ── */}
-      <InfoCell label="Target Audience" icon="👥">
+      <InfoCell label="Target Audience" icon="">
         <BareInput value={influencer.audience ?? ''} onChange={e => u('audience', e.target.value)} placeholder={aPh}/>
       </InfoCell>
 
       {/* ── Physical ── */}
       {influencer.physicalDesc && (
-        <InfoCell label="Physical Description" icon="✧">
+        <InfoCell label="Physical Description" icon="">
           <BareInput value={influencer.physicalDesc ?? ''} onChange={e => u('physicalDesc', e.target.value)} placeholder="Physical appearance…"/>
         </InfoCell>
       )}
 
       {/* ── Lifestyle ── */}
       <div className="desc-grid-2">
-        <InfoCell label="Hobbies & Interests" icon="🎯">
+        <InfoCell label="Hobbies & Interests" icon="">
           <BareInput value={influencer.hobbies ?? ''} onChange={e => u('hobbies', e.target.value)} placeholder="e.g. Yoga, travel, photography…" multiline rows={2}/>
         </InfoCell>
-        <InfoCell label="Aesthetic / Style Vibe" icon="✨">
+        <InfoCell label="Aesthetic / Style Vibe" icon="">
           <BareInput value={influencer.clothingStyle ?? ''} onChange={e => u('clothingStyle', e.target.value)} placeholder="e.g. Minimalist, Old Money…" multiline rows={2}/>
         </InfoCell>
       </div>
 
       {/* ── Brand ── */}
       <div className="desc-grid-2">
-        <InfoCell label="Dream Brands" icon="💎">
+        <InfoCell label="Dream Brands" icon="">
           <BareInput value={influencer.dreamBrands ?? ''} onChange={e => u('dreamBrands', e.target.value)} placeholder="e.g. Nike, Glossier, Loewe…"/>
         </InfoCell>
-        <InfoCell label="Content Pillars" icon="📌">
+        <InfoCell label="Content Pillars" icon="">
           <BareInput value={(influencer.contentPillars ?? []).join(', ')} onChange={e => u('contentPillars', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} placeholder="e.g. Fitness, Mindset, Style…"/>
         </InfoCell>
       </div>
 
       {/* ── Color Palette + Voice ── */}
       <div className="desc-grid-2">
-        <InfoCell label="Brand Colors" icon="🎨">
+        <InfoCell label="Brand Colors" icon="">
           <ColorPalette palette={influencer.palette ?? []} onChange={v => u('palette', v)} gender={influencer.gender}/>
         </InfoCell>
-        <InfoCell label="Voice / TTS" icon="🎙">
+        <InfoCell label="Voice / TTS" icon="">
           <BareInput value={influencer.voice ?? ''} onChange={e => u('voice', e.target.value)} placeholder="e.g. Higgsfield, ElevenLabs…"/>
         </InfoCell>
       </div>
@@ -1602,33 +1593,33 @@ function DescriptionForm({ influencer, onUpdate }) {
 // Wardrobe generator
 
 const WARDROBE_STYLES_F = [
-  { id: 'old_money',    label: 'Old Money',    icon: '🏛', outfit: 'ivory cashmere turtleneck, tailored wide-leg cream trousers, tan leather loafers, minimal gold jewelry',                                   hair: 'sleek low chignon' },
-  { id: 'clean_girl',   label: 'Clean Girl',   icon: '🫧', outfit: 'fitted white ribbed tank top, straight-leg light-wash jeans, simple gold hoops, clean white sneakers',                                    hair: 'slicked-back low bun' },
-  { id: 'streetwear',   label: 'Streetwear',   icon: '🧢', outfit: 'oversized washed graphic hoodie, baggy wide-leg cargo pants, chunky platform sneakers',                                                   hair: 'messy space buns' },
-  { id: 'glam',         label: 'Glam',         icon: '✨', outfit: 'strapless sequin bodycon mini dress, strappy barely-there heels, small diamond studs',                                                    hair: 'bouncy blowout with voluminous waves' },
-  { id: 'cottagecore',  label: 'Cottagecore',  icon: '🌸', outfit: 'white floral prairie dress with puffed sleeves, brown Mary Jane flats, wicker bag',                                                       hair: 'loose romantic braids with small dried flowers' },
-  { id: 'y2k',          label: 'Y2K',          icon: '💿', outfit: 'pink butterfly-print crop top, ultra low-rise denim mini skirt, chunky platform sneakers, tinted micro sunglasses',                       hair: 'half-up pigtails with butterfly clips' },
-  { id: 'editorial',    label: 'Editorial',    icon: '🖤', outfit: 'oversized sharp black structured blazer worn as a dress belted at waist, knee-high patent leather boots',                                  hair: 'sleek straight blowout' },
-  { id: 'bohemian',     label: 'Bohemian',     icon: '🌿', outfit: 'cream linen wide-sleeve blouse, rust-toned flowy maxi skirt, leather flat sandals, layered gold necklaces, stacked bracelets',            hair: 'loose undone beachy waves' },
-  { id: 'sporty',       label: 'Sporty',       icon: '⚡', outfit: 'fitted cropped sports bra, high-waist seamless flare leggings, clean white training sneakers',                                             hair: 'sleek high ponytail' },
-  { id: 'dark_moody',   label: 'Dark & Moody', icon: '🌙', outfit: 'sheer black long-sleeve fitted top, black leather midi skirt, black pointed ankle boots, silver rings',                                    hair: 'sleek center-part straight hair' },
-  { id: 'coastal',      label: 'Coastal',      icon: '🌊', outfit: 'white linen button-down shirt loosely tied at waist, wide-leg cream linen trousers, tan leather flat sandals',                            hair: 'loose natural waves, sun-kissed' },
-  { id: 'preppy',       label: 'Preppy',       icon: '🎓', outfit: 'fitted navy polo shirt, plaid pleated mini skirt, white knee-high socks, brown penny loafers',                                            hair: 'low twin braids with ribbon ties' },
+  { id: 'old_money',    label: 'Old Money',    icon: '', outfit: 'ivory cashmere turtleneck, tailored wide-leg cream trousers, tan leather loafers, minimal gold jewelry',                                   hair: 'sleek low chignon' },
+  { id: 'clean_girl',   label: 'Clean Girl',   icon: '', outfit: 'fitted white ribbed tank top, straight-leg light-wash jeans, simple gold hoops, clean white sneakers',                                    hair: 'slicked-back low bun' },
+  { id: 'streetwear',   label: 'Streetwear',   icon: '', outfit: 'oversized washed graphic hoodie, baggy wide-leg cargo pants, chunky platform sneakers',                                                   hair: 'messy space buns' },
+  { id: 'glam',         label: 'Glam',         icon: '', outfit: 'strapless sequin bodycon mini dress, strappy barely-there heels, small diamond studs',                                                    hair: 'bouncy blowout with voluminous waves' },
+  { id: 'cottagecore',  label: 'Cottagecore',  icon: '', outfit: 'white floral prairie dress with puffed sleeves, brown Mary Jane flats, wicker bag',                                                       hair: 'loose romantic braids with small dried flowers' },
+  { id: 'y2k',          label: 'Y2K',          icon: '', outfit: 'pink butterfly-print crop top, ultra low-rise denim mini skirt, chunky platform sneakers, tinted micro sunglasses',                       hair: 'half-up pigtails with butterfly clips' },
+  { id: 'editorial',    label: 'Editorial',    icon: '', outfit: 'oversized sharp black structured blazer worn as a dress belted at waist, knee-high patent leather boots',                                  hair: 'sleek straight blowout' },
+  { id: 'bohemian',     label: 'Bohemian',     icon: '', outfit: 'cream linen wide-sleeve blouse, rust-toned flowy maxi skirt, leather flat sandals, layered gold necklaces, stacked bracelets',            hair: 'loose undone beachy waves' },
+  { id: 'sporty',       label: 'Sporty',       icon: '', outfit: 'fitted cropped sports bra, high-waist seamless flare leggings, clean white training sneakers',                                             hair: 'sleek high ponytail' },
+  { id: 'dark_moody',   label: 'Dark & Moody', icon: '', outfit: 'sheer black long-sleeve fitted top, black leather midi skirt, black pointed ankle boots, silver rings',                                    hair: 'sleek center-part straight hair' },
+  { id: 'coastal',      label: 'Coastal',      icon: '', outfit: 'white linen button-down shirt loosely tied at waist, wide-leg cream linen trousers, tan leather flat sandals',                            hair: 'loose natural waves, sun-kissed' },
+  { id: 'preppy',       label: 'Preppy',       icon: '', outfit: 'fitted navy polo shirt, plaid pleated mini skirt, white knee-high socks, brown penny loafers',                                            hair: 'low twin braids with ribbon ties' },
 ]
 
 const WARDROBE_STYLES_M = [
-  { id: 'old_money',    label: 'Old Money',    icon: '🏛', outfit: 'navy single-breasted blazer, crisp white oxford shirt, tailored beige chinos, tan leather loafers — no tie',                             hair: 'classic side-parted, neat and polished' },
-  { id: 'streetwear',  label: 'Streetwear',   icon: '🧢', outfit: 'oversized washed black graphic tee, baggy distressed denim jeans, clean white low-top sneakers',                                          hair: 'low skin fade, loose top' },
-  { id: 'tech_bro',    label: 'Tech Bro',     icon: '💻', outfit: 'heather grey quarter-zip fleece pullover, dark slim-fit chinos, minimalist clean white sneakers',                                          hair: 'neat, slightly tousled' },
-  { id: 'preppy',      label: 'Preppy',       icon: '🎓', outfit: 'pink Oxford button-down polo shirt, flat-front khaki chinos, brown penny loafers, leather belt',                                           hair: 'classic side part, well-groomed' },
-  { id: 'sporty',      label: 'Sporty',       icon: '⚡', outfit: 'fitted performance athletic training top, tapered jogger pants, premium running sneakers',                                                  hair: 'fresh skin fade, clean edges' },
-  { id: 'business',    label: 'Business',     icon: '👔', outfit: 'slate blue slim-fit button-down shirt, dark tailored slim trousers, brown leather oxford shoes',                                           hair: 'neat, professional, combed' },
-  { id: 'coastal',     label: 'Coastal',      icon: '🌊', outfit: 'relaxed linen white shirt slightly unbuttoned at collar, navy linen shorts, tan boat shoes, no socks',                                    hair: 'natural, lightly wind-tousled' },
-  { id: 'editorial',   label: 'Editorial',    icon: '🖤', outfit: 'oversized black structured wool coat, slim black ribbed turtleneck, straight-leg black trousers, black leather Chelsea boots',              hair: 'slicked back, very sleek' },
-  { id: 'dark_moody',  label: 'Dark & Moody', icon: '🌙', outfit: 'washed black denim jacket over black band tee, black slim-fit jeans, black creeper boots, silver chain necklace',                         hair: 'undone, messy, slightly overgrown' },
-  { id: 'bohemian',    label: 'Bohemian',     icon: '🌿', outfit: 'loose cream linen shirt open at chest, wide-leg natural linen trousers, leather sandals, stacked wooden and silver bracelets',             hair: 'loose natural curls or waves' },
-  { id: 'y2k',         label: 'Y2K',          icon: '💿', outfit: 'baggy vintage colour-block windbreaker, wide-leg track pants, chunky dad sneakers, fitted cap',                                            hair: 'buzz cut or tight cornrows' },
-  { id: 'party',       label: 'Party Night',  icon: '🪩', outfit: 'black satin shirt open two buttons, slim-fit black tailored trousers, sleek black loafers, silver watch',                                  hair: 'slicked back, polished' },
+  { id: 'old_money',    label: 'Old Money',    icon: '', outfit: 'navy single-breasted blazer, crisp white oxford shirt, tailored beige chinos, tan leather loafers — no tie',                             hair: 'classic side-parted, neat and polished' },
+  { id: 'streetwear',  label: 'Streetwear',   icon: '', outfit: 'oversized washed black graphic tee, baggy distressed denim jeans, clean white low-top sneakers',                                          hair: 'low skin fade, loose top' },
+  { id: 'tech_bro',    label: 'Tech Bro',     icon: '', outfit: 'heather grey quarter-zip fleece pullover, dark slim-fit chinos, minimalist clean white sneakers',                                          hair: 'neat, slightly tousled' },
+  { id: 'preppy',      label: 'Preppy',       icon: '', outfit: 'pink Oxford button-down polo shirt, flat-front khaki chinos, brown penny loafers, leather belt',                                           hair: 'classic side part, well-groomed' },
+  { id: 'sporty',      label: 'Sporty',       icon: '', outfit: 'fitted performance athletic training top, tapered jogger pants, premium running sneakers',                                                  hair: 'fresh skin fade, clean edges' },
+  { id: 'business',    label: 'Business',     icon: '', outfit: 'slate blue slim-fit button-down shirt, dark tailored slim trousers, brown leather oxford shoes',                                           hair: 'neat, professional, combed' },
+  { id: 'coastal',     label: 'Coastal',      icon: '', outfit: 'relaxed linen white shirt slightly unbuttoned at collar, navy linen shorts, tan boat shoes, no socks',                                    hair: 'natural, lightly wind-tousled' },
+  { id: 'editorial',   label: 'Editorial',    icon: '', outfit: 'oversized black structured wool coat, slim black ribbed turtleneck, straight-leg black trousers, black leather Chelsea boots',              hair: 'slicked back, very sleek' },
+  { id: 'dark_moody',  label: 'Dark & Moody', icon: '', outfit: 'washed black denim jacket over black band tee, black slim-fit jeans, black creeper boots, silver chain necklace',                         hair: 'undone, messy, slightly overgrown' },
+  { id: 'bohemian',    label: 'Bohemian',     icon: '', outfit: 'loose cream linen shirt open at chest, wide-leg natural linen trousers, leather sandals, stacked wooden and silver bracelets',             hair: 'loose natural curls or waves' },
+  { id: 'y2k',         label: 'Y2K',          icon: '', outfit: 'baggy vintage colour-block windbreaker, wide-leg track pants, chunky dad sneakers, fitted cap',                                            hair: 'buzz cut or tight cornrows' },
+  { id: 'party',       label: 'Party Night',  icon: '', outfit: 'black satin shirt open two buttons, slim-fit black tailored trousers, sleek black loafers, silver watch',                                  hair: 'slicked back, polished' },
 ]
 
 const HAIR_PRESETS_F = ['Sleek bun', 'High ponytail', 'Beach waves', 'Blowout', 'Space buns', 'Braids', 'Half-up', 'Curtain bangs', 'Slicked back', 'Natural curls', 'Pixie cut', 'Bob']
@@ -1999,7 +1990,6 @@ function WorldDropSection({ drops=[], onChange }) {
       {lightboxUrl&&<Lightbox images={[lightboxUrl]} startIndex={0} onClose={()=>setLightboxUrl(null)}/>}
       {drops.length===0&&(
         <div style={{ textAlign:'center', padding:'52px 0', color:'var(--text-tertiary)' }}>
-          <div style={{ fontSize:36, marginBottom:10, opacity:.2 }}>👗</div>
           <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginBottom:6 }}>No wardrobe slots yet</div>
           <div style={{ fontSize:13 }}>Add wardrobe slots to organize your influencer's looks.</div>
         </div>
@@ -2053,7 +2043,6 @@ function HomeSection({ slots=[], onChange }) {
       {lightboxUrl&&<Lightbox images={[lightboxUrl]} startIndex={0} onClose={()=>setLightboxUrl(null)}/>}
       {slots.length===0&&(
         <div style={{textAlign:'center',padding:'52px 0',color:'var(--text-tertiary)'}}>
-          <div style={{fontSize:36,marginBottom:10,opacity:.2}}>🏠</div>
           <div style={{fontSize:14,fontWeight:600,color:'var(--text-secondary)',marginBottom:6}}>No home photos yet</div>
           <div style={{fontSize:13}}>Add room and home photos for your influencer.</div>
         </div>
@@ -2490,7 +2479,6 @@ function BrandDealSection({ deals=[], onChange }) {
       {showImport && <ImportBrandDealsModal deals={globalDeals} existingBrands={existingBrands} onImport={importDeals} onClose={()=>setShowImport(false)}/>}
       {deals.length===0&&(
         <div style={{textAlign:'center',padding:'52px 0',color:'var(--text-tertiary)'}}>
-          <div style={{fontSize:36,marginBottom:10,opacity:.2}}>🤝</div>
           <div style={{fontSize:14,fontWeight:600,color:'var(--text-secondary)',marginBottom:6}}>No brand deals yet</div>
           <div style={{fontSize:13}}>Add brands you want this influencer to promote.</div>
         </div>
@@ -2676,7 +2664,7 @@ const VIDEO_TEMPLATES = [
   {
     id: 'talking-head',
     label: 'Talking Head',
-    icon: '🎤',
+    icon: '',
     sub: 'Direct to camera, personal & engaging',
     dialogue: "I need to tell you about something that completely changed my routine.",
     envKey: 'Bedroom', environment: '',
@@ -2694,7 +2682,7 @@ const VIDEO_TEMPLATES = [
   {
     id: 'grwm',
     label: 'GRWM',
-    icon: '✨',
+    icon: '',
     sub: 'Get Ready With Me — casual beauty content',
     dialogue: "Get ready with me for tonight — I have a whole thing planned.",
     envKey: 'Bathroom', environment: '',
@@ -2703,7 +2691,7 @@ const VIDEO_TEMPLATES = [
   {
     id: 'brand-collab',
     label: 'Brand Collab',
-    icon: '🤝',
+    icon: '',
     sub: 'Polished partnership announcement',
     dialogue: "I partnered with a brand that actually aligns with how I live.",
     envKey: 'Street', environment: '',
@@ -3545,7 +3533,7 @@ function HistoryTab({ influencer, onUpdate, onReuseSettings }) {
       {/* Segment switcher */}
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:18,flexWrap:'wrap'}}>
         <div style={{display:'flex',gap:0,background:'var(--bg-tertiary)',borderRadius:10,padding:3}}>
-          {[['photos','📸 Photos'],['videos','🎬 Videos']].map(([s,label])=>(
+          {[['photos','Photos'],['videos','Videos']].map(([s,label])=>(
             <button key={s} onClick={()=>{setSegment(s);setSelected(new Set())}} style={{
               padding:'7px 18px',borderRadius:8,fontSize:13,fontWeight:600,border:'none',cursor:'pointer',fontFamily:'inherit',
               background: segment===s ? 'var(--surface)' : 'transparent',
@@ -4612,7 +4600,7 @@ ${shotsWithBeats.join('\n\n')}`
                 fontSize:11,fontWeight:600,color:'var(--text-tertiary)',
                 background:'transparent',border:'1px solid var(--border)',
               }}>
-                <span>🕐</span>
+                
                 <span>Recent</span>
                 <span style={{fontSize:9,opacity:0.55}}>{showHistory?'▲':'▼'}</span>
               </button>
@@ -4831,7 +4819,7 @@ ${shotsWithBeats.join('\n\n')}`
         <Sec>
           <CSStepHeader n={3} title="Time of Day" sub="Lighting and atmosphere of the scene."/>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {[['morning','🌅'],['afternoon','☀️'],['golden hour','🌇'],['night','🌙']].map(([val, icon]) => {
+            {['morning','afternoon','golden hour','night'].map(val => {
               const on = videoTimeOfDay === val
               return (
                 <button key={val} onClick={() => setVideoTimeOfDay(val)} style={{
@@ -4840,7 +4828,7 @@ ${shotsWithBeats.join('\n\n')}`
                   color: on ? 'var(--accent)' : 'var(--text-secondary)',
                   border: on ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid transparent',
                   transition:'all 0.15s', cursor:'pointer', fontFamily:'inherit',
-                }}>{icon} {val.charAt(0).toUpperCase() + val.slice(1)}</button>
+                }}>{val.charAt(0).toUpperCase() + val.slice(1)}</button>
               )
             })}
           </div>
@@ -5043,7 +5031,7 @@ ${shotsWithBeats.join('\n\n')}`
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:700,color:'var(--text-primary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{audioFileName}</div>
                 {audioDuration != null && audioDuration > 13.5
-                  ? <div style={{fontSize:11,fontWeight:600,color:'var(--color-status-danger)',marginTop:2}}>⚠ {audioDuration.toFixed(1)}s — max 13s. Trim your audio before uploading.</div>
+                  ? <div style={{fontSize:11,fontWeight:600,color:'var(--color-status-danger)',marginTop:2}}>{audioDuration.toFixed(1)}s — max 13s. Trim your audio before uploading.</div>
                   : <div style={{fontSize:11,color:'color-mix(in srgb, var(--accent) 80%, transparent)',marginTop:2}}>{audioDuration != null ? `${audioDuration.toFixed(1)}s · ` : ''}Lip-sync via @audio_1 — voice presets ignored</div>
                 }
               </div>
@@ -5180,9 +5168,9 @@ ${shotsWithBeats.join('\n\n')}`
 
           <div style={{display:'flex',gap:20,flexWrap:'wrap',alignItems:'flex-start'}}>
 
-            <div style={{flex:'1 1 160px',minWidth:140}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
-                <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)'}}>Duration</div>
+  <div style={{flex:'1 1 160px',minWidth:140}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+      <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)'}}>Duration</div>
                 <div style={{fontSize:16,fontWeight:700,color:'var(--text-primary)',fontVariantNumeric:'tabular-nums'}}>{duration}s</div>
               </div>
               <input type="range" min={4} max={15} step={1} value={duration} onChange={e=>{const v=Number(e.target.value);setDuration(v);localStorage.setItem('hf_duration',v)}}
@@ -5193,12 +5181,12 @@ ${shotsWithBeats.join('\n\n')}`
               </div>
             </div>
 
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Format</div>
+  <div>
+    <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Format</div>
               <div style={{display:'flex',gap:6}}>
                 {[
-                  {r:'9:16',  label:'📱 Reels'},
-                  {r:'16:9',  label:'🖥 Long-form'},
+                  {r:'9:16',  label:'Reels'},
+                  {r:'16:9',  label:'Long-form'},
                 ].map(({r, label}) => (
                   <button key={r} onClick={()=>{setAspect(r);localStorage.setItem('hf_aspect',r)}} style={{
                     padding:'7px 12px',borderRadius:9,fontSize:11,fontWeight:600,
@@ -5211,8 +5199,8 @@ ${shotsWithBeats.join('\n\n')}`
               </div>
             </div>
 
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Resolution</div>
+  <div>
+    <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Resolution</div>
               <div style={{display:'flex',gap:6}}>
                 {['480p','720p','1080p'].map(r => (
                   <button key={r} onClick={()=>{setResolution(r);localStorage.setItem('hf_resolution',r)}} style={{
@@ -5226,8 +5214,8 @@ ${shotsWithBeats.join('\n\n')}`
               </div>
             </div>
 
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Outputs</div>
+  <div>
+    <div style={{fontSize:11,fontWeight:600,color:'var(--text-tertiary)',marginBottom:8}}>Outputs</div>
               <div style={{display:'flex',gap:6}}>
                 {[1,2,3].map(n=>(
                   <button key={n} onClick={()=>{setOutputs(n);localStorage.setItem('hf_outputs',n)}} style={{
@@ -5357,7 +5345,7 @@ ${shotsWithBeats.join('\n\n')}`
                           background:'rgba(0,0,0,0.55)',borderRadius:6,padding:'3px 7px',
                           fontSize:10,color:'rgba(255,255,255,0.7)',fontWeight:500,
                           pointerEvents:'none',
-                        }}>⛶ expand</div>
+                        }}>expand</div>
                       </div>
 
                       {/* Action bar */}
@@ -5508,7 +5496,7 @@ ${shotsWithBeats.join('\n\n')}`
               border:'1.5px solid var(--border)', background:'var(--bg-tertiary)',
               color:'var(--text-primary)', cursor:'pointer',
               transition:'all 0.12s', fontFamily:'inherit',
-            }}>🎲 Random</button>
+            }}>Random</button>
           )}
           <button
             onClick={generate}
@@ -5757,7 +5745,6 @@ ${shotsWithBeats.join('\n\n')}`
         <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
           onClick={() => setConfirmVidClear(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', border: '1px solid var(--border)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>{confirmVidClear.label}?</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24 }}>This cannot be undone.</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -6090,10 +6077,7 @@ export default function Influencers() {
                     <div style={{position:'relative',width:40,height:40,flexShrink:0}}>
                       <Ring pct={pct} size={42}/>
                       <div style={{position:'absolute',top:3,left:3,width:34,height:34,borderRadius:inf.mainImage?'50%':8,overflow:'hidden',background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',transition:'border-radius 0.2s'}}>
-                        {inf.mainImage
-                          ?<img src={inf.mainImage} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                          :<span style={{fontSize:14,fontWeight:700,color:SD.dim}}>{inf.name[0]?.toUpperCase()}</span>
-                        }
+                        <AvatarImg key={inf.mainImage} src={inf.mainImage} fallback={<span style={{fontSize:14,fontWeight:700,color:SD.dim}}>{inf.name[0]?.toUpperCase()}</span>}/>
                       </div>
                     </div>
                     {/* Name + gender */}
@@ -6168,7 +6152,7 @@ export default function Influencers() {
           )}
 
           {/* ── Studio tab switcher + sidebar toggle */}
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
             {/* Expand sidebar button — only when collapsed */}
             {sidebarCollapsed && !isMobile && (
               <button onClick={()=>{setSidebarCollapsed(false);localStorage.setItem('inf_sidebar_collapsed','0')}} title="Show sidebar" style={{
@@ -6204,8 +6188,7 @@ export default function Influencers() {
                 transition:'all 0.18s',
               }}>Videos</button>
             </div>
-            <button type="button" className="muse-btn muse-btn-tonal" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>navigate('/studio',{state:{influencerId:influencer.id}})}>Open in Studio</button>
-            <button type="button" className="muse-btn muse-btn-text" style={{alignSelf:'flex-start',minHeight:44}} onClick={()=>exportPersonaBible(influencer)} title="Download this persona as Markdown and JSON">Export persona</button>
+            <div style={{marginLeft:'auto',alignSelf:'flex-start'}}><ProfileActions influencer={influencer} onExport={()=>exportPersonaBible(influencer)} onDelete={()=>del(influencer.id)}/></div>
           </div>
 
 
@@ -6278,7 +6261,7 @@ export default function Influencers() {
           )}
 
           {/* Hero banner */}
-          <HeroBanner influencer={influencer} pct={pct} onDelete={()=>del(influencer.id)} onUpdate={v=>upd(influencer.id,v)}/>
+          <HeroBanner influencer={influencer} pct={pct} onUpdate={v=>upd(influencer.id,v)}/>
 
           {/* Three image sections */}
           <Sec>

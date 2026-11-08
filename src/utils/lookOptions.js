@@ -2,20 +2,20 @@
 // Swatch hexes are content (skin/hair/eye colours), not UI chrome, so they stay literal.
 
 export const VIBE_OPTIONS = [
-  { id: 'Minimalist',   label: 'Minimalist',   sub: 'Clean, simple, less is more',            icon: '🤍' },
-  { id: 'Old Money',    label: 'Old Money',    sub: 'Understated wealth & heritage',           icon: '🏛' },
-  { id: 'Clean Girl',   label: 'Clean Girl',   sub: 'Effortless, dewy, no-makeup look',        icon: '🫧', genders: ['female'] },
-  { id: 'Editorial',    label: 'Editorial',    sub: 'High fashion, bold & structured',         icon: '🖤' },
-  { id: 'Streetwear',   label: 'Streetwear',   sub: 'Urban, casual street style',              icon: '🧢' },
-  { id: 'Bohemian',     label: 'Bohemian',     sub: 'Earthy, flowy, free-spirited',            icon: '🌿' },
-  { id: 'Glam',         label: 'Glam',         sub: 'Dressy, dramatic & glamorous',            icon: '✨' },
-  { id: 'Preppy',       label: 'Preppy',       sub: 'Classic, collegiate, polished',           icon: '🎓' },
-  { id: 'Sporty',       label: 'Sporty',       sub: 'Athletic & activewear vibes',             icon: '⚡' },
-  { id: 'Dark & Moody', label: 'Dark & Moody', sub: 'Alternative, edgy & dramatic',           icon: '🌙' },
-  { id: 'Y2K',          label: 'Y2K',          sub: '2000s nostalgia & pop culture',           icon: '💿' },
-  { id: 'Cottagecore',  label: 'Cottagecore',  sub: 'Romantic, vintage & nature',             icon: '🌸', genders: ['female'] },
-  { id: 'Tech Bro',     label: 'Tech Bro',     sub: 'Smart-casual, Silicon Valley',            icon: '💻', genders: ['male'] },
-  { id: 'Coastal',      label: 'Coastal',      sub: 'Linen, nautical, effortlessly sun-worn',  icon: '🌊' },
+  { id: 'Minimalist',   label: 'Minimalist',   sub: 'Clean, simple, less is more',            icon: '' },
+  { id: 'Old Money',    label: 'Old Money',    sub: 'Understated wealth & heritage',           icon: '' },
+  { id: 'Clean Girl',   label: 'Clean Girl',   sub: 'Effortless, dewy, no-makeup look',        icon: '', genders: ['female'] },
+  { id: 'Editorial',    label: 'Editorial',    sub: 'High fashion, bold & structured',         icon: '' },
+  { id: 'Streetwear',   label: 'Streetwear',   sub: 'Urban, casual street style',              icon: '' },
+  { id: 'Bohemian',     label: 'Bohemian',     sub: 'Earthy, flowy, free-spirited',            icon: '' },
+  { id: 'Glam',         label: 'Glam',         sub: 'Dressy, dramatic & glamorous',            icon: '' },
+  { id: 'Preppy',       label: 'Preppy',       sub: 'Classic, collegiate, polished',           icon: '' },
+  { id: 'Sporty',       label: 'Sporty',       sub: 'Athletic & activewear vibes',             icon: '' },
+  { id: 'Dark & Moody', label: 'Dark & Moody', sub: 'Alternative, edgy & dramatic',           icon: '' },
+  { id: 'Y2K',          label: 'Y2K',          sub: '2000s nostalgia & pop culture',           icon: '' },
+  { id: 'Cottagecore',  label: 'Cottagecore',  sub: 'Romantic, vintage & nature',             icon: '', genders: ['female'] },
+  { id: 'Tech Bro',     label: 'Tech Bro',     sub: 'Smart-casual, Silicon Valley',            icon: '', genders: ['male'] },
+  { id: 'Coastal',      label: 'Coastal',      sub: 'Linen, nautical, effortlessly sun-worn',  icon: '' },
 ]
 
 export const SKIN_TONES = [

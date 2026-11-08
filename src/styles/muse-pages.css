@@ -613,3 +613,13 @@ a.muse-conn-row { text-decoration: none; }
   .muse-q-card { flex-wrap: wrap; width: 100%; }
   .muse-q-empty { width: 100%; }
 }
+
+/* Influencer profile header actions (Create ▾ and ⋯) */
+.muse-pa-row { display: flex; gap: var(--space-2); align-items: center; }
+.muse-pa { position: relative; }
+.muse-pa .muse-btn { gap: 6px; }
+.muse-pa-more { padding: 0; width: 44px; justify-content: center; }
+.muse-pa-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 210px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+.muse-pa-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font: inherit; font-size: 14px; color: var(--text-primary); background: none; border: 0; text-align: left; cursor: pointer; }
+.muse-pa-menu button:hover, .muse-pa-menu button:focus-visible { background: var(--surface-hover); outline: none; }
+.muse-pa-menu button.danger { color: var(--color-status-danger); }

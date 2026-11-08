@@ -75,10 +75,10 @@ const LOC_VISUAL = {
 
 // Time of day overlays on the location card
 const TIME_VISUAL = {
-  morning:       { overlay: 'rgba(186,230,253,0.18)', badge: '🌅 Morning',    badgeBg: 'rgba(186,230,253,0.22)' },
-  afternoon:     { overlay: 'rgba(253,224,71,0.14)',  badge: '☀️ Afternoon',  badgeBg: 'rgba(253,224,71,0.22)'  },
-  'golden-hour': { overlay: 'rgba(251,146,60,0.28)',  badge: '🌇 Golden Hour',badgeBg: 'rgba(251,146,60,0.28)'  },
-  night:         { overlay: 'rgba(10,10,35,0.55)',    badge: '🌙 Night',      badgeBg: 'rgba(50,50,100,0.35)'   },
+  morning:       { overlay: 'rgba(186,230,253,0.18)', badge: 'Morning',    badgeBg: 'rgba(186,230,253,0.22)' },
+  afternoon:     { overlay: 'rgba(253,224,71,0.14)',  badge: 'Afternoon',  badgeBg: 'rgba(253,224,71,0.22)'  },
+  'golden-hour': { overlay: 'rgba(251,146,60,0.28)',  badge: 'Golden Hour',badgeBg: 'rgba(251,146,60,0.28)'  },
+  night:         { overlay: 'rgba(10,10,35,0.55)',    badge: 'Night',      badgeBg: 'rgba(50,50,100,0.35)'   },
 }
 
 async function downloadImage(url, filename) {
@@ -1570,7 +1570,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
             border: '1.5px solid var(--border)', background: 'var(--bg)',
             color: 'var(--text-primary)', cursor: 'pointer',
             transition: 'all 0.12s', fontFamily: 'inherit',
-          }}>🎲 Random</button>
+          }}>Random</button>
         )}
         <button
           onClick={() => setPlanOpen(true)}
@@ -1802,7 +1802,6 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
         <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
           onClick={() => setConfirmClear(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', border: '1px solid var(--border)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>{confirmClear.label}?</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24 }}>This cannot be undone.</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>

@@ -2,18 +2,18 @@
 // Based on the photo-studio-influencer-guide.md realism spec
 
 export const LOCATIONS = [
-  { id: 'coffee-shop',   label: 'Coffee Shop',    icon: '☕' },
-  { id: 'city-street',   label: 'City Street',    icon: '🏙' },
-  { id: 'beach',         label: 'Beach',          icon: '🌊' },
-  { id: 'rooftop',       label: 'Rooftop',        icon: '🌆' },
-  { id: 'bedroom',       label: 'Bedroom',        icon: '🛏' },
-  { id: 'bathroom',      label: 'Mirror Selfie',  icon: '🪞' },
-  { id: 'mall',          label: 'Mall',           icon: '🛍' },
-  { id: 'gym',           label: 'Gym',            icon: '💪' },
-  { id: 'park',          label: 'Park',           icon: '🌿' },
-  { id: 'restaurant',    label: 'Restaurant',     icon: '🍽' },
-  { id: 'hotel',         label: 'Hotel Room',     icon: '🏨' },
-  { id: 'studio',        label: 'Studio',         icon: '🎨' },
+  { id: 'coffee-shop',   label: 'Coffee Shop',    icon: '' },
+  { id: 'city-street',   label: 'City Street',    icon: '' },
+  { id: 'beach',         label: 'Beach',          icon: '' },
+  { id: 'rooftop',       label: 'Rooftop',        icon: '' },
+  { id: 'bedroom',       label: 'Bedroom',        icon: '' },
+  { id: 'bathroom',      label: 'Mirror Selfie',  icon: '' },
+  { id: 'mall',          label: 'Mall',           icon: '' },
+  { id: 'gym',           label: 'Gym',            icon: '' },
+  { id: 'park',          label: 'Park',           icon: '' },
+  { id: 'restaurant',    label: 'Restaurant',     icon: '' },
+  { id: 'hotel',         label: 'Hotel Room',     icon: '' },
+  { id: 'studio',        label: 'Studio',         icon: '' },
 ]
 
 export const TIMES = [
