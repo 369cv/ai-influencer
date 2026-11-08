@@ -815,3 +815,7 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-help-body li { margin-bottom: 6px; }
 .muse-help-body code { font-size: 13px; padding: 1px 6px; border-radius: 6px; background: var(--bg-tertiary); }
 .muse-help-vote { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); font-size: 14px; }
+
+/* Influencer profile: advanced studio bar */
+.muse-adv-bar { display: flex; align-items: center; gap: var(--space-3); }
+.muse-adv-bar .muse-btn { padding-left: 0; }

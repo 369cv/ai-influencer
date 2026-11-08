@@ -1,6 +1,6 @@
 # Simplify Muse: one box, a free plan, the influencer as identity
 
-Status: **proposal, not built.** Researched from HeyGen's current help center (articles and screenshots from 2026), HeyGen's public product pages, and Muzecast's public homepage. Muzecast's `/app/new` and HeyGen's signed-in app need a login, which this cloud session can't use. YouTube refused automated access ("confirm you're not a bot"), so no tutorial videos were watched.
+Status: **phases 1, 2 and 4 built** (Create box and plan, influencer looks, one entry point per job); phase 3 (talking video, remake a reel) waits on lip-sync and motion transfer. Researched from HeyGen's current help center (articles and screenshots from 2026), HeyGen's public product pages, and Muzecast's public homepage. Muzecast's `/app/new` and HeyGen's signed-in app need a login, which this cloud session can't use. YouTube refused automated access ("confirm you're not a bot"), so no tutorial videos were watched.
 
 ## What they do (findings)
 
