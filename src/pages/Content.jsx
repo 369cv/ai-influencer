@@ -59,7 +59,7 @@ export default function Content() {
       // ?compose=1 stays in the URL until the composer closes, so a direct
       // load (bookmark, extension link) still opens it if the page remounts.
       setComposing(c => c || {
-        caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null,
+        caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMediaList?.length ? location.state.prefillMediaList : location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null,
         // Brand deal → Create post: the post is linked back to its deliverable.
         ...(location.state?.deliverableId ? { dealId: location.state.dealId, deliverableId: location.state.deliverableId } : {}),
         ...(location.state?.igFormat ? { igFormat: location.state.igFormat } : {}),

@@ -1,0 +1,42 @@
+[
+ {
+  "id": "start",
+  "title": "Getting started",
+  "summary": "The basics: a tour, connecting Higgsfield, your first shoot and post."
+ },
+ {
+  "id": "create",
+  "title": "Create",
+  "summary": "One box, the plan, results and costs."
+ },
+ {
+  "id": "influencers",
+  "title": "Influencers and looks",
+  "summary": "Her identity: looks, face sheet, voice."
+ },
+ {
+  "id": "content",
+  "title": "Content and posting",
+  "summary": "Posting services, the queue, captions, edits and stats."
+ },
+ {
+  "id": "workflows",
+  "title": "Workflows",
+  "summary": "Chained steps you can run and review."
+ },
+ {
+  "id": "deals",
+  "title": "Brand deals",
+  "summary": "Deliverables and approval packs."
+ },
+ {
+  "id": "settings",
+  "title": "Settings and data",
+  "summary": "System check, connections and where your data lives."
+ },
+ {
+  "id": "troubleshooting",
+  "title": "Troubleshooting",
+  "summary": "When something fails, and how to fix it."
+ }
+]

@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
-import { NavLink, Link, useLocation } from 'react-router-dom'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useInfluencers } from '../store'
-import { openNewMenu } from './NewMenu'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
 
 // The one navigation. ≥1100px: full sidebar (collapsible to icons). 720–1099px:
@@ -10,7 +9,6 @@ import WorkspaceSwitcher from './WorkspaceSwitcher'
 // and html[data-drawer="open"] while the phone-width drawer is open.
 
 const KEY = 'muse_rail_expanded'
-const FEEDBACK_FORM_URL = 'https://forms.gle/p5cBXw4sYaHPdcANA'
 const I = {
   collapse: 'M15 6l-6 6 6 6',
   expand: 'M9 6l6 6-6 6',
@@ -23,10 +21,9 @@ const I = {
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 7.2 19.73l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.2 14.1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.27 7.3l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9.9 3.3V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.8 9.9H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.1z',
 }
 const LINKS = [
-  { to: '/', label: 'Home', icon: I.home, end: true },
+  { to: '/', label: 'Create', icon: I.home, end: true },
   { to: '/influencers', label: 'Influencers', icon: I.people },
   { to: '/content', label: 'Content', icon: I.content },
-  { to: '/plan', label: 'Plan', icon: I.plan },
 ]
 const Icon = ({ d }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
 
@@ -35,6 +32,7 @@ export const openDrawer = () => window.dispatchEvent(new CustomEvent(DRAWER_EVT,
 
 export default function AppSidebar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [influencers] = useInfluencers()
   const [expanded, setExpanded] = useState(() => { try { return localStorage.getItem(KEY) !== '0' } catch { return true } })
   const [drawer, setDrawer] = useState(false)
@@ -80,7 +78,7 @@ export default function AppSidebar() {
           </button>
         </div>
 
-        <button type="button" className="muse-rail-new" title="New" aria-haspopup="menu" onClick={e => openNewMenu(e.currentTarget)}>
+        <button type="button" className="muse-rail-new" title="New" onClick={() => navigate('/?new=1')}>
           <Icon d={I.plus} /><span className="muse-rail-label">New</span>
         </button>
 
@@ -105,9 +103,9 @@ export default function AppSidebar() {
         )}
 
         <div className="muse-rail-foot">
-          <a href={FEEDBACK_FORM_URL} target="_blank" rel="noopener noreferrer" className="muse-rail-item" title="Help & feedback">
-            <Icon d={I.help} /><span className="muse-rail-label">Help &amp; feedback</span>
-          </a>
+          <NavLink to="/help" title="Help" className={({ isActive }) => `muse-rail-item${isActive ? ' active' : ''}`}>
+            <Icon d={I.help} /><span className="muse-rail-label">Help</span>
+          </NavLink>
           <NavLink to="/settings" title="Settings" className={({ isActive }) => `muse-rail-item${isActive ? ' active' : ''}`}>
             <Icon d={I.settings} /><span className="muse-rail-label">Settings</span>
           </NavLink>

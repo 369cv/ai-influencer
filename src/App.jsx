@@ -14,12 +14,12 @@ import Influencers from './pages/Influencers'
 import BrandDeals from './pages/BrandDeals'
 import Create from './pages/Create'
 import Settings from './pages/Settings'
+import Help from './pages/Help'
 import Workflows from './pages/Workflows'
 import Import from './pages/Import'
 import Content from './pages/Content'
 import Plan from './pages/Plan'
 import Studio from './pages/Studio'
-import NewMenu from './components/NewMenu'
 import AuthCallback from './pages/AuthCallback'
 
 export default function App() {
@@ -56,10 +56,12 @@ export default function App() {
         <Route path="/brand-deals" element={<BrandDeals />} />
         <Route path="/create" element={<Create />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/help/c/:id" element={<Help />} />
+        <Route path="/help/a/:slug" element={<Help />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <NewMenu />
       <Analytics />
     </BrowserRouter>
     </WorkspaceProvider>
