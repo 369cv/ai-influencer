@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getElevenKey, listVoices, speak, designVoice, saveDesignedVoice, VOICE_MODELS, DEFAULT_VOICE_SETTINGS } from '../utils/elevenlabs'
+import { getElevenKey, listVoices, speak, designVoice, saveDesignedVoice, remixVoice, searchLibrary, addLibraryVoice, VOICE_MODELS, DEFAULT_VOICE_SETTINGS } from '../utils/elevenlabs'
 
 // Persona voice (influencer profile → Overview). One ElevenLabs voice per
 // persona with locked settings and an optional seed, so every clip sounds the
@@ -21,7 +21,8 @@ export default function PersonaVoice({ influencer, onUpdate }) {
   const vp = influencer.voiceProfile || null
   const settings = { ...DEFAULT_VOICE_SETTINGS, ...(vp?.settings || {}) }
   const [picking, setPicking] = useState(false)
-  const [designing, setDesigning] = useState(false)
+  const [designing, setDesigning] = useState(false) // false | 'design' | 'remix'
+  const [source, setSource] = useState('mine')       // picker: 'mine' | 'library'
   const [voices, setVoices] = useState(null)
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState('')
@@ -88,7 +89,8 @@ export default function PersonaVoice({ influencer, onUpdate }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
         <span id="pv-h" style={label}>Voice</span>
         <span style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>
-          <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 36 }} onClick={() => { setDesigning(d => !d); setPicking(false) }} aria-expanded={designing}>{designing ? 'Close' : 'Design a voice'}</button>
+          {vp?.voiceId && <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 36 }} onClick={() => { setDesigning(d => d === 'remix' ? false : 'remix'); setPicking(false) }} aria-expanded={designing === 'remix'}>{designing === 'remix' ? 'Close' : 'Tweak voice'}</button>}
+          <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 36 }} onClick={() => { setDesigning(d => d === 'design' ? false : 'design'); setPicking(false) }} aria-expanded={designing === 'design'}>{designing === 'design' ? 'Close' : 'Design a voice'}</button>
           <button type="button" className="muse-btn muse-btn-tonal" style={{ minHeight: 36 }} onClick={() => { setDesigning(false); picking ? setPicking(false) : openPicker() }} aria-expanded={picking}>
             {picking ? 'Close' : vp?.voiceId ? 'Change voice' : 'Pick a voice'}
           </button>
@@ -99,9 +101,15 @@ export default function PersonaVoice({ influencer, onUpdate }) {
         ? <div style={{ fontSize: 15, fontWeight: 600 }}>{vp.voiceName || vp.voiceId} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 13 }}>· ElevenLabs</span></div>
         : !picking && <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>No voice yet. Pick one from your ElevenLabs library.</p>}
 
-      {designing && <VoiceDesign influencer={influencer} play={play} onSaved={v => { save({ voiceId: v.voice_id, voiceName: v.name, designed: true }); setVoices(null); setDesigning(false) }} />}
+      {designing && <VoiceDesign key={designing} remixOf={designing === 'remix' ? vp : null} influencer={influencer} play={play} onSaved={v => { save({ voiceId: v.voice_id, voiceName: v.name, designed: true }); setVoices(null); setDesigning(false) }} />}
 
       {picking && (
+        <div className="muse-chip-row" role="tablist" aria-label="Voices from">
+          {[['mine', 'My voices'], ['library', 'Voice library']].map(([id, l]) => <button key={id} type="button" role="tab" aria-selected={source === id} className={`muse-chip${source === id ? ' on' : ''}`} onClick={() => setSource(id)}>{l}</button>)}
+        </div>
+      )}
+      {picking && source === 'library' && <VoiceLibrary play={play} current={vp?.voiceId} onUse={v => { save({ voiceId: v.voice_id, voiceName: v.name }); setVoices(null); setPicking(false) }} />}
+      {picking && source === 'mine' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <input className="muse-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Search voices" aria-label="Search voices" />
           {busy === 'voices' && <p className="muse-muted">Loading your voices…</p>}
@@ -165,19 +173,20 @@ export default function PersonaVoice({ influencer, onUpdate }) {
 
 // Voice Design (ElevenLabs): describe her voice, get three takes, keep one. Each round
 // uses ElevenLabs credits; nothing is added to the account until Save.
-function VoiceDesign({ influencer, play, onSaved }) {
+function VoiceDesign({ influencer, play, onSaved, remixOf = null }) {
   const [description, setDescription] = useState('')
   const [text, setText] = useState('')
   const [takes, setTakes] = useState(null)
   const [pick, setPick] = useState(null)
-  const [name, setName] = useState(influencer.name || '')
+  const [name, setName] = useState(remixOf ? `${remixOf.voiceName || influencer.name || 'Voice'} (remix)`.slice(0, 100) : influencer.name || '')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const d = description.trim(), t = text.trim()
-  const ok = d.length >= 20 && d.length <= 1000 && (!t || (t.length >= 100 && t.length <= 1000))
+  const min = remixOf ? 5 : 20
+  const ok = d.length >= min && d.length <= 1000 && (!t || (t.length >= 100 && t.length <= 1000))
   async function make() {
     setBusy('design'); setError(''); setTakes(null); setPick(null)
-    try { const r = await designVoice({ description: d, text: t || undefined }); setTakes(r.previews); if (!t && r.text) setText(r.text) } catch (e) { setError(e.message) } finally { setBusy('') }
+    try { const r = remixOf ? await remixVoice({ voiceId: remixOf.voiceId, description: d, text: t || undefined }) : await designVoice({ description: d, text: t || undefined }); setTakes(r.previews); if (!t && r.text) setText(r.text) } catch (e) { setError(e.message) } finally { setBusy('') }
   }
   async function keep() {
     setBusy('save'); setError('')
@@ -185,9 +194,9 @@ function VoiceDesign({ influencer, play, onSaved }) {
   }
   return (
     <div className="muse-vd">
-      <label className="muse-field-label" htmlFor="vd-desc">Describe {influencer.name ? `${influencer.name}’s` : 'her'} voice</label>
-      <textarea id="vd-desc" className="muse-input" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Age, accent, tone, pace and mood. For example: warm, mid-twenties, light London accent, relaxed and a little playful." />
-      <small className={d && (d.length < 20 || d.length > 1000) ? 'muse-error' : 'muse-muted'}>{d.length} / 1,000 · at least 20</small>
+      <label className="muse-field-label" htmlFor="vd-desc">{remixOf ? `What should change in ${remixOf.voiceName || 'this voice'}?` : `Describe ${influencer.name ? `${influencer.name}’s` : 'her'} voice`}</label>
+      <textarea id="vd-desc" className="muse-input" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder={remixOf ? 'For example: a little older, softer, slower, with a light Irish accent.' : 'Age, accent, tone, pace and mood. For example: warm, mid-twenties, light London accent, relaxed and a little playful.'} />
+      <small className={d && (d.length < min || d.length > 1000) ? 'muse-error' : 'muse-muted'}>{d.length} / 1,000 · at least {min}</small>
       <label className="muse-field-label" htmlFor="vd-text">Sample line <span className="muse-muted">· optional, 100 to 1,000 characters</span></label>
       <textarea id="vd-text" className="muse-input" rows={2} value={text} onChange={e => setText(e.target.value)} placeholder="Leave empty and ElevenLabs writes one that fits the description." />
       {t && (t.length < 100 || t.length > 1000) && <small className="muse-error">{t.length} characters; needs 100 to 1,000.</small>}
@@ -213,6 +222,63 @@ function VoiceDesign({ influencer, play, onSaved }) {
           <button type="button" className="muse-btn muse-btn-filled" disabled={!name.trim() || !!busy} onClick={keep}>{busy === 'save' ? 'Saving…' : 'Save and use'}</button>
         </div>
       )}
+    </div>
+  )
+}
+
+// Voice Library (ElevenLabs public voices) with filters. Add and use copies the voice
+// into your ElevenLabs account, then picks it for her.
+const GENDERS = [['', 'Any gender'], ['female', 'Female'], ['male', 'Male'], ['neutral', 'Neutral']]
+const AGES = [['', 'Any age'], ['young', 'Young'], ['middle_aged', 'Middle aged'], ['old', 'Old']]
+const USES = [['', 'Any use'], ['social_media', 'Social media'], ['conversational', 'Conversational'], ['narrative_story', 'Narration'], ['advertisement', 'Advertising'], ['characters_animation', 'Characters'], ['entertainment_tv', 'Entertainment'], ['informative_educational', 'Educational']]
+const LANGS = [['', 'Any language'], ['en', 'English'], ['es', 'Spanish'], ['pt', 'Portuguese'], ['fr', 'French'], ['de', 'German'], ['it', 'Italian'], ['ar', 'Arabic'], ['hi', 'Hindi'], ['ja', 'Japanese'], ['ko', 'Korean'], ['zh', 'Chinese']]
+function VoiceLibrary({ play, current, onUse }) {
+  const [f, setF] = useState({ search: '', gender: '', age: '', accent: '', language: '', use_case: '' })
+  const [page, setPage] = useState(0)
+  const [res, setRes] = useState(null)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      setBusy('search'); setError('')
+      try { const r = await searchLibrary({ ...f, page }); setRes(x => page > 0 && x ? { voices: [...x.voices, ...r.voices], hasMore: r.hasMore } : r) } catch (e) { setError(e.message) } finally { setBusy('') }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [f, page])
+  const set = patch => { setPage(0); setF(x => ({ ...x, ...patch })) }
+  const sel = (key, opts, label) => <select className="muse-input" value={f[key]} onChange={e => set({ [key]: e.target.value })} aria-label={label}>{opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+  async function add(v) {
+    setBusy(v.voice_id); setError('')
+    try { const { voice_id } = await addLibraryVoice({ publicOwnerId: v.public_owner_id, voiceId: v.voice_id, name: v.name }); onUse({ voice_id: voice_id || v.voice_id, name: v.name }) }
+    catch (e) { setError(e.message) } finally { setBusy('') }
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <input className="muse-input" value={f.search} onChange={e => set({ search: e.target.value })} placeholder="Search the ElevenLabs library: warm, raspy, upbeat…" aria-label="Search the voice library" />
+      <div className="muse-vl-filters">
+        {sel('gender', GENDERS, 'Gender')}{sel('age', AGES, 'Age')}{sel('language', LANGS, 'Language')}{sel('use_case', USES, 'Use')}
+        <input className="muse-input" value={f.accent} onChange={e => set({ accent: e.target.value })} placeholder="Accent" aria-label="Accent" />
+      </div>
+      {error && <p className="muse-error">{error}</p>}
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 320, overflow: 'auto', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }} aria-label="Library voices">
+        {(res?.voices || []).map(v => {
+          const tags = [v.labels?.gender, v.labels?.age?.replace('_', ' '), v.labels?.accent, v.labels?.descriptive, v.labels?.use_case?.replace(/_/g, ' ')].filter(Boolean).join(' · ')
+          return (
+            <li key={`${v.public_owner_id}-${v.voice_id}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <button type="button" className="muse-pchip icon" aria-label={`Play ${v.name} sample`} disabled={!v.preview_url} onClick={() => play(v.preview_url)}>▶</button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{v.name}</div>
+                {tags && <div style={{ fontSize: 12, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tags}</div>}
+              </div>
+              {v.voice_id === current ? <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Selected</span>
+                : <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 32 }} disabled={!!busy} onClick={() => add(v)}>{busy === v.voice_id ? 'Adding…' : 'Add and use'}</button>}
+            </li>
+          )
+        })}
+        {busy === 'search' && <li style={{ padding: 12, fontSize: 13, color: 'var(--text-tertiary)' }}>Searching…</li>}
+        {res && !res.voices.length && busy !== 'search' && <li style={{ padding: 12, fontSize: 13, color: 'var(--text-tertiary)' }}>No library voices match.</li>}
+      </ul>
+      {res?.hasMore && <button type="button" className="muse-btn muse-btn-text" disabled={!!busy} onClick={() => setPage(p => p + 1)}>More voices</button>}
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { downloadImage } from '../utils/imageUtils'
 import { isPublishingConnected } from '../utils/connections'
 import { MODEL_LABELS } from '../utils/creditEstimate'
 import { getHFToken } from '../utils/higgsfieldAuth'
-import { hfToolNames, editCost, editImage, EDIT_TOOLS } from '../utils/higgsfieldGenerate'
+import { hfToolNames, editCost, editImage, editOptions, EDIT_TOOLS } from '../utils/higgsfieldGenerate'
 import { useInfluencers } from '../store'
 
 // Full-screen viewer for Library items: swipe or arrow keys to move,
@@ -67,18 +67,22 @@ const EDITS = [
   { op: 'upscale', label: 'Upscale', hint: 'Sharper, up to 4K' },
   { op: 'expand', label: 'Expand', hint: 'Extend the frame to a new shape' },
   { op: 'removebg', label: 'Remove background', hint: 'Subject only, transparent' },
+  { op: 'relight', label: 'Relight', hint: 'New lighting on the same photo' },
 ]
 const EXPAND_RATIOS = ['9:16', '4:5', '1:1', '16:9']
 function EditSheet({ item }) {
   const [, setInfluencers] = useInfluencers()
   const [tools, setTools] = useState(null)
   const [op, setOp] = useState('upscale')
-  const [opts, setOpts] = useState({ resolution: '4k', aspectRatio: '4:5' })
+  const [opts, setOpts] = useState({ resolution: '4k', aspectRatio: '4:5', fields: {} })
   const [cost, setCost] = useState({ state: 'idle' })
   const [run, setRun] = useState({ state: 'idle' })
   const signedIn = !!getHFToken()
   useEffect(() => { if (signedIn) hfToolNames().then(setTools).catch(() => setTools(new Set())) }, [signedIn])
   const available = EDITS.filter(e => tools?.has(EDIT_TOOLS[e.op]))
+  const relightOpts = op === 'relight' && tools ? editOptions(EDIT_TOOLS.relight) : []
+  const relightReady = relightOpts.filter(o => o.required).every(o => String(opts.fields[o.key] ?? o.def ?? '').trim())
+  const setField = (k, v) => { setOpts(x => ({ ...x, fields: { ...x.fields, [k]: v } })); setCost({ state: 'idle' }); setRun({ state: 'idle' }) }
   async function quote() {
     setCost({ state: 'busy' })
     try { const n = await editCost(op, item.url, opts); setCost({ state: 'done', n }) } catch (e) { setCost({ state: 'error', error: e.message }) }
@@ -87,7 +91,7 @@ function EditSheet({ item }) {
     setRun({ state: 'busy' })
     try {
       const url = await editImage(op, item.url, opts)
-      const label = op === 'upscale' ? `Upscaled ${opts.resolution.toUpperCase()}` : op === 'expand' ? `Expanded ${opts.aspectRatio}` : 'Background removed'
+      const label = op === 'upscale' ? `Upscaled ${opts.resolution.toUpperCase()}` : op === 'expand' ? `Expanded ${opts.aspectRatio}` : op === 'relight' ? 'Relit' : 'Background removed'
       if (item.influencerId) setInfluencers(prev => prev.map(i => i.id === item.influencerId ? { ...i, generationHistory: [{ id: `edit_${Date.now()}`, type: 'image', url, label, date: Date.now(), settings: { source: 'edit', edit: op, from: item.url, aspectRatio: op === 'expand' ? opts.aspectRatio : item.aspectRatio } }, ...(i.generationHistory || [])] } : i))
       setRun({ state: 'done', url, label })
     } catch (e) { setRun({ state: 'error', error: e.message }) }
@@ -103,9 +107,17 @@ function EditSheet({ item }) {
             {available.map(e => <button key={e.op} type="button" role="radio" aria-checked={op === e.op} className={`muse-chip${op === e.op ? ' on' : ''}`} onClick={() => pick(e.op)} title={e.hint}>{e.label}</button>)}
           </div>
           {op === 'upscale' && <div className="muse-chip-row" role="radiogroup" aria-label="Resolution">{['2k', '4k'].map(r => <button key={r} type="button" role="radio" aria-checked={opts.resolution === r} className={`muse-chip${opts.resolution === r ? ' on' : ''}`} onClick={() => pick('upscale', { resolution: r })}>{r.toUpperCase()}</button>)}</div>}
+          {op === 'relight' && relightOpts.map(o => o.enum ? (
+            <div key={o.key} className="muse-chip-row" role="radiogroup" aria-label={o.label} title={o.hint}>
+              {o.enum.map(v => { const on = (opts.fields[o.key] ?? o.def) === v; return <button key={v} type="button" role="radio" aria-checked={on} className={`muse-chip${on ? ' on' : ''}`} onClick={() => setField(o.key, v)}>{String(v).replace(/_/g, ' ')}</button> })}
+            </div>
+          ) : (
+            <input key={o.key} className="muse-input" value={opts.fields[o.key] || ''} onChange={e => setField(o.key, e.target.value)} placeholder={`${o.label}${o.required ? '' : ' (optional)'}: ${o.hint.slice(0, 80)}`} aria-label={o.label} />
+          ))}
           {op === 'expand' && <div className="muse-chip-row" role="radiogroup" aria-label="New shape">{EXPAND_RATIOS.map(r => <button key={r} type="button" role="radio" aria-checked={opts.aspectRatio === r} className={`muse-chip${opts.aspectRatio === r ? ' on' : ''}`} onClick={() => pick('expand', { aspectRatio: r })}>{r}</button>)}</div>}
           <p className="muse-muted" style={{ fontSize: 13 }}>
             {op === 'removebg' ? 'Higgsfield doesn’t quote this one in advance; it uses your Higgsfield credits.'
+              : op === 'relight' && !relightReady ? 'Fill in the lighting first.'
               : cost.state === 'busy' ? 'Asking Higgsfield for the cost…'
               : cost.state === 'done' ? (cost.n != null ? `Costs ${cost.n} credits.` : 'Higgsfield didn’t return a price.')
               : cost.state === 'error' ? <span className="muse-error">{cost.error}</span>
@@ -120,7 +132,7 @@ function EditSheet({ item }) {
             </div>
           ) : (
             <div className="muse-plan-actions">
-              <button type="button" className="muse-btn muse-btn-filled" disabled={run.state === 'busy'} onClick={go}>
+              <button type="button" className="muse-btn muse-btn-filled" disabled={run.state === 'busy' || (op === 'relight' && !relightReady)} onClick={go}>
                 {run.state === 'busy' ? 'Working…' : `${EDITS.find(e => e.op === op).label}${cost.state === 'done' && cost.n != null ? ` · ${cost.n} credits` : ''}`}
               </button>
             </div>

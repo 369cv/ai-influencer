@@ -44,3 +44,25 @@ test('errors come back as plain text', async () => {
   const out = await handleElevenLabs({ method: 'GET', op: 'usage', key })
   assert.deepEqual([out.status, out.json.error], [401, 'quota_exceeded'])
 })
+
+test('library passes only known filters and maps voices', async () => {
+  const calls = stub({ voices: [{ voice_id: 'abcdefgh12', public_owner_id: 'owner12345', name: 'Ava', gender: 'female', age: 'young', accent: 'british', descriptive: 'warm', use_case: 'social_media', language: 'en', preview_url: 'https://x/p.mp3' }], has_more: true })
+  const out = await handleElevenLabs({ method: 'GET', op: 'library', key, query: { search: 'warm', gender: 'female', use_case: 'social_media', evil: 'x', page: '2' } })
+  const u = new URL(calls[0].url)
+  assert.equal(u.pathname, '/v1/shared-voices')
+  assert.deepEqual([u.searchParams.get('search'), u.searchParams.get('gender'), u.searchParams.get('use_cases'), u.searchParams.get('page'), u.searchParams.get('evil')], ['warm', 'female', 'social_media', '2', null])
+  assert.equal(out.json.hasMore, true)
+  assert.equal(out.json.voices[0].labels.accent, 'british')
+})
+
+test('add copies a library voice; remix needs a voice and a change', async () => {
+  let calls = stub({ voice_id: 'newvoice123' })
+  const out = await handleElevenLabs({ method: 'POST', op: 'add', key, body: { public_owner_id: 'owner12345', voice_id: 'abcdefgh12', name: 'Ava' } })
+  assert.equal(calls[0].url, 'https://api.elevenlabs.io/v1/voices/add/owner12345/abcdefgh12')
+  assert.deepEqual(out.json, { voice_id: 'newvoice123' })
+  assert.equal((await handleElevenLabs({ method: 'POST', op: 'remix', key, body: { description: 'older' } })).status, 400)
+  calls = stub({ text: 't', previews: [{ generated_voice_id: 'gen123456', audio_base_64: 'A' }] })
+  const r = await handleElevenLabs({ method: 'POST', op: 'remix', voice: 'abcdefgh12', key, body: { description: 'a bit older and softer' } })
+  assert.match(calls[0].url, /\/v1\/text-to-voice\/abcdefgh12\/remix/)
+  assert.equal(r.json.previews[0].id, 'gen123456')
+})

@@ -186,7 +186,7 @@ const elevenPlugin = {
       try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch {}
       const { handleElevenLabs } = await import('./api/elevenlabs.js')
       try {
-        const out = await handleElevenLabs({ method: req.method, op: url.searchParams.get('op'), voice: url.searchParams.get('voice'), key: req.headers['x-api-key'], body })
+        const out = await handleElevenLabs({ method: req.method, op: url.searchParams.get('op'), voice: url.searchParams.get('voice'), key: req.headers['x-api-key'], body, query: Object.fromEntries(url.searchParams) })
         if (out.audio) { res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(out.audio); return }
         res.writeHead(out.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(out.json))
       } catch {

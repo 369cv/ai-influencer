@@ -865,3 +865,4 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-credits:hover { background: var(--bg-tertiary); }
 .muse-credits-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-status-success); flex-shrink: 0; margin: 0 6px; }
 .muse-credits.low .muse-credits-dot { background: var(--color-status-error, #B42318); }
+.muse-vl-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--space-2); }

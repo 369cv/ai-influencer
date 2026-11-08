@@ -8,6 +8,10 @@
 //        body { description (20–1000), text? (100–1000), model? }
 //   POST /api/elevenlabs?op=save              → { voice_id, name }
 //        body { name, description, generated_voice_id }
+//   GET  /api/elevenlabs?op=library&search=&gender=&age=&accent=&language=&use_case=&page=
+//                                             → { voices: [...], hasMore }
+//   POST /api/elevenlabs?op=add               → { voice_id }   body { public_owner_id, voice_id, name }
+//   POST /api/elevenlabs?op=remix&voice=<id>  → like design    body { description, text? }
 import { rateLimit, clientIp } from '../lib/rateLimit.js'
 
 const BASE = 'https://api.elevenlabs.io'
@@ -25,7 +29,7 @@ const errText = (data, fallback) => {
 const clamp = (v, lo, hi) => (typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : undefined)
 
 // Shared by the Vercel function and the Vite dev mirror.
-export async function handleElevenLabs({ method, op, voice, key, body }) {
+export async function handleElevenLabs({ method, op, voice, key, body, query = {} }) {
   if (!key) return { status: 400, json: { error: 'Add your ElevenLabs key in Settings → Connections.' } }
   const headers = { 'xi-api-key': key }
 
@@ -98,6 +102,47 @@ export async function handleElevenLabs({ method, op, voice, key, body }) {
     return { status: 200, json: { voice_id: data.voice_id, name: data.name || name } }
   }
 
+  // Voice Library: public voices with filters. Adding one copies it into the account.
+  if (op === 'library' && method === 'GET') {
+    const q = new URLSearchParams({ page_size: '30' })
+    for (const k of ['search', 'gender', 'age', 'accent', 'language']) {
+      const v = String(query[k] || '').trim().slice(0, 60)
+      if (v) q.set(k, v)
+    }
+    const uc = String(query.use_case || '').trim().slice(0, 40)
+    if (uc) q.append('use_cases', uc)
+    const page = Number.parseInt(query.page, 10)
+    if (page > 0 && page < 100) q.set('page', String(page))
+    const r = await fetch(`${BASE}/v1/shared-voices?${q}`, { headers })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs refused the request.') } }
+    const voices = (data.voices || []).map(v => ({ voice_id: v.voice_id, public_owner_id: v.public_owner_id, name: v.name, preview_url: v.preview_url || '', labels: { gender: v.gender, age: v.age, accent: v.accent, descriptive: v.descriptive, use_case: v.use_case, language: v.language }, category: v.category || '' }))
+    return { status: 200, json: { voices, hasMore: !!data.has_more } }
+  }
+
+  if (op === 'add' && method === 'POST') {
+    const owner = String(body?.public_owner_id || ''), id = String(body?.voice_id || '')
+    const name = String(body?.name || '').trim().slice(0, 100)
+    if (!/^[A-Za-z0-9]{8,80}$/.test(owner) || !VOICE_ID.test(id) || !name) return { status: 400, json: { error: 'Pick a voice from the library.' } }
+    const r = await fetch(`${BASE}/v1/voices/add/${owner}/${id}`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ new_name: name }) })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs could not add that voice.') } }
+    return { status: 200, json: { voice_id: data.voice_id } }
+  }
+
+  // Voice Remix: change an existing voice (older, softer, another accent): 3 takes.
+  if (op === 'remix' && method === 'POST') {
+    if (!VOICE_ID.test(voice || '')) return { status: 400, json: { error: 'Pick a voice first.' } }
+    const description = String(body?.description || '').trim()
+    if (description.length < 5 || description.length > 1000) return { status: 400, json: { error: 'Describe the change in 5 to 1,000 characters.' } }
+    const text = String(body?.text || '').trim()
+    if (text && (text.length < 100 || text.length > 1000)) return { status: 400, json: { error: 'The sample line needs 100 to 1,000 characters, or leave it empty.' } }
+    const r = await fetch(`${BASE}/v1/text-to-voice/${voice}/remix?output_format=mp3_44100_128`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ voice_description: description, ...(text ? { text } : { auto_generate_text: true }) }) })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs could not remix that voice.') } }
+    return { status: 200, json: { text: data.text || text, previews: (data.previews || []).map(p => ({ id: p.generated_voice_id, audio: p.audio_base_64, duration: p.duration_secs ?? null })) } }
+  }
+
   return { status: 404, json: { error: 'Unknown operation.' } }
 }
 
@@ -106,7 +151,7 @@ export default async function handler(req, res) {
   const rl = rateLimit(clientIp(req.headers))
   if (!rl.ok) { res.setHeader('Retry-After', String(rl.retryAfter)); return res.status(429).json({ error: 'Too many requests — try again in a moment.' }) }
   try {
-    const out = await handleElevenLabs({ method: req.method, op: req.query.op, voice: req.query.voice, key: req.headers['x-api-key'], body: req.body })
+    const out = await handleElevenLabs({ method: req.method, op: req.query.op, voice: req.query.voice, key: req.headers['x-api-key'], body: req.body, query: req.query })
     if (out.audio) { res.setHeader('Content-Type', 'audio/mpeg'); return res.status(200).send(out.audio) }
     return res.status(out.status).json(out.json)
   } catch (e) {
