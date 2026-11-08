@@ -897,3 +897,67 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-inbox-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .muse-inbox-c { display: flex; flex-direction: column; gap: 6px; padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-subtle); font-size: 14px; }
 .muse-inbox-c p { margin: 0; }
+
+/* ── Home: workflow box, cards, setup steps, attach sheet, recent ── */
+.muse-wfbox { position: relative; }
+.muse-wf-dd { position: relative; align-self: flex-start; }
+.muse-wf-ddbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle); background: var(--tonal); color: var(--on-tonal); font: inherit; font-size: 13px; font-weight: var(--font-weight-semibold); cursor: pointer; }
+.muse-wf-ddbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.muse-wf-menu { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: min(320px, 86vw); margin: 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.muse-wf-menu li.sep { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-subtle); }
+.muse-wf-menu button { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.muse-wf-menu button:hover, .muse-wf-menu button:focus-visible { background: var(--surface-hover); outline: none; }
+.muse-wf-menu button svg { margin-top: 2px; color: var(--accent); flex: none; }
+.muse-wf-menu b { display: block; font-size: 14px; font-weight: var(--font-weight-semibold); }
+.muse-wf-menu small { display: block; font-size: 12px; color: var(--text-secondary); }
+.muse-wf-chips { flex-wrap: wrap; gap: 6px; }
+.muse-wf-chips .muse-chip { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.muse-wf-who { position: relative; cursor: pointer; }
+.muse-wf-who select { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 16px; }
+.muse-wf-attached { display: flex; gap: 6px; flex-wrap: wrap; }
+.muse-wf-attached .muse-thumb { position: relative; width: 52px; height: 52px; border-radius: var(--radius-md); background-size: cover; background-position: center; background-color: var(--bg-tertiary); display: grid; place-items: center; overflow: visible; }
+.muse-wf-attached .muse-thumb em { font-style: normal; font-size: 10px; color: var(--text-secondary); }
+.muse-wf-attached .muse-thumb button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 10px; line-height: 1; cursor: pointer; }
+.muse-wf-setups { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+.muse-wf-setups .muse-chip { text-decoration: none; }
+
+.muse-wf-cards { text-align: left; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.muse-wf-card { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface); color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.muse-wf-card svg { color: var(--accent); }
+.muse-wf-card b { font-size: 14px; font-weight: var(--font-weight-semibold); }
+.muse-wf-card small { font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
+.muse-wf-card:hover { background: var(--surface-hover); }
+.muse-wf-card.on { border-color: var(--accent); background: var(--accent-light); }
+.muse-wf-card:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+@media (max-width: 860px) { .muse-wf-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.muse-setup { display: flex; gap: 10px; align-items: stretch; margin: 12px 0 14px; text-align: left; }
+@media (max-width: 760px) { .muse-setup { flex-wrap: wrap; } .muse-step-done { flex: 1; } }
+.muse-step-done { flex: none; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 120px; padding: 10px 12px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface); font-size: 13px; }
+.muse-step-done small { color: var(--text-tertiary); font-size: 12px; }
+.muse-step-ok { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; }
+.muse-step-next { flex: 1; min-width: 280px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--accent); background: var(--accent-light); }
+.muse-step-av { width: 44px; height: 44px; flex: none; border-radius: 50%; background: var(--bg-tertiary) center / cover; display: grid; place-items: center; font-weight: var(--font-weight-semibold); color: var(--text-secondary); }
+.muse-step-text { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 13px; min-width: 0; }
+.muse-step-text strong { font-size: 15px; }
+.muse-step-name { font-weight: var(--font-weight-semibold); }
+@media (max-width: 560px) { .muse-step-next { flex-wrap: wrap; } .muse-step-next .muse-btn { width: 100%; } }
+
+.muse-attach { max-width: 560px; }
+.muse-attach-drop { display: block; width: 100%; padding: 22px; margin: 10px 0; border: 1.5px dashed var(--border); border-radius: var(--radius-lg); background: var(--bg-tertiary); color: var(--text-secondary); font: inherit; cursor: pointer; }
+.muse-attach-drop:hover { border-color: var(--accent); color: var(--text-primary); }
+.muse-attach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 10px 0; max-height: 50vh; overflow: auto; }
+.muse-attach-cell { position: relative; aspect-ratio: 3 / 4; border-radius: var(--radius-md); border: 2px solid transparent; background: var(--bg-tertiary) center / cover; cursor: pointer; display: grid; place-items: center; }
+.muse-attach-cell em { font-style: normal; font-size: 11px; color: var(--text-secondary); }
+.muse-attach-cell.on { border-color: var(--accent); }
+.muse-attach-cell:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.muse-attach-n { position: absolute; top: 6px; right: 6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--radius-pill); background: var(--accent); color: #fff; font-size: 12px; font-weight: var(--font-weight-semibold); display: grid; place-items: center; }
+
+.muse-recent.muse-home-recent-sec { max-width: 720px; margin-left: auto; margin-right: auto; }
+.muse-home-recent { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.muse-home-recent-tile { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-tertiary) center / cover; }
+.muse-home-recent-tile video { width: 100%; height: 100%; object-fit: cover; }
+.muse-home-recent-tile .muse-badge { position: absolute; top: 8px; left: 8px; }
+.muse-home-recent-tile .muse-home-recent-who { top: auto; bottom: 8px; }
+@media (max-width: 560px) { .muse-home-recent { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.muse-wf-menu li[aria-selected=true] button { background: var(--accent-light); }
