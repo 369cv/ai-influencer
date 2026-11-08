@@ -57,6 +57,7 @@ export default function ProfileActions({ influencer, onExport, onDelete, onAdvan
       <Menu label="Create" items={[
         { label: 'Photoshoot', icon: 'spark', onClick: () => navigate('/', { state: { createFor: influencer.id } }) },
         { label: 'Photo in Studio', icon: 'photo', onClick: () => navigate('/studio', { state }) },
+        { label: 'Talking video', icon: 'video', onClick: () => navigate('/talk', { state: { influencerId: influencer.id } }) },
         { label: 'Video in Studio', icon: 'video', onClick: () => navigate('/studio?mode=video', { state: { ...state, mode: 'video' } }) },
         { label: 'Post', icon: 'post', onClick: () => navigate('/content?compose=1', { state }) },
       ]} trigger={({ open, toggle }) => (

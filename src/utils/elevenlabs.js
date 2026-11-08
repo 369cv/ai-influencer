@@ -81,3 +81,14 @@ export async function remixVoice({ voiceId, description, text }) {
   const data = await res.json()
   return { text: data.text, previews: (data.previews || []).map(p => ({ ...p, url: `data:audio/mpeg;base64,${p.audio}`, audio: undefined })) }
 }
+
+// Full voiceover with timing (for captions). Returns { url (data: mp3), alignment }.
+export async function voiceover({ voiceId, text, model, settings, seed }) {
+  const res = await fetch(`/api/elevenlabs?op=speech&voice=${encodeURIComponent(voiceId)}`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': getElevenKey() },
+    body: JSON.stringify({ text, model_id: model, voice_settings: settings, seed: Number.isInteger(seed) ? seed : undefined }),
+  })
+  if (!res.ok) await fail(res)
+  const data = await res.json()
+  return { url: `data:audio/mpeg;base64,${data.audio}`, alignment: data.alignment }
+}

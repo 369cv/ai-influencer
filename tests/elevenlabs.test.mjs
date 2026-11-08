@@ -66,3 +66,12 @@ test('add copies a library voice; remix needs a voice and a change', async () =>
   assert.match(calls[0].url, /\/v1\/text-to-voice\/abcdefgh12\/remix/)
   assert.equal(r.json.previews[0].id, 'gen123456')
 })
+
+test('speech returns audio with character timing and defaults to v4', async () => {
+  const calls = stub({ audio_base64: 'QUJD', alignment: { characters: ['H', 'i'], character_start_times_seconds: [0, 0.1], character_end_times_seconds: [0.1, 0.2] } })
+  const out = await handleElevenLabs({ method: 'POST', op: 'speech', voice: 'abcdefgh12', key, body: { text: 'Hi' } })
+  assert.match(calls[0].url, /\/v1\/text-to-speech\/abcdefgh12\/with-timestamps/)
+  assert.equal(JSON.parse(calls[0].init.body).model_id, 'eleven_v4')
+  assert.deepEqual(out.json.alignment, { characters: ['H', 'i'], starts: [0, 0.1], ends: [0.1, 0.2] })
+  assert.equal((await handleElevenLabs({ method: 'POST', op: 'speech', voice: 'abcdefgh12', key, body: { text: 'x'.repeat(1501) } })).status, 413)
+})

@@ -467,7 +467,7 @@ const uploadAudioFile = dataUrl => uploadMedia(dataUrl, {
   prefix: 'audio',
 })
 
-export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', onProgress, onPartialResults, isCancelled, pendingKey = null }) {
+export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', elementId = null, onProgress, onPartialResults, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -507,7 +507,7 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8
 
   const params = {
     model,
-    prompt,
+    prompt: withElement(prompt, elementId, model),
     aspect_ratio: aspectRatio,
     duration,
     resolution,
@@ -1146,7 +1146,7 @@ const _editIds = new Map()
 async function mediaIdFor(url) {
   if (_editIds.has(url)) return _editIds.get(url)
   await whenOnline()
-  const res = await fetch(url)
+  const res = await fetch(proxied(url))
   if (!res.ok) throw new Error(`Couldn’t read the image (${res.status}).`)
   const blob = await res.blob()
   const contentType = blob.type || 'image/png'
@@ -1182,8 +1182,10 @@ const imageSize = url => new Promise((resolve, reject) => {
   img.crossOrigin = 'anonymous'
   img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
   img.onerror = () => reject(new Error('Couldn’t read the image size.'))
-  img.src = url
+  img.src = proxied(url)
 })
+// Remote images go through the app's image proxy so the browser can read them.
+const proxied = url => (/^https?:/.test(url || '') ? `/api/img-proxy?url=${encodeURIComponent(url)}` : url)
 
 // op: 'upscale' | 'expand' | 'removebg'. opts: { resolution: '2k'|'4k', aspectRatio }
 export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background', relight: 'relight_image' }

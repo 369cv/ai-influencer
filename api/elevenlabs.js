@@ -12,10 +12,14 @@
 //                                             → { voices: [...], hasMore }
 //   POST /api/elevenlabs?op=add               → { voice_id }   body { public_owner_id, voice_id, name }
 //   POST /api/elevenlabs?op=remix&voice=<id>  → like design    body { description, text? }
+//   POST /api/elevenlabs?op=speech&voice=<id> → { audio (base64 mp3), alignment: { characters, starts, ends } }
+//        body { text (≤ 1,500), model_id?, voice_settings?, seed? }   full voiceover with timing for captions
 import { rateLimit, clientIp } from '../lib/rateLimit.js'
 
 const BASE = 'https://api.elevenlabs.io'
 const MAX_TEXT = 600
+const MAX_SPEECH = 1500
+export const SPEECH_MODELS = ['eleven_v4', 'eleven_multilingual_v2', 'eleven_turbo_v2_5', 'eleven_v3']
 const VOICE_ID = /^[A-Za-z0-9]{8,40}$/
 const MODEL_ID = /^[a-z0-9_]{3,40}$/
 // ElevenLabs errors come as a string, { message } or a validation array; always return plain text.
@@ -39,6 +43,26 @@ export async function handleElevenLabs({ method, op, voice, key, body, query = {
     if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs refused the request.') } }
     const voices = (data.voices || []).map(v => ({ voice_id: v.voice_id, name: v.name, labels: v.labels || {}, preview_url: v.preview_url || '', category: v.category || '' }))
     return { status: 200, json: { voices } }
+  }
+
+  // Full voiceover for a talking video, with per-character timing for captions.
+  if (op === 'speech' && method === 'POST') {
+    if (!VOICE_ID.test(voice || '')) return { status: 400, json: { error: 'Pick her voice first.' } }
+    const text = String(body?.text || '').trim()
+    if (!text) return { status: 400, json: { error: 'Write the script first.' } }
+    if (text.length > MAX_SPEECH) return { status: 413, json: { error: `Scripts are limited to ${MAX_SPEECH.toLocaleString()} characters.` } }
+    const s = body?.voice_settings || {}
+    const payload = {
+      text,
+      model_id: SPEECH_MODELS.includes(body?.model_id) ? body.model_id : 'eleven_v4',
+      voice_settings: { stability: clamp(s.stability, 0, 1), similarity_boost: clamp(s.similarity_boost, 0, 1), style: clamp(s.style, 0, 1), speed: clamp(s.speed, 0.7, 1.2), use_speaker_boost: s.use_speaker_boost !== false },
+    }
+    if (Number.isInteger(body?.seed)) payload.seed = Math.min(4294967295, Math.max(0, body.seed))
+    const r = await fetch(`${BASE}/v1/text-to-speech/${voice}/with-timestamps?output_format=mp3_44100_128`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs could not make the voiceover.') } }
+    const a = data.alignment || data.normalized_alignment || {}
+    return { status: 200, json: { audio: data.audio_base64, alignment: { characters: a.characters || [], starts: a.character_start_times_seconds || [], ends: a.character_end_times_seconds || [] } } }
   }
 
   if (op === 'tts' && method === 'POST') {
