@@ -117,6 +117,18 @@ export default function InfluencerLooks({ influencer, onUpdate }) {
         ))}
         <button type="button" className="muse-lk muse-lk-add" onClick={() => setAdding(true)}>＋<span>Add a look</span></button>
       </div>
+      {(() => {
+        // The old Home tab's rooms become looks (settings), on request.
+        const have = new Set(looks.map(l => l.url))
+        const rooms = (influencer.homeSlots || []).filter(h => h.image && !have.has(h.image))
+        if (!rooms.length) return null
+        return (
+          <div className="muse-notice" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <span>{rooms.length} home room{rooms.length > 1 ? 's' : ''} from the old Home tab ({rooms.map(r => r.name).filter(Boolean).slice(0, 3).join(', ')}).</span>
+            <button type="button" className="muse-btn muse-btn-tonal" onClick={() => onUpdate({ looks: [...looks, ...rooms.map(r => ({ id: newId('look'), url: r.image, name: r.name || 'Home', createdAt: Date.now(), from: 'home' }))] })}>Bring them into Looks</button>
+          </div>
+        )
+      })()}
       <div className="muse-looks-id">
         <div className="muse-looks-idcard">
           <span style={label}>Face sheet</span>

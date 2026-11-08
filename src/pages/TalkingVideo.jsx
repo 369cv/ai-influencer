@@ -115,6 +115,12 @@ export default function TalkingVideo() {
               <button type="button" className="muse-btn muse-btn-tonal" disabled={!inf || !!busy} onClick={write}>{busy === 'write' ? 'Writing…' : 'Write it for me'}</button>
             </div>
           )}
+          {(inf?.scripts || []).filter(x => (x.script || '').trim()).length > 0 && (
+            <div className="muse-chip-row" aria-label="Saved scripts">
+              <span className="muse-field-label">Saved scripts</span>
+              {inf.scripts.filter(x => (x.script || '').trim()).slice(0, 8).map(x => <button key={x.id} type="button" className="muse-chip" title={x.script.slice(0, 200)} onClick={() => { setScript(x.script.trim()); setAudio(null); setVideo(null) }}>{x.title || 'Script'}</button>)}
+            </div>
+          )}
           <textarea className="muse-input" rows={5} value={script} onChange={e => setScript(e.target.value)} placeholder={`The words ${inf?.name || 'she'} says. About ${budget} words fit in ${seconds} seconds.`} aria-label="Script" />
           <small className={over ? 'muse-error' : 'muse-muted'}>{words} of {budget} words for {seconds}s{over ? '. Too long: cut it or choose a longer video.' : ''}</small>
           <label className="muse-field-label" htmlFor="talk-dir">Direction <span className="muse-muted">· optional</span></label>
