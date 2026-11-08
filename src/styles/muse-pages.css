@@ -887,3 +887,16 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-dt-sheets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
 .muse-dt-sheets figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .muse-dt-sheets img { width: 100%; border-radius: var(--radius-lg); background: var(--bg-tertiary); }
+
+/* Content → Inbox (Ayrshare comments) */
+.muse-inbox { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: var(--space-4); }
+@media (max-width: 760px) { .muse-inbox { grid-template-columns: 1fr; } }
+.muse-inbox-posts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 70vh; overflow: auto; }
+.muse-inbox-posts button { display: flex; gap: var(--space-3); align-items: center; width: 100%; text-align: left; padding: 8px; border-radius: var(--radius-md, 10px); border: 0; background: none; color: inherit; cursor: pointer; }
+.muse-inbox-posts button.on, .muse-inbox-posts button:hover { background: var(--bg-tertiary); }
+.muse-inbox-posts span:last-child { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.muse-inbox-posts small { color: var(--text-tertiary); }
+.muse-inbox-thread { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); background: var(--surface); }
+.muse-inbox-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.muse-inbox-c { display: flex; flex-direction: column; gap: 6px; padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-subtle); font-size: 14px; }
+.muse-inbox-c p { margin: 0; }

@@ -56,9 +56,27 @@ export function normalizeStats(platformBlock) {
   return out
 }
 
+// Ayrshare returns comments grouped by platform; keep the fields the inbox shows.
+export function normalizeComments(d = {}) {
+  const out = []
+  for (const [platform, list] of Object.entries(d || {})) {
+    if (!AYRSHARE_PLATFORMS.has(platform) || !Array.isArray(list)) continue
+    for (const c of list) {
+      if (!c || typeof c.comment !== 'string') continue
+      out.push({
+        id: String(c.commentId || c.id || ''), platform, text: c.comment.slice(0, 2000),
+        author: String(c.displayName || c.username || c.userName || c.from?.name || '').slice(0, 80),
+        at: c.created || c.createdTime || '', likes: typeof c.likeCount === 'number' ? c.likeCount : null,
+        own: !!c.owner, replies: Array.isArray(c.replies) ? c.replies.length : (typeof c.replyCount === 'number' ? c.replyCount : 0),
+      })
+    }
+  }
+  return out.filter(c => c.id).sort((a, b) => String(b.at).localeCompare(String(a.at)))
+}
+
 const cleanIds = ids => (Array.isArray(ids) ? ids : []).map(String).filter(x => /^[A-Za-z0-9_-]{4,80}$/.test(x)).slice(0, 20)
 
-async function ayrshare(creds, post, test, cancel, stats) {
+async function ayrshare(creds, post, test, cancel, stats, comments, reply) {
   if (!creds?.apiKey) return { status: 400, json: { ok: false, error: 'Missing Ayrshare API key.' } }
   const headers = { Authorization: `Bearer ${creds.apiKey}`, 'Content-Type': 'application/json' }
   if (creds.profileKey) headers['Profile-Key'] = String(creds.profileKey)
@@ -82,6 +100,27 @@ async function ayrshare(creds, post, test, cancel, stats) {
       posts[id] = { platforms, error: Object.keys(platforms).length ? (errors.join(' · ') || undefined) : (errors.join(' · ') || d.message || (r.ok ? 'No stats yet.' : 'Ayrshare could not read stats.')) }
     }
     return { status: 200, json: { ok: true, posts } }
+  }
+  if (comments) {
+    // Comments on one Ayrshare post (docs: GET /api/comments/:id), flattened and normalised.
+    const [id] = cleanIds([comments.id])
+    if (!id) return { status: 400, json: { ok: false, error: 'No Ayrshare post id to read.' } }
+    const r = await fetch(`${AYRSHARE}/comments/${id}`, { headers })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || d.status === 'error') return { status: r.ok ? 502 : r.status, json: { ok: false, error: d.message || 'Ayrshare could not read comments.' } }
+    return { status: 200, json: { ok: true, comments: normalizeComments(d) } }
+  }
+  if (reply) {
+    // Reply to a comment by its social comment id (docs: POST /api/comments/reply/:id).
+    const cid = String(reply.commentId || '')
+    const text = String(reply.comment || '').trim().slice(0, 2000)
+    const platform = String(reply.platform || '')
+    if (!/^[A-Za-z0-9_:.\/-]{4,200}$/.test(cid) || !text || !AYRSHARE_PLATFORMS.has(platform)) return { status: 400, json: { ok: false, error: 'Write a reply first.' } }
+    const r = await fetch(`${AYRSHARE}/comments/reply/${encodeURIComponent(cid)}`, { method: 'POST', headers, body: JSON.stringify({ comment: text, platforms: [platform], searchPlatformId: true }) })
+    const d = await r.json().catch(() => ({}))
+    const res = d[platform]
+    if (!r.ok || d.status === 'error' || (res && res.status === 'error')) return { status: r.ok ? 502 : r.status, json: { ok: false, error: res?.message || d.message || 'Ayrshare could not post the reply.' } }
+    return { status: 200, json: { ok: true, commentId: res?.commentId || d.commentId || '' } }
   }
   if (cancel) {
     // Scheduled posts are deleted before they go out (docs: DELETE /api/post).
@@ -132,10 +171,12 @@ export async function handlePublish(body = {}) {
   const { provider, credentials, test } = body
   const cancel = body.cancel && typeof body.cancel === 'object' ? body.cancel : null
   const stats = body.stats && typeof body.stats === 'object' ? body.stats : null
+  const comments = body.comments && typeof body.comments === 'object' ? body.comments : null
+  const reply = body.reply && typeof body.reply === 'object' ? body.reply : null
   const post = cleanPost(body.post)
   try {
-    if (provider === 'ayrshare') return await ayrshare(credentials, post, !!test, cancel, stats)
-    if (stats) return { status: 400, json: { ok: false, error: 'Stats come from Ayrshare only.' } }
+    if (provider === 'ayrshare') return await ayrshare(credentials, post, !!test, cancel, stats, comments, reply)
+    if (stats || comments || reply) return { status: 400, json: { ok: false, error: 'Stats and comments come from Ayrshare only.' } }
     if (provider === 'webhook') return await webhook(credentials, post, !!test, cancel)
     return { status: 400, json: { ok: false, error: 'Unknown posting provider.' } }
   } catch (e) {
