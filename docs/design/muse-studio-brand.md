@@ -59,7 +59,6 @@ regenerates the CSS automatically. Use the tokens in code as `var(--accent)`,
 palette without code changes.
 
 **Theme:** Settings → Appearance offers System (default; follows the device and switches live), Light and Dark, saved per browser (`muse_theme`). `index.html` applies it before the app loads, so there's no flash. Both themes come from `src/design/tokens.json`; use tokens, never hard-coded colours, so new UI works in both. Black brand marks use `--logo-black`, which lightens in dark.
-they chose.
 
 ## Patterns
 
