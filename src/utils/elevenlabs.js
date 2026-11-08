@@ -33,3 +33,27 @@ export async function speak({ voiceId, text, model, settings, seed }) {
   if (!res.ok) await fail(res)
   return URL.createObjectURL(await res.blob())
 }
+
+const post = (op, body) => fetch(`/api/elevenlabs?op=${op}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': getElevenKey() }, body: JSON.stringify(body) })
+
+// Characters used and left this billing period: { tier, used, limit, resetsAt }.
+export async function getUsage() {
+  const res = await fetch('/api/elevenlabs?op=usage', { headers: { 'x-api-key': getElevenKey() } })
+  if (!res.ok) await fail(res)
+  return res.json()
+}
+
+// Voice Design: three takes from a description. Returns { text, previews: [{ id, url, duration }] }.
+export async function designVoice({ description, text, model }) {
+  const res = await post('design', { description, text, model })
+  if (!res.ok) await fail(res)
+  const data = await res.json()
+  return { text: data.text, previews: (data.previews || []).map(p => ({ ...p, url: `data:audio/mpeg;base64,${p.audio}`, audio: undefined })) }
+}
+
+// Saves one take to the ElevenLabs account. Returns { voice_id, name }.
+export async function saveDesignedVoice({ name, description, generatedVoiceId }) {
+  const res = await post('save', { name, description, generated_voice_id: generatedVoiceId })
+  if (!res.ok) await fail(res)
+  return res.json()
+}

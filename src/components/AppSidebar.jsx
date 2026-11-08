@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useInfluencers } from '../store'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
+import CreditsPill from './CreditsPill'
 
 // The one navigation. ≥1100px: full sidebar (collapsible to icons). 720–1099px:
 // icons only. <720px: a drawer opened from the slim top bar (see Nav.jsx).
@@ -103,6 +104,7 @@ export default function AppSidebar() {
         )}
 
         <div className="muse-rail-foot">
+          <CreditsPill />
           <NavLink to="/help" title="Help" className={({ isActive }) => `muse-rail-item${isActive ? ' active' : ''}`}>
             <Icon d={I.help} /><span className="muse-rail-label">Help</span>
           </NavLink>

@@ -1107,3 +1107,94 @@ export async function checkHiggsfield() {
   if (!Array.isArray(tools)) throw new Error('Higgsfield answered without a tool list.')
   return tools.length
 }
+
+// ── Photo edits (Upscale, Expand, Remove background) ─────────────────────────
+// Each runs a Higgsfield tool on one image. Tools take a media_id, so the image is
+// uploaded once (cached by URL for this tab) and its media_id reused.
+let _toolNames = null
+export async function hfToolNames() {
+  if (_toolNames) return _toolNames
+  if (!getHFToken()) return new Set()
+  await initSession()
+  const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
+  const tools = (res?.result ?? res)?.tools
+  _toolNames = new Set(Array.isArray(tools) ? tools.map(t => t.name) : [])
+  return _toolNames
+}
+
+const _editIds = new Map()
+async function mediaIdFor(url) {
+  if (_editIds.has(url)) return _editIds.get(url)
+  await whenOnline()
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Couldn’t read the image (${res.status}).`)
+  const blob = await res.blob()
+  const contentType = blob.type || 'image/png'
+  const up = unwrapMCP(await callTool('media_upload', { method: 'upload_url', filename: `edit_${Date.now()}.${contentType.includes('png') ? 'png' : 'jpeg'}`, content_type: contentType }))
+  const f0 = up?.uploads?.[0] ?? up?.files?.[0] ?? up?.data?.[0]
+  let uploadUrl = up?.upload_url || up?.url || f0?.upload_url || f0?.url
+  let mediaId = up?.media_id || up?.id || f0?.media_id || f0?.id
+  if (!uploadUrl || !mediaId) {
+    const text = typeof up === 'string' ? up : JSON.stringify(up ?? '')
+    mediaId = mediaId || (text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i) || [])[0]
+    uploadUrl = uploadUrl || (text.match(/https:\/\/[^\s"'\\]+/) || [])[0]
+  }
+  if (!uploadUrl || !mediaId) throw new Error('Higgsfield didn’t return an upload address.')
+  const put = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } })
+  if (!put.ok) throw new Error(`Upload failed (${put.status}).`)
+  await callTool('media_confirm', { media_id: mediaId, type: 'image' })
+  _editIds.set(url, mediaId)
+  return mediaId
+}
+
+const imageSize = url => new Promise((resolve, reject) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+  img.onerror = () => reject(new Error('Couldn’t read the image size.'))
+  img.src = url
+})
+
+// op: 'upscale' | 'expand' | 'removebg'. opts: { resolution: '2k'|'4k', aspectRatio }
+export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background' }
+async function editArgs(op, url, opts) {
+  if (op === 'upscale') {
+    const { width, height } = await imageSize(url)
+    return { params: { image_id: await mediaIdFor(url), width, height, resolution: opts.resolution || '4k' } }
+  }
+  if (op === 'expand') return { params: { image_id: await mediaIdFor(url), aspect_ratio: opts.aspectRatio || 'auto' } }
+  if (op === 'removebg') return { params: { media_id: await mediaIdFor(url), media_type: 'image' } }
+  throw new Error(`Unknown edit: ${op}`)
+}
+
+function creditsIn(data) {
+  if (data && typeof data === 'object') {
+    for (const k of ['credits', 'cost', 'total_credits', 'credit_cost', 'price']) if (typeof data[k] === 'number') return data[k]
+    if (data.cost && typeof data.cost === 'object') return creditsIn(data.cost)
+  }
+  const m = (typeof data === 'string' ? data : JSON.stringify(data ?? '')).match(/(\d+(?:\.\d+)?)\s*credits?/i)
+  return m ? Number(m[1]) : null
+}
+
+// Higgsfield's own quote (get_cost). Only Upscale and Expand support it; null otherwise.
+export async function editCost(op, url, opts = {}) {
+  if (op === 'removebg') return null
+  const args = await editArgs(op, url, opts)
+  args.params.get_cost = true
+  return creditsIn(unwrapMCP(await callTool(EDIT_TOOLS[op], args)))
+}
+
+export async function editImage(op, url, opts = {}) {
+  const args = await editArgs(op, url, opts)
+  const input = args.params.image_id || args.params.media_id
+  const result = await callTool(EDIT_TOOLS[op], args)
+  const direct = extractImageUrls(result)
+  if (direct.length) return direct[0]
+  const ids = extractJobIds(result).filter(id => id !== input)
+  if (!ids.length) {
+    const d = unwrapMCP(result)
+    throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'Higgsfield didn’t start the edit.')
+  }
+  const [out] = await pollAllJobs(ids.slice(0, 1), 1, opts.onProgress)
+  return out
+}

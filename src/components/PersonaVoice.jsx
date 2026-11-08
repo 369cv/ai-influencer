@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getElevenKey, listVoices, speak, VOICE_MODELS, DEFAULT_VOICE_SETTINGS } from '../utils/elevenlabs'
+import { getElevenKey, listVoices, speak, designVoice, saveDesignedVoice, VOICE_MODELS, DEFAULT_VOICE_SETTINGS } from '../utils/elevenlabs'
 
 // Persona voice (influencer profile → Overview). One ElevenLabs voice per
 // persona with locked settings and an optional seed, so every clip sounds the
@@ -21,6 +21,7 @@ export default function PersonaVoice({ influencer, onUpdate }) {
   const vp = influencer.voiceProfile || null
   const settings = { ...DEFAULT_VOICE_SETTINGS, ...(vp?.settings || {}) }
   const [picking, setPicking] = useState(false)
+  const [designing, setDesigning] = useState(false)
   const [voices, setVoices] = useState(null)
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState('')
@@ -86,14 +87,19 @@ export default function PersonaVoice({ influencer, onUpdate }) {
     <section style={card} aria-labelledby="pv-h">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
         <span id="pv-h" style={label}>Voice</span>
-        <button type="button" className="muse-btn muse-btn-tonal" style={{ minHeight: 36 }} onClick={() => (picking ? setPicking(false) : openPicker())} aria-expanded={picking}>
-          {picking ? 'Close' : vp?.voiceId ? 'Change voice' : 'Pick a voice'}
-        </button>
+        <span style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>
+          <button type="button" className="muse-btn muse-btn-text" style={{ minHeight: 36 }} onClick={() => { setDesigning(d => !d); setPicking(false) }} aria-expanded={designing}>{designing ? 'Close' : 'Design a voice'}</button>
+          <button type="button" className="muse-btn muse-btn-tonal" style={{ minHeight: 36 }} onClick={() => { setDesigning(false); picking ? setPicking(false) : openPicker() }} aria-expanded={picking}>
+            {picking ? 'Close' : vp?.voiceId ? 'Change voice' : 'Pick a voice'}
+          </button>
+        </span>
       </div>
 
       {vp?.voiceId
         ? <div style={{ fontSize: 15, fontWeight: 600 }}>{vp.voiceName || vp.voiceId} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 13 }}>· ElevenLabs</span></div>
         : !picking && <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>No voice yet. Pick one from your ElevenLabs library.</p>}
+
+      {designing && <VoiceDesign influencer={influencer} play={play} onSaved={v => { save({ voiceId: v.voice_id, voiceName: v.name, designed: true }); setVoices(null); setDesigning(false) }} />}
 
       {picking && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -154,5 +160,59 @@ export default function PersonaVoice({ influencer, onUpdate }) {
 
       {error && <p className="muse-error" role="alert">{error}</p>}
     </section>
+  )
+}
+
+// Voice Design (ElevenLabs): describe her voice, get three takes, keep one. Each round
+// uses ElevenLabs credits; nothing is added to the account until Save.
+function VoiceDesign({ influencer, play, onSaved }) {
+  const [description, setDescription] = useState('')
+  const [text, setText] = useState('')
+  const [takes, setTakes] = useState(null)
+  const [pick, setPick] = useState(null)
+  const [name, setName] = useState(influencer.name || '')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const d = description.trim(), t = text.trim()
+  const ok = d.length >= 20 && d.length <= 1000 && (!t || (t.length >= 100 && t.length <= 1000))
+  async function make() {
+    setBusy('design'); setError(''); setTakes(null); setPick(null)
+    try { const r = await designVoice({ description: d, text: t || undefined }); setTakes(r.previews); if (!t && r.text) setText(r.text) } catch (e) { setError(e.message) } finally { setBusy('') }
+  }
+  async function keep() {
+    setBusy('save'); setError('')
+    try { onSaved(await saveDesignedVoice({ name: name.trim(), description: d, generatedVoiceId: pick })) } catch (e) { setError(e.message) } finally { setBusy('') }
+  }
+  return (
+    <div className="muse-vd">
+      <label className="muse-field-label" htmlFor="vd-desc">Describe {influencer.name ? `${influencer.name}’s` : 'her'} voice</label>
+      <textarea id="vd-desc" className="muse-input" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Age, accent, tone, pace and mood. For example: warm, mid-twenties, light London accent, relaxed and a little playful." />
+      <small className={d && (d.length < 20 || d.length > 1000) ? 'muse-error' : 'muse-muted'}>{d.length} / 1,000 · at least 20</small>
+      <label className="muse-field-label" htmlFor="vd-text">Sample line <span className="muse-muted">· optional, 100 to 1,000 characters</span></label>
+      <textarea id="vd-text" className="muse-input" rows={2} value={text} onChange={e => setText(e.target.value)} placeholder="Leave empty and ElevenLabs writes one that fits the description." />
+      {t && (t.length < 100 || t.length > 1000) && <small className="muse-error">{t.length} characters; needs 100 to 1,000.</small>}
+      <div className="muse-assist-row">
+        <button type="button" className="muse-btn muse-btn-filled" disabled={!ok || !!busy} onClick={make}>{busy === 'design' ? 'Designing…' : takes ? 'Make 3 new takes' : 'Make 3 takes'}</button>
+        <small className="muse-muted">Uses your ElevenLabs credits.</small>
+      </div>
+      {error && <p className="muse-error">{error}</p>}
+      {takes && (
+        <ul className="muse-vd-takes" aria-label="Takes">
+          {takes.map((p, i) => (
+            <li key={p.id} className={pick === p.id ? 'on' : ''}>
+              <button type="button" className="muse-pchip icon" aria-label={`Play take ${i + 1}`} onClick={() => play(p.url)}>▶</button>
+              <span>Take {i + 1}{p.duration ? <small className="muse-muted"> · {Math.round(p.duration)}s</small> : null}</span>
+              <button type="button" className={`muse-chip${pick === p.id ? ' on' : ''}`} aria-pressed={pick === p.id} onClick={() => setPick(p.id)}>{pick === p.id ? 'Chosen' : 'Choose'}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {pick && (
+        <div className="muse-assist-row">
+          <input className="muse-input" value={name} onChange={e => setName(e.target.value)} aria-label="Voice name" placeholder="Voice name" />
+          <button type="button" className="muse-btn muse-btn-filled" disabled={!name.trim() || !!busy} onClick={keep}>{busy === 'save' ? 'Saving…' : 'Save and use'}</button>
+        </div>
+      )}
+    </div>
   )
 }
