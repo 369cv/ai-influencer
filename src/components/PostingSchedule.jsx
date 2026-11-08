@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { DAY_NAMES, STARTER_DAYS, isValidTime, localTimeZone, slotsPerWeek, starterSchedule } from '../utils/schedule'
+import { bestTimes, fmtBest, bestAsSlot } from '../utils/goals'
+import { useWorkspaceStore } from '../context/workspace'
 
 // Posting schedule for one influencer: time zone, weekly goal and time slots per
 // weekday. "Add to queue" in Content fills the next free slot. Saved on the
@@ -12,6 +14,7 @@ const fmt = t => { const [h, m] = t.split(':').map(Number); return `${((h + 11) 
 
 export default function PostingSchedule({ influencer, onUpdate, bare = false }) {
   const s = influencer.postingSchedule
+  const [posts] = useWorkspaceStore('muse_posts')
   const [adding, setAdding] = useState(null) // weekday being added to
   const [draftTime, setDraftTime] = useState('18:00')
   const zones = useMemo(() => (s?.tz && !ZONES.includes(s.tz) ? [s.tz, ...ZONES] : ZONES), [s?.tz])
@@ -60,6 +63,22 @@ export default function PostingSchedule({ influencer, onUpdate, bare = false }) 
         <div><strong>Time slots</strong><small>“Add to queue” fills the next free one.</small></div>
         <button type="button" className="muse-btn muse-btn-tonal" onClick={() => { if (confirm(`Replace ${name}’s slots with starter times?`)) save({ days: structuredClone(STARTER_DAYS) }) }}>Use starter times</button>
       </div>
+      {(() => {
+        // Suggest best times: from her own sent posts with stats; until there are enough, say so.
+        const best = bestTimes(s, posts, influencer.id)
+        const missing = best.ready ? best.slots.filter(b => !(s.days?.[b.day] || []).includes(bestAsSlot(b))) : []
+        return (
+          <div className="muse-ps-row">
+            <div>
+              <strong>Best times</strong>
+              <small>{!best.ready ? `From her own post stats. ${best.have} of ${best.need} measured posts so far; refresh stats in Content › Sent.`
+                : !best.slots.length ? `No hour stands out yet across ${best.have} measured posts.`
+                : `${best.slots.map(fmtBest).join(', ')} beat her average (${best.have} measured posts).`}</small>
+            </div>
+            {missing.length > 0 && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => { const days = { ...s.days }; for (const b of missing) days[b.day] = [...new Set([...(days[b.day] || []), bestAsSlot(b)])].sort(); save({ days }) }}>Add {missing.length === 1 ? 'it' : 'them'} as slots</button>}
+          </div>
+        )
+      })()}
       <div className="muse-ps-grid" role="group" aria-label="Time slots by day">
         {DAY_NAMES.map((d, i) => {
           const list = s.days?.[i] || []

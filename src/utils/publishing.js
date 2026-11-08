@@ -210,6 +210,6 @@ export async function refreshStats(posts) {
 // One line for a post: "12.4k views · 520 likes · 31 comments".
 export function statsLine(totals = {}) {
   const parts = [['views', 'views'], ['likes', 'likes'], ['comments', 'comments'], ['saves', 'saves'], ['shares', 'shares']]
-    .filter(([k]) => typeof totals[k] === 'number').map(([k, l]) => `${fmtNum(totals[k])} ${l}`)
+    .filter(([k]) => typeof totals[k] === 'number').map(([k, l]) => `${fmtNum(totals[k])} ${totals[k] === 1 ? l.slice(0, -1) : l}`)
   return parts.join(' · ')
 }

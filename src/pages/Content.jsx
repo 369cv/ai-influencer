@@ -14,7 +14,9 @@ import { isPublishingConnected, routeForAccount, routeName } from '../utils/conn
 import { CONNECTORS } from '../utils/connectors'
 import ConnectorLogo from '../components/ConnectorLogo'
 import { freeSlots, nextFreeSlot, isSlotTime, fmtSlot, fmtTime } from '../utils/schedule'
-import { influencerContext } from '../utils/claudeAssist'
+import { influencerContext, hasClaude, runSkill } from '../utils/claudeAssist'
+import { bestTimes, isBestTime } from '../utils/goals'
+import GoalBar from '../components/GoalBar'
 import { newId } from '../utils/localJson'
 import { kindLabel } from '../utils/deals'
 
@@ -121,7 +123,7 @@ export default function Content() {
           })}
         </div>
       )}
-      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} onRefreshStats={loadStats} statsState={statsState} />}
+      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} onRefreshStats={loadStats} statsState={statsState} onBulk={setPosts} />}
       {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => newPost({ scheduledAt: d.toISOString() })} />}
       {view === 'media' && <Library embedded />}
       {view === 'ideas' && <><div className="muse-ideas-week"><WeeklyIdeas /></div><Plan embedded /></>}
@@ -129,11 +131,17 @@ export default function Content() {
 
       {composing && (
         <Composer
+          key={composing._k || composing.id || 'new'}
           initial={composing}
           accounts={accounts}
           posts={posts}
           onClose={closeComposer}
-          onSave={p => { save(p); closeComposer() }}
+          onSave={(p, another) => {
+            save(p)
+            if (!another) return closeComposer()
+            // Create another: same influencer and accounts; the composer takes her next free slot.
+            setComposing({ _k: Date.now(), influencerId: p.influencerId || null, accountIds: p.accountIds || [] })
+          }}
           onPersist={save}
           onDelete={id => { setPosts(l => l.filter(x => x.id !== id)); closeComposer() }}
         />
@@ -160,8 +168,9 @@ const dayLabel = d => {
 }
 const BADGE = { planned: 'Planned · not sent', approved: 'Approved · not sent', scheduled: 'Scheduled', posted: 'Posted', failed: 'Failed', draft: 'Draft' }
 
-function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying, onRefreshStats, statsState }) {
+function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying, onRefreshStats, statsState, onBulk }) {
   const [tab, setTab] = useState('queue')
+  const [confirmClean, setConfirmClean] = useState(false)
   const now = Date.now()
   const byTab = useMemo(() => { const m = { queue: [], drafts: [], sent: [], failed: [] }; for (const p of posts) m[tabOf(p, now)].push(p); return m }, [posts]) // eslint-disable-line
   const withSchedule = influencers.filter(i => i.postingSchedule)
@@ -175,21 +184,47 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
     return items.sort((a, b) => new Date(a.at) - new Date(b.at))
   }, [tab, byTab, posts, withSchedule.map(i => i.id + JSON.stringify(i.postingSchedule)).join()]) // eslint-disable-line
   const infOf = id => influencers.find(i => i.id === id)
+  // "Great time to post": only from her own sent posts with stats (see utils/goals.js).
+  const best = useMemo(() => Object.fromEntries(withSchedule.map(i => [i.id, bestTimes(i.postingSchedule, posts, i.id)])), [posts, withSchedule.map(i => i.id).join()]) // eslint-disable-line
 
   let lastDay = ''
   return (
     <div className="muse-q">
+      {tab === 'queue' && withSchedule.length > 0 && (
+        <div className="muse-goals" aria-label="Weekly posting goals">
+          {withSchedule.map(i => <GoalBar key={i.id} influencer={i} posts={posts} compact />)}
+        </div>
+      )}
       <div className="muse-q-tabs" role="tablist" aria-label="Posts">
         {TABS.map(t => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`${tab === t.id ? 'on' : ''}${t.id === 'failed' && byTab.failed.length ? ' warn' : ''}`} onClick={() => setTab(t.id)}>
             {t.label}<i>{byTab[t.id].length}</i>
           </button>
         ))}
-        {influencers.length === 1 && influencers[0].postingSchedule && (() => {
-          const i = influencers[0]; const wk = now + 7 * 864e5
-          const n = byTab.queue.filter(p => new Date(p.scheduledAt) <= wk).length
-          return <span className="muse-q-goal">{n} of {i.postingSchedule.weeklyGoal || 1} queued this week</span>
+        {tab === 'queue' && (() => {
+          // Shuffle: swap the times of posts not yet handed to a posting service, per influencer.
+          const unsent = byTab.queue.filter(p => p.status === 'planned' || p.status === 'approved')
+          const groups = Object.values(unsent.reduce((m, p) => ((m[p.influencerId || '-'] ||= []).push(p), m), {})).filter(g => g.length > 1)
+          if (!groups.length) return null
+          return <span className="muse-q-goal"><button type="button" className="muse-btn muse-btn-text" title="Mix up the order of posts that haven’t been sent to a posting service yet" onClick={() => {
+            const patch = {}
+            for (const g of groups) {
+              const times = g.map(p => p.scheduledAt)
+              for (let i = times.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [times[i], times[j]] = [times[j], times[i]] }
+              g.forEach((p, i) => { patch[p.id] = { scheduledAt: times[i] } })
+            }
+            onBulk(l => l.map(x => patch[x.id] ? { ...x, ...patch[x.id], updatedAt: Date.now() } : x))
+          }}>Shuffle unsent</button></span>
         })()}
+        {tab === 'failed' && byTab.failed.length > 0 && (
+          <span className="muse-q-goal">
+            {!confirmClean ? <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => setConfirmClean(true)}>Delete all failed</button> : (
+              <>Delete {byTab.failed.length} failed post{byTab.failed.length === 1 ? '' : 's'}?
+                <button type="button" className="muse-btn muse-btn-text" onClick={() => setConfirmClean(false)}>Keep</button>
+                <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => { const ids = new Set(byTab.failed.map(p => p.id)); onBulk(l => l.filter(x => !ids.has(x.id))); setConfirmClean(false) }}>Delete</button></>
+            )}
+          </span>
+        )}
         {tab === 'sent' && byTab.sent.some(canHaveStats) && (
           <span className="muse-q-goal muse-q-stats-ctl">
             {statsState.error ? <span className="muse-error">{statsState.error}</span> : statsState.at ? <span>Stats updated {when(new Date(statsState.at).toISOString())}</span> : null}
@@ -216,7 +251,10 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
               {head && <h3 className="muse-q-day">{head[0]} {head[1] && <small>· {head[1]}</small>}</h3>}
               <div className="muse-q-row">
                 <span className="muse-q-time">{time}</span>
-                <button type="button" className="muse-q-empty" onClick={() => onNewAt(r.inf, new Date(r.at))}>＋ Add to {r.inf.name || 'this influencer'}’s {time} slot</button>
+                <button type="button" className={`muse-q-empty${isBestTime(best[r.inf.id], r.at) ? ' great' : ''}`} onClick={() => onNewAt(r.inf, new Date(r.at))}>
+                  ＋ Add to {r.inf.name || 'this influencer'}’s {time} slot
+                  {isBestTime(best[r.inf.id], r.at) && <span className="muse-badge approved" title="One of her best hours, from her own post stats">Great time to post</span>}
+                </button>
               </div>
             </div>
           )
@@ -317,6 +355,7 @@ function Calendar({ posts, onOpen, onNewOn }) {
 }
 
 function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, onDelete }) {
+  const [another, setAnother] = useState(false) // keep the composer open for the next post
   const [influencers] = useInfluencers()
   const library = useMemo(() => collectLibrary(influencers || []), [influencers])
   const [deals] = useBrandDeals()
@@ -374,7 +413,7 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
     const ids = patch.accountIds || p.accountIds
     const t = accounts.filter(a => ids?.includes(a.id))
     const saved = { ...p, ...patch, id: p.id || newId('post'), platforms: [...new Set(t.map(a => a.platform))], createdAt: p.createdAt || Date.now(), updatedAt: Date.now() }
-    if (close) onSave(saved); else { setP(saved); onPersist(saved) }
+    if (close) onSave(saved, another); else { setP(saved); onPersist(saved) }
   }
   async function send(now) {
     setBusy(true); setError(''); setMenu(false); setNotice('')
@@ -518,6 +557,7 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             context={() => influencerContext(inf)}
             onResult={r => setTabText(r)}
           />
+          {!locked && <CaptionAssist text={tabText} platforms={tab === 'all' ? targetPlatforms : [tab]} inf={inf} onUse={setTabText} />}
 
           <div className="muse-media-row">
             {p.mediaUrls.map(u => (
@@ -608,6 +648,7 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             )}
             {p.id && !scheduledOut && <button type="button" className="muse-btn muse-btn-text muse-danger" onClick={() => onDelete(p.id)}>Delete</button>}
             {approved && <span className="muse-badge approved" title={p.approvedAt ? `Approved ${new Date(p.approvedAt).toLocaleString()}` : undefined}>Approved ✓</span>}
+            {!p.id && <label className="muse-cs-another"><input type="checkbox" checked={another} onChange={e => setAnother(e.target.checked)} /> Create another</label>}
             <button type="button" className="muse-btn muse-btn-text" onClick={downloadPack} disabled={!p.caption.trim() && !p.mediaUrls.length} title="Download the caption and media to post by hand">Download pack</button>
             {!editing && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: p.scheduledAt ? 'planned' : 'draft', approvedAt: undefined })} disabled={locked} title={approved ? 'Saving an edit moves it back to draft so it can be approved again' : undefined}>Save draft</button>}
             {canApprove && !editing && <button type="button" className="muse-btn muse-btn-tonal" onClick={() => finalize({ status: 'approved', approvedAt: new Date().toISOString() })}>Approve</button>}
@@ -622,15 +663,57 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
         </div>
 
         <aside className="muse-cs-preview" aria-label="Preview">
-          <span className="muse-field-label">Preview</span>
+          <span className="muse-field-label">Preview{tab !== 'all' ? ` · ${platformName(tab)}${tab === 'instagram' && p.igFormat && p.igFormat !== 'post' ? ` ${IG_FORMATS.find(f => f.id === p.igFormat)?.label || ''}` : ''}` : targetPlatforms.length === 1 ? ` · ${platformName(targetPlatforms[0])}` : ''}</span>
+          {targetPlatforms.length > 1 && <small className="muse-muted">Pick a platform above to preview its version.</small>}
           <div className="muse-preview-card">
             <div className="muse-preview-head"><span className="muse-rail-avatar" style={{ backgroundImage: (inf?.mainImage || inf?.image) ? `url(${inf.mainImage || inf.image})` : undefined }} /><strong>{targets[0]?.handle?.replace(/^@/, '') || inf?.name || 'your account'}</strong></div>
-            <div className="muse-preview-media" style={{ backgroundImage: preview && !isVideo(preview) ? `url(${preview})` : undefined }}>{!preview ? <span>No media yet</span> : isVideo(preview) ? <span>Video</span> : null}</div>
+            <div className={`muse-preview-media${(tab === 'tiktok' || tab === 'youtube' || (tab === 'instagram' && p.igFormat && p.igFormat !== 'post') || (tab === 'all' && targetPlatforms.length === 1 && (targetPlatforms[0] === 'tiktok' || targetPlatforms[0] === 'youtube'))) ? ' tall' : ''}`} style={{ backgroundImage: preview && !isVideo(preview) ? `url(${preview})` : undefined }}>{!preview ? <span>No media yet</span> : isVideo(preview) ? <span>Video</span> : null}</div>
             <p className="muse-preview-cap"><strong>{targets[0]?.handle?.replace(/^@/, '') || ''}</strong> {(tab === 'all' ? p.caption : tabText) || <em>{p.igFormat === 'story' && tab === 'instagram' ? 'Stories show no caption.' : 'Your caption shows here.'}</em>}</p>
           </div>
           {targets.some(a => PLATFORMS.find(x => x.id === a.platform)?.videoOnly) && <p className="muse-field-hint">TikTok and YouTube Shorts accept video only.</p>}
         </aside>
       </div>
+    </div>
+  )
+}
+
+// Composer assistant (Buffer-style): one-tap rewrites of the caption in her voice,
+// through your own Anthropic key. The result is shown before it replaces anything.
+const REWRITES = [
+  { id: 'shorter', label: 'Shorter', task: 'Make this caption about half as long. Keep the hook and the call to action.' },
+  { id: 'casual', label: 'More casual', task: 'Rewrite this caption to sound more casual and conversational, like a text to a friend.' },
+  { id: 'hook', label: 'Add a hook', task: 'Add a scroll-stopping first line (the hook) to this caption. Keep the rest.' },
+  { id: 'hashtags', label: 'Hashtags', task: 'Add 3 to 6 relevant, specific hashtags at the end of this caption. No generic ones like #love or #instagood.' },
+]
+function CaptionAssist({ text, platforms, inf, onUse }) {
+  const [busy, setBusy] = useState('')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+  if (!hasClaude() || !text.trim()) return null
+  const actions = [...REWRITES, ...platforms.filter(pl => pl !== 'instagram').slice(0, 2).map(pl => ({ id: `for-${pl}`, label: `Rewrite for ${platformName(pl)}`, task: `Rewrite this caption for ${platformName(pl)}: its tone, length and conventions${PLATFORMS.find(x => x.id === pl)?.limit ? ` (max ${PLATFORMS.find(x => x.id === pl).limit} characters)` : ''}.` }))]
+  async function run(a) {
+    setBusy(a.id); setError(''); setResult(null)
+    try {
+      const out = await runSkill({ task: `${a.task}\n\nReturn only the new caption, nothing else.\n\nCaption:\n${text}`, context: influencerContext(inf), maxTokens: 700 })
+      setResult({ label: a.label, text: out })
+    } catch (e) { setError(e.message) } finally { setBusy('') }
+  }
+  return (
+    <div className="muse-cs-rewrite">
+      <div className="muse-chip-row" role="group" aria-label="Rewrite caption">
+        {actions.map(a => <button key={a.id} type="button" className="muse-chip" disabled={!!busy} onClick={() => run(a)}>{busy === a.id ? 'Writing…' : a.label}</button>)}
+      </div>
+      {error && <p className="muse-error">{error}</p>}
+      {result && (
+        <div className="muse-assist-result">
+          <small className="muse-muted">{result.label}</small>
+          <pre>{result.text}</pre>
+          <div className="muse-assist-row">
+            <button type="button" className="muse-btn muse-btn-filled" onClick={() => { onUse(result.text); setResult(null) }}>Use this</button>
+            <button type="button" className="muse-btn muse-btn-text" onClick={() => setResult(null)}>Discard</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

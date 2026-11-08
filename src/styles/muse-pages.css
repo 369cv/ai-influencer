@@ -825,3 +825,26 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-ideas-bar { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
 .muse-create-recipes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: var(--space-3); font-size: 13px; }
 .muse-ideas-week > section { margin: var(--space-4) 0 0 !important; max-width: none !important; padding: 0 !important; }
+
+/* Content: weekly goal bars, great-time slots, composer assistant, create another */
+.muse-goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.muse-goal { display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface); font-size: 13px; }
+.muse-goal-top { display: flex; justify-content: space-between; gap: var(--space-2); }
+.muse-goal-top small, .muse-goal-sub { color: var(--text-tertiary); }
+.muse-goal-sub b { color: var(--text-primary); font-weight: 600; }
+.muse-goal-track { position: relative; height: 6px; border-radius: 999px; background: var(--bg-tertiary); overflow: hidden; }
+.muse-goal-track i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; }
+.muse-goal-track i.queued { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.muse-goal-track i.sent { background: var(--accent); }
+.muse-goal.met .muse-goal-track i.sent, .muse-goal.met .muse-goal-track i.queued { background: var(--color-status-success); }
+.muse-q-empty.great { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.muse-cs-rewrite { display: flex; flex-direction: column; gap: var(--space-2); }
+.muse-cs-another { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); margin-right: auto; }
+.muse-preview-media.tall { aspect-ratio: 9 / 16; }
+.muse-takeaways { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
+.muse-takeaway { display: flex; flex-direction: column; gap: 4px; padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--bg-tertiary); font-size: 13px; color: var(--text-primary); text-decoration: none; }
+.muse-takeaway small { color: var(--text-secondary); }
+.muse-ins-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.muse-ins-table th, .muse-ins-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border-subtle); }
+.muse-ins-table th { font-weight: 600; color: var(--text-tertiary); }
+.muse-ins-table td.num, .muse-ins-table th.num { text-align: right; font-variant-numeric: tabular-nums; }

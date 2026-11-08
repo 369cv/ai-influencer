@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useWorkspaceStore } from '../context/workspace'
 import { STAT_KEYS, canHaveStats, refreshStats, sumStats, fmtNum, statsLine } from '../utils/publishing'
 import { isRouteConnected } from '../utils/connections'
+import { weekProgress, bestTimes, engagementOf, fmtBest } from '../utils/goals'
+import GoalBar from './GoalBar'
 
 // Influencer profile → Overview: what her sent posts did over the last 30 days.
 // Real numbers only, read from Ayrshare; posts sent through webhooks have none.
@@ -25,6 +27,17 @@ export default function InfluencerInsights({ influencer }) {
   const top = [...withStats].sort((a, b) => (b.stats.totals[rankBy] || 0) - (a.stats.totals[rankBy] || 0)).slice(0, 3)
   const last = Math.max(0, ...withStats.map(p => p.stats.at || 0))
   const name = influencer.name || 'This influencer'
+  // Takeaways: up to three actions drawn from the numbers above. Nothing shows without data.
+  const sched = influencer.postingSchedule
+  const week = sched ? weekProgress(sched, posts, influencer.id) : null
+  const best = sched ? bestTimes(sched, posts, influencer.id) : null
+  const rateOf = p => { const v = p.stats.totals.views || p.stats.totals.reach; return v ? engagementOf(p.stats.totals) / v : null }
+  const table = [...withStats].map(p => ({ p, eng: engagementOf(p.stats.totals), rate: rateOf(p) }))
+    .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1) || b.eng - a.eng)
+  const takeaways = []
+  if (top[0]) takeaways.push({ key: 'repost', title: 'Repost your top post', sub: `${statsLine(top[0].stats.totals)}. Reuse its media and caption in a new post.`, to: '/content?compose=1', state: { influencerId: influencer.id, prefillCaption: top[0].caption || '', prefillMediaList: top[0].mediaUrls || [] } })
+  if (week && !week.met) takeaways.push({ key: 'goal', title: `${week.short} more post${week.short === 1 ? '' : 's'} to hit the goal`, sub: `${week.total} of ${week.goal} this week · ${week.daysLeft} day${week.daysLeft === 1 ? '' : 's'} left`, to: '/content?view=queue' })
+  if (best?.ready && best.slots.length) takeaways.push({ key: 'best', title: `Best time: ${fmtBest(best.slots[0])}`, sub: `${Math.round((best.slots[0].lift - 1) * 100)}% more engagement than her average, from ${best.have} measured posts.`, to: '/settings?section=accounts' })
 
   async function refresh() {
     setBusy(true); setError('')
@@ -47,6 +60,7 @@ export default function InfluencerInsights({ influencer }) {
       </div>
 
       {error && <p className="muse-error" role="alert" style={{ fontSize: 13 }}>{error}</p>}
+      {sched && <GoalBar influencer={influencer} posts={posts} />}
 
       {!sent.length ? (
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{name} hasn’t posted in the last 30 days. Stats show up here once posts go out through Ayrshare.</p>
@@ -82,6 +96,28 @@ export default function InfluencerInsights({ influencer }) {
               ))}
             </ul>
           </div>
+          {takeaways.length > 0 && (
+            <div className="muse-takeaways" aria-label="Takeaways">
+              {takeaways.slice(0, 3).map(t => <Link key={t.key} to={t.to} state={t.state} className="muse-takeaway"><strong>{t.title}</strong><small>{t.sub}</small></Link>)}
+            </div>
+          )}
+          {table.length > 1 && (
+            <details>
+              <summary className="muse-muted" style={{ fontSize: 13, cursor: 'pointer' }}>All measured posts by engagement rate</summary>
+              <table className="muse-ins-table">
+                <thead><tr><th>Post</th><th className="num">Engagement</th><th className="num">Rate</th></tr></thead>
+                <tbody>
+                  {table.map(({ p, eng, rate }) => (
+                    <tr key={p.id}>
+                      <td><Link to={`/content?view=queue&open=${p.id}`}>{p.caption?.split('\n')[0]?.slice(0, 60) || 'No caption'}</Link></td>
+                      <td className="num">{fmtNum(eng)}</td>
+                      <td className="num">{rate == null ? '—' : `${(rate * 100).toFixed(1)}%`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          )}
         </>
       )}
     </section>
