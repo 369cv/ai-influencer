@@ -77,12 +77,12 @@ async function claudePlan(request, influencer, { previous, change } = {}) {
 }
 
 // New session with a plan. Never generates anything.
-export async function startSession({ request, influencer, ratio = '9:16' }) {
+export async function startSession({ request, influencer, ratio = '9:16', lookUrl = null }) {
   const draft = (await claudePlan(request, influencer)) || fallbackPlan(request)
   const s = {
     id: newId('cs'), kind: 'photoshoot', request, influencerId: influencer?.id || null, influencerName: influencer?.name || '',
     status: 'plan', createdAt: Date.now(), updatedAt: Date.now(), results: {},
-    plan: { ...draft, ratio, model: DEFAULTS.photo.model, resolution: DEFAULTS.photo.resolution },
+    plan: { ...draft, ratio, model: DEFAULTS.photo.model, resolution: DEFAULTS.photo.resolution, ...(lookUrl ? { lookUrl } : {}) },
   }
   save([s, ...readSessions()])
   return s.id

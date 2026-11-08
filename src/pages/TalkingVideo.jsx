@@ -27,8 +27,8 @@ export default function TalkingVideo() {
   const inf = list.find(i => i.id === infId) || null
   const looks = useMemo(() => [inf?.mainImage || inf?.image, ...(inf?.looks || []).map(l => l.url)].filter(Boolean), [inf])
   const [look, setLook] = useState('')
-  const [seconds, setSeconds] = useState(10)
-  const [ratio, setRatio] = useState('9:16')
+  const [seconds, setSeconds] = useState(() => VIDEO_SECONDS.includes(location.state?.seconds) ? location.state.seconds : 10)
+  const [ratio, setRatio] = useState(() => RATIOS.includes(location.state?.ratio) ? location.state.ratio : '9:16')
   const [resolution, setResolution] = useState('720p')
   const [topic, setTopic] = useState(location.state?.topic || '')
   const [script, setScript] = useState(location.state?.script || '')
@@ -39,7 +39,9 @@ export default function TalkingVideo() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const cancel = useRef(false)
-  useEffect(() => { setLook(looks[0] || ''); setAudio(null); setVideo(null) }, [infId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A look picked in the Home box (Attach) wins on first load; switching influencer resets to her main photo.
+  const handedLook = useRef(location.state?.look || '')
+  useEffect(() => { setLook(handedLook.current || looks[0] || ''); handedLook.current = ''; setAudio(null); setVideo(null) }, [infId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const vp = inf?.voiceProfile
   const budget = wordBudget(seconds)
@@ -96,7 +98,7 @@ export default function TalkingVideo() {
           </div>
           {looks.length > 0 && (
             <div className="muse-talk-looks" role="radiogroup" aria-label="Look">
-              {looks.map((u, n) => <button key={u} type="button" role="radio" aria-checked={u === look} className={`muse-thumb lg${u === look ? ' on' : ''}`} style={{ backgroundImage: `url(${u})` }} onClick={() => { setLook(u); setVideo(null) }} aria-label={n === 0 ? 'Main photo' : `Look ${n}`} />)}
+              {(look && !looks.includes(look) ? [look, ...looks] : looks).map((u, n) => <button key={u} type="button" role="radio" aria-checked={u === look} className={`muse-thumb lg${u === look ? ' on' : ''}`} style={{ backgroundImage: `url(${u})` }} onClick={() => { setLook(u); setVideo(null) }} aria-label={u === looks[0] ? 'Main photo' : `Look ${n}`} />)}
             </div>
           )}
           <div className="muse-chip-row">

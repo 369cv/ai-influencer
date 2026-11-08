@@ -1,6 +1,6 @@
 # Reimagine: HeyGen's structure with Muzecast's one box
 
-Status: **proposal, not built.** Nothing in the app changes until we agree on the decisions below.
+Status: **decided (November 2026); phase 1 built.** The decisions are recorded below. Phase 1 (the box and Home) is in the app; later phases are not built yet.
 
 ## Sources
 
@@ -113,22 +113,37 @@ One kit per influencer, stored on her record (local-first), and exportable as **
   - **Coming:** listed so you can see where Muse is heading. Not built.
 - **System check:** sits next to the grid, and tests every connected service without spending credits.
 
-## Decisions needed
+## Decisions
 
-1. **Navigation:** move to four places (Home, Influencers, Apps, Content) on an icon rail with labels, HeyGen-style?
-2. **Home:** setup steps, one box, workflow cards and Recent. This replaces today's chips, links, Recipes and the Getting started strip. OK?
-3. **Box workflows:** Talking video, Video, Photoshoot and Post, with New influencer under the list. Recipes become "Browse setups" inside Photoshoot, and Idea leaves Create (it lives in Content › Ideas). OK?
-4. **Remake a reel** (Higgsfield motion transfer): add it now or later? **FlipScript** (keep a reel's structure, write your own script) needs a transcript source and would be its own phase.
-5. **Brand kits:** build them as the identity layer, so every workflow reads the kit? If yes, the two new pieces are captions burned into the video and a link reader. Include both, or start with the profile-based kit only?
-6. **Content becomes Projects** (grouped by job, with folders), with the queue and the rest in the side column. OK?
-7. **Look:** keep Muse's lavender, light and dark, as shown, rather than HeyGen's dark-only or Muzecast's warm orange?
-8. **Integrations:** move Connections into Apps › Integrations, as a card grid with honest statuses?
-9. **Unused keys:** for services with a key saved but no feature (HeyGen, Runway, Kling and others), wire one of them up next, or hide them until they do something?
-10. **Influencer page:** rebuild it around her looks (board 8), as its own `Influencers.jsx` session? And add Clone from a recording to Voices?
+| # | Question | Decision |
+|---|---|---|
+| 1 | Navigation: four places on an icon rail with labels | **Yes** (phase 2) |
+| 2 | Home: setup steps, one box, workflow cards, Recent | **Yes. Built** |
+| 3 | Box workflows | **Yes:** Talking video, Video, Photoshoot, Post, with New influencer under a separator. Recipes became "Browse setups" in Photoshoot; Idea stays in Content › Ideas. **Built** |
+| 4 | Remake a reel, FlipScript | **Later:** Remake a reel is phase 6; FlipScript after that |
+| 5 | Brand kits | **Yes**, starting from her profile, text-only first. Burned-in captions and the link reader come after |
+| 6 | Content becomes Projects | **Yes** (phase 5) |
+| 7 | Look | **Keep Muse's lavender**, light and dark |
+| 8 | Integrations in Apps, card grid with honest statuses | **Yes** (phase 2) |
+| 9 | Unused keys | **Keep them** in a collapsed "Saved keys (not used yet)" section until a feature uses them |
+| 10 | Influencer page around looks; voice clone | **Yes**, in its own `Influencers.jsx` session. Clone from a recording comes later |
 
-## Suggested phases (after agreement)
+### What phase 1 changed
 
-1. **Box and Home:** dropdown, per-workflow chips, the "Add media" sheet, workflow cards, setup steps, and the placeholder fix.
+- **One box, five workflows.** A dropdown (with descriptions) and five cards switch it. Each workflow has its own placeholder, which names the selected influencer, and its own chips:
+  - **Talking video:** Attach (the look), influencer, voice (or "No voice yet · add one"), length, format. Opens `/talk` with the script, look, length and format filled in.
+  - **Video:** Attach (starting picture), Inspiration, influencer, Seedance 2.0, format. Opens Studio's video mode with the prompt and picture.
+  - **Photoshoot:** Attach (a look to keep), Browse setups (the runnable workflows), influencer, format. Drafts the free plan as before; an attached look is kept on the plan.
+  - **Post:** Attach (up to 10), influencer. Opens the composer with the caption and media.
+  - **New influencer:** Attach (a face photo), "Design from traits instead". Opens the wizard with the description and face.
+- **Add media sheet:** Upload, her looks and Media, with a selected count. It lists only the user's own photos and videos.
+- **Setup steps:** for the selected influencer, read from real data (Higgsfield connected, main photo, consistent face, voice, posting schedule, linked account). The next unfinished step gets the big card; nothing shows once all six are done.
+- **Recent:** the last four photos and videos, linking to Content › Media, plus the recent requests row.
+- **Removed:** the old chips, the plain links, the Recipes row and the Getting started checklist.
+
+## Phases
+
+1. **Box and Home (built):** dropdown, per-workflow chips, the "Add media" sheet, workflow cards, setup steps, and the placeholder fix.
 2. **Navigation:** icon rail; the Apps library with Integrations; the Influencers gallery and list view, and the Voices page.
 3. **Brand identity:** kit editor and previews; build a kit from her profile; apply it in the composer, scripts, replies and deal packs; pronunciation for ElevenLabs. Then captions burned into the video and import from a link.
 4. **Influencer page around looks** (its own session, with every flow checked).
