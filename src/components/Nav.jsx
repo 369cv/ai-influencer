@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useTheme } from '../context/theme'
 
 const links = [
+  { to: '/', label: 'Home', end: true },
   { to: '/influencers', label: 'Influencers' },
   { to: '/inspiration', label: 'Inspiration' },
   { to: '/brand-deals', label: 'Brand Deals' },
@@ -10,7 +11,7 @@ const links = [
 export default function Nav() {
   const { pathname } = useLocation()
   const { isDark, toggle } = useTheme()
-  const landing = pathname === '/'
+  const landing = pathname === '/welcome'
   const dark = landing || isDark
 
   const navBg = landing
@@ -53,19 +54,19 @@ export default function Nav() {
       </NavLink>
 
       {/* Nav links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {links.map(l => (
-          <NavLink key={l.to} to={l.to} className="nav-link" style={({ isActive }) => ({
+          <NavLink key={l.to} to={l.to} end={l.end} className="nav-link" style={({ isActive }) => ({
             padding: '6px 14px',
             borderRadius: 8,
             fontSize: 14,
             fontWeight: isActive ? 600 : 500,
             color: dark
               ? (isActive ? 'rgba(255,255,255,0.93)' : 'rgba(255,255,255,0.45)')
-              : (isActive ? '#EC4899' : 'var(--text-secondary)'),
+              : (isActive ? 'var(--on-tonal)' : 'var(--text-secondary)'),
             background: dark
               ? (isActive ? 'rgba(255,255,255,0.08)' : 'transparent')
-              : (isActive ? 'rgba(236,72,153,0.08)' : 'transparent'),
+              : (isActive ? 'var(--tonal)' : 'transparent'),
             transition: 'all 0.15s',
           })}>
             {l.label}
@@ -77,7 +78,7 @@ export default function Nav() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
         <NavLink to="/create" style={({ isActive }) => ({
           padding: '7px 16px', borderRadius: 980,
-          background: isActive ? (dark ? 'rgba(255,255,255,0.14)' : '#1D1D1F') : dark ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg,#EC4899,#8B5CF6)',
+          background: isActive ? (dark ? 'rgba(255,255,255,0.14)' : '#1D1D1F') : dark ? 'rgba(255,255,255,0.12)' : 'var(--accent)',
           color: '#fff', fontSize: 13, fontWeight: 700,
           textDecoration: 'none', letterSpacing: '-0.1px',
           boxShadow: dark ? 'none' : '0 2px 8px rgba(139,92,246,0.3)',

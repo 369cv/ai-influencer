@@ -1557,7 +1557,7 @@ export default function Create() {
   const prefill = location.state || {}
   const [data, setData] = useState({
     name: prefill.prefillName || '', gender: prefill.prefillGender || '', age: '', niches: [], nicheCustom: '',
-    backstory: '', personality: 50,
+    backstory: prefill.prefillBackstory || '', personality: 50,
     ethnicity: '', skinTone: '', hairColor: '', hairLength: 'Long', hairTexture: 'Straight',
     eyeColor: '', build: '', uniqueFeatures: '',
     vibeWords: [], faceRef: null, styleRef: null,
