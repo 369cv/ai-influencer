@@ -1,6 +1,6 @@
 # Remaining gaps: proposal
 
-Status: **proposal, not built.** This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
+Status: **G8, G1, G2 and G3 are built** (see Build status below); the rest are proposals. This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
 - **Exists:** works today.
 - **Change:** exists, gets reworked.
 - **New:** to build.
@@ -17,6 +17,19 @@ Status: **proposal, not built.** This set completes the earlier boards in `docs/
 | G6 Saved keys become usable | `gap-6.png` | Connection page (Change) → Studio picker (Change) → Writer picker (Change) | A proxy per provider (Kling, Runway, Luma, OpenAI, Gemini). Models without a key show Connect |
 | G7 Sign in to MCP services | `gap-7.png` | Connect (Change) → Tools found (New) → Used in Plan (New) | Generalise the Higgsfield OAuth/MCP proxy to other remote MCP servers |
 | G8 System check | `gap-8.png` | Run checks (New) → Fix (New) → Ready to ship (New) | One cheap real request per connection; cost shown before running |
+
+## Build status
+
+| Gap | Status | Where |
+|---|---|---|
+| G8 System check | Built | Settings → System check. Higgsfield check is free (sign-in + tool list); ElevenLabs lists voices; Claude sends a 5-token reply |
+| G1 Captions per platform | Built | Composer: caption tabs, limits, Instagram Post/Reel/Story, first comment, per-platform checks |
+| G2 Edit and cancel | Built | Composer on a scheduled post: Edit (cancel, then re-send) and Cancel post. Ayrshare `DELETE /api/post`; webhooks get `muse.post.cancelled` with `postId` |
+| G3 Analytics | Built | Content → Sent (Refresh stats) and the profile's Insights card. Ayrshare `POST /api/analytics/post` |
+| G5 Workflow runs | Next | Spends credits; needs per-step inputs (influencer, scene) |
+| G6 Saved keys usable | Needs your pick of providers | |
+| G7 MCP sign-in | Needs your pick of services | |
+| G4 Brand approval | Blocked on F7 deliverables | Brand deals have no deliverables yet |
 
 ## How they connect
 
