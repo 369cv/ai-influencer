@@ -467,7 +467,7 @@ const uploadAudioFile = dataUrl => uploadMedia(dataUrl, {
   prefix: 'audio',
 })
 
-export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', onProgress, onPartialResults, isCancelled, pendingKey = null }) {
+export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8, count = 1, referenceImages = [], audioRef = null, startFrameUrl = null, model = 'seedance_2_0', resolution = '1080p', elementId = null, onProgress, onPartialResults, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -507,7 +507,7 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', duration = 8
 
   const params = {
     model,
-    prompt,
+    prompt: withElement(prompt, elementId, model),
     aspect_ratio: aspectRatio,
     duration,
     resolution,
@@ -1119,14 +1119,34 @@ export async function hfToolNames() {
   const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
   const tools = (res?.result ?? res)?.tools
   _toolNames = new Set(Array.isArray(tools) ? tools.map(t => t.name) : [])
+  _toolSchemas = Object.fromEntries((Array.isArray(tools) ? tools : []).map(t => [t.name, t.inputSchema || null]))
   return _toolNames
+}
+let _toolSchemas = {}
+// Fields of a tool's `params` object, from the tool list Higgsfield returned.
+export function hfToolFields(name) {
+  const sc = _toolSchemas[name]
+  const params = sc?.properties?.params
+  const props = params?.properties || sc?.properties || {}
+  const required = new Set(params?.required || sc?.required || [])
+  return { wrapped: !!params, required, props }
+}
+const IMAGE_FIELD = ['image_id', 'media_id', 'input_image_id', 'source_image_id']
+
+// Options a person can set for a schema-described edit (Relight): enums become choices,
+// free text fields become inputs. The image field and get_cost are filled in by Muse.
+export function editOptions(name) {
+  const { props, required } = hfToolFields(name)
+  return Object.entries(props)
+    .filter(([k, v]) => !IMAGE_FIELD.includes(k) && k !== 'get_cost' && k !== 'count' && (Array.isArray(v.enum) ? v.enum.length > 1 : v.type === 'string'))
+    .map(([k, v]) => ({ key: k, label: k.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()), enum: Array.isArray(v.enum) ? v.enum : null, def: v.default, hint: v.description || '', required: required.has(k) }))
 }
 
 const _editIds = new Map()
 async function mediaIdFor(url) {
   if (_editIds.has(url)) return _editIds.get(url)
   await whenOnline()
-  const res = await fetch(url)
+  const res = await fetch(proxied(url))
   if (!res.ok) throw new Error(`Couldn’t read the image (${res.status}).`)
   const blob = await res.blob()
   const contentType = blob.type || 'image/png'
@@ -1162,11 +1182,13 @@ const imageSize = url => new Promise((resolve, reject) => {
   img.crossOrigin = 'anonymous'
   img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
   img.onerror = () => reject(new Error('Couldn’t read the image size.'))
-  img.src = url
+  img.src = proxied(url)
 })
+// Remote images go through the app's image proxy so the browser can read them.
+const proxied = url => (/^https?:/.test(url || '') ? `/api/img-proxy?url=${encodeURIComponent(url)}` : url)
 
 // op: 'upscale' | 'expand' | 'removebg'. opts: { resolution: '2k'|'4k', aspectRatio }
-export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background' }
+export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background', relight: 'relight_image' }
 async function editArgs(op, url, opts) {
   if (op === 'upscale') {
     const { width, height } = await imageSize(url)
@@ -1174,6 +1196,13 @@ async function editArgs(op, url, opts) {
   }
   if (op === 'expand') return { params: { image_id: await mediaIdFor(url), aspect_ratio: opts.aspectRatio || 'auto' } }
   if (op === 'removebg') return { params: { media_id: await mediaIdFor(url), media_type: 'image' } }
+  if (op === 'relight') {
+    const { props, wrapped } = hfToolFields(EDIT_TOOLS.relight)
+    const field = IMAGE_FIELD.find(k => props[k]) || 'image_id'
+    const defaults = Object.fromEntries(editOptions(EDIT_TOOLS.relight).filter(o => o.required && o.def !== undefined).map(o => [o.key, o.def]))
+    const params = { [field]: await mediaIdFor(url), ...(props.media_type ? { media_type: 'image' } : {}), ...defaults, ...(opts.fields || {}) }
+    return wrapped ? { params } : params
+  }
   throw new Error(`Unknown edit: ${op}`)
 }
 
@@ -1189,14 +1218,16 @@ function creditsIn(data) {
 // Higgsfield's own quote (get_cost). Only Upscale and Expand support it; null otherwise.
 export async function editCost(op, url, opts = {}) {
   if (op === 'removebg') return null
+  if (op === 'relight' && !hfToolFields(EDIT_TOOLS.relight).props.get_cost) return null
   const args = await editArgs(op, url, opts)
-  args.params.get_cost = true
+  ;(args.params || args).get_cost = true
   return creditsIn(unwrapMCP(await callTool(EDIT_TOOLS[op], args)))
 }
 
 export async function editImage(op, url, opts = {}) {
   const args = await editArgs(op, url, opts)
-  const input = args.params.image_id || args.params.media_id
+  const a = args.params || args
+  const input = IMAGE_FIELD.map(k => a[k]).find(Boolean)
   const result = await callTool(EDIT_TOOLS[op], args)
   const direct = extractImageUrls(result)
   if (direct.length) return direct[0]

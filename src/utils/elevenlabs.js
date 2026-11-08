@@ -57,3 +57,38 @@ export async function saveDesignedVoice({ name, description, generatedVoiceId })
   if (!res.ok) await fail(res)
   return res.json()
 }
+
+// Voice Library: public voices. filters: { search, gender, age, accent, language, use_case, page }
+export async function searchLibrary(filters = {}) {
+  const q = new URLSearchParams({ op: 'library' })
+  for (const [k, v] of Object.entries(filters)) if (v !== '' && v != null) q.set(k, String(v))
+  const res = await fetch(`/api/elevenlabs?${q}`, { headers: { 'x-api-key': getElevenKey() } })
+  if (!res.ok) await fail(res)
+  return res.json()
+}
+
+// Copies a library voice into the account so it can be used. Returns { voice_id }.
+export async function addLibraryVoice({ publicOwnerId, voiceId, name }) {
+  const res = await post('add', { public_owner_id: publicOwnerId, voice_id: voiceId, name })
+  if (!res.ok) await fail(res)
+  return res.json()
+}
+
+// Voice Remix: three takes of a changed version of an existing voice.
+export async function remixVoice({ voiceId, description, text }) {
+  const res = await fetch(`/api/elevenlabs?op=remix&voice=${encodeURIComponent(voiceId)}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': getElevenKey() }, body: JSON.stringify({ description, text }) })
+  if (!res.ok) await fail(res)
+  const data = await res.json()
+  return { text: data.text, previews: (data.previews || []).map(p => ({ ...p, url: `data:audio/mpeg;base64,${p.audio}`, audio: undefined })) }
+}
+
+// Full voiceover with timing (for captions). Returns { url (data: mp3), alignment }.
+export async function voiceover({ voiceId, text, model, settings, seed }) {
+  const res = await fetch(`/api/elevenlabs?op=speech&voice=${encodeURIComponent(voiceId)}`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': getElevenKey() },
+    body: JSON.stringify({ text, model_id: model, voice_settings: settings, seed: Number.isInteger(seed) ? seed : undefined }),
+  })
+  if (!res.ok) await fail(res)
+  const data = await res.json()
+  return { url: `data:audio/mpeg;base64,${data.audio}`, alignment: data.alignment }
+}

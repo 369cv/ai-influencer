@@ -865,3 +865,15 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-credits:hover { background: var(--bg-tertiary); }
 .muse-credits-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-status-success); flex-shrink: 0; margin: 0 6px; }
 .muse-credits.low .muse-credits-dot { background: var(--color-status-error, #B42318); }
+.muse-vl-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--space-2); }
+
+/* Talking video */
+.muse-talk { display: flex; flex-direction: column; gap: var(--space-4); max-width: 820px; }
+.muse-talk-step { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); background: var(--surface); }
+.muse-talk-step h2 { display: flex; align-items: center; gap: var(--space-2); font-size: 16px; font-weight: 600; margin: 0; }
+.muse-talk-step h2 span { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-light); color: var(--accent); font-size: 13px; }
+.muse-talk-looks { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.muse-talk-looks .muse-thumb.on { outline: 3px solid var(--accent); outline-offset: 2px; }
+.muse-talk-result { display: flex; flex-direction: column; gap: var(--space-3); }
+.muse-talk-result video { width: 100%; max-width: 360px; border-radius: var(--radius-lg); background: #000; }
+.muse-talk audio { height: 36px; }
