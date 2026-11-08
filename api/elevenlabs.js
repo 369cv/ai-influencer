@@ -3,6 +3,11 @@
 //   GET  /api/elevenlabs?op=voices            → { voices: [{ voice_id, name, labels, preview_url, category }] }
 //   POST /api/elevenlabs?op=tts&voice=<id>    → audio/mpeg
 //        body { text, model_id?, voice_settings?, seed? }  (text ≤ 600 chars: previews only)
+//   GET  /api/elevenlabs?op=usage             → { tier, used, limit, resetsAt }
+//   POST /api/elevenlabs?op=design            → { text, previews: [{ id, audio (base64 mp3), duration }] }
+//        body { description (20–1000), text? (100–1000), model? }
+//   POST /api/elevenlabs?op=save              → { voice_id, name }
+//        body { name, description, generated_voice_id }
 import { rateLimit, clientIp } from '../lib/rateLimit.js'
 
 const BASE = 'https://api.elevenlabs.io'
@@ -59,6 +64,38 @@ export async function handleElevenLabs({ method, op, voice, key, body }) {
       return { status: r.status, json: { error: errText(data, 'ElevenLabs could not make that preview.') } }
     }
     return { status: 200, audio: Buffer.from(await r.arrayBuffer()) }
+  }
+
+  if (op === 'usage' && method === 'GET') {
+    const r = await fetch(`${BASE}/v1/user/subscription`, { headers })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs refused the request.') } }
+    return { status: 200, json: { tier: data.tier || '', used: data.character_count ?? null, limit: data.character_limit ?? null, resetsAt: data.next_character_count_reset_unix ? data.next_character_count_reset_unix * 1000 : null } }
+  }
+
+  // Voice Design: 3 takes from a description; nothing is saved until op=save.
+  if (op === 'design' && method === 'POST') {
+    const description = String(body?.description || '').trim()
+    if (description.length < 20 || description.length > 1000) return { status: 400, json: { error: 'Describe the voice in 20 to 1,000 characters.' } }
+    const text = String(body?.text || '').trim()
+    if (text && (text.length < 100 || text.length > 1000)) return { status: 400, json: { error: 'The sample line needs 100 to 1,000 characters, or leave it empty to have one written.' } }
+    const payload = { voice_description: description, model_id: body?.model === 'eleven_ttv_v3' ? 'eleven_ttv_v3' : 'eleven_multilingual_ttv_v2', ...(text ? { text } : { auto_generate_text: true }) }
+    const r = await fetch(`${BASE}/v1/text-to-voice/design?output_format=mp3_44100_128`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs could not design that voice.') } }
+    const previews = (data.previews || []).map(p => ({ id: p.generated_voice_id, audio: p.audio_base_64, duration: p.duration_secs ?? null }))
+    return { status: 200, json: { text: data.text || text, previews } }
+  }
+
+  if (op === 'save' && method === 'POST') {
+    const name = String(body?.name || '').trim().slice(0, 100)
+    const description = String(body?.description || '').trim().slice(0, 1000)
+    const generated = String(body?.generated_voice_id || '')
+    if (!name || !description || !/^[A-Za-z0-9_-]{6,80}$/.test(generated)) return { status: 400, json: { error: 'Pick a take and name the voice.' } }
+    const r = await fetch(`${BASE}/v1/text-to-voice`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ voice_name: name, voice_description: description, generated_voice_id: generated }) })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) return { status: r.status, json: { error: errText(data, 'ElevenLabs could not save that voice.') } }
+    return { status: 200, json: { voice_id: data.voice_id, name: data.name || name } }
   }
 
   return { status: 404, json: { error: 'Unknown operation.' } }

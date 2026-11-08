@@ -882,7 +882,7 @@ export async function generateSingleImage({ prompt, aspectRatio = '16:9', resolu
 // ── Photo Studio batch generation ────────────────────────────────────────────
 // Uploads refs once, launches all N jobs in parallel, polls together, and streams
 // results via onResult(url) as each image completes.
-export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', model = 'gpt_image_2', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], onProgress, onResult, isCancelled, pendingKey = null }) {
+export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', model = 'gpt_image_2', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], elementId = null, onProgress, onResult, isCancelled, pendingKey = null }) {
   await initSession()
   onProgress?.(5)
 
@@ -914,9 +914,9 @@ export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16',
 
   // Launch jobs sequentially — parallel calls conflict over the shared MCP session
   // (same reason video generation uses a sequential loop)
-  const prompts = Array.isArray(prompt)
+  const prompts = (Array.isArray(prompt)
     ? prompt
-    : Array.from({ length: count }, () => prompt)
+    : Array.from({ length: count }, () => prompt)).map(p => withElement(p, elementId, model))
   const jobResults = []
   for (const p of prompts) {
     jobResults.push(await callTool('generate_image', { params: { ...baseParams, prompt: p } }))
@@ -1106,4 +1106,135 @@ export async function checkHiggsfield() {
   const tools = (res?.result ?? res)?.tools
   if (!Array.isArray(tools)) throw new Error('Higgsfield answered without a tool list.')
   return tools.length
+}
+
+// ── Photo edits (Upscale, Expand, Remove background) ─────────────────────────
+// Each runs a Higgsfield tool on one image. Tools take a media_id, so the image is
+// uploaded once (cached by URL for this tab) and its media_id reused.
+let _toolNames = null
+export async function hfToolNames() {
+  if (_toolNames) return _toolNames
+  if (!getHFToken()) return new Set()
+  await initSession()
+  const res = await mcpPost({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} })
+  const tools = (res?.result ?? res)?.tools
+  _toolNames = new Set(Array.isArray(tools) ? tools.map(t => t.name) : [])
+  return _toolNames
+}
+
+const _editIds = new Map()
+async function mediaIdFor(url) {
+  if (_editIds.has(url)) return _editIds.get(url)
+  await whenOnline()
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Couldn’t read the image (${res.status}).`)
+  const blob = await res.blob()
+  const contentType = blob.type || 'image/png'
+  const up = unwrapMCP(await callTool('media_upload', { method: 'upload_url', filename: `edit_${Date.now()}.${contentType.includes('png') ? 'png' : 'jpeg'}`, content_type: contentType }))
+  const f0 = up?.uploads?.[0] ?? up?.files?.[0] ?? up?.data?.[0]
+  let uploadUrl = up?.upload_url || up?.url || f0?.upload_url || f0?.url
+  let mediaId = up?.media_id || up?.id || f0?.media_id || f0?.id
+  if (!uploadUrl || !mediaId) {
+    const text = typeof up === 'string' ? up : JSON.stringify(up ?? '')
+    mediaId = mediaId || (text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i) || [])[0]
+    uploadUrl = uploadUrl || (text.match(/https:\/\/[^\s"'\\]+/) || [])[0]
+  }
+  if (!uploadUrl || !mediaId) throw new Error('Higgsfield didn’t return an upload address.')
+  const put = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } })
+  if (!put.ok) throw new Error(`Upload failed (${put.status}).`)
+  const confirmed = unwrapMCP(await callTool('media_confirm', { media_id: mediaId, type: 'image' }))
+  const cdn = confirmed?.url || confirmed?.media_url || confirmed?.rawUrl || confirmed?.cdn_url
+    || (typeof confirmed === 'string' ? (confirmed.match(/https:\/\/[^\s"'\\]+/) || [])[0] : null)
+  _editIds.set(url, mediaId)
+  _editUrls.set(url, cdn || (/^https:/.test(url) ? url : null))
+  return mediaId
+}
+const _editUrls = new Map()
+async function uploadForElement(url) {
+  const mediaId = await mediaIdFor(url)
+  const cdn = _editUrls.get(url)
+  if (!cdn) throw new Error('Higgsfield didn’t return a link for the uploaded photo.')
+  return { mediaId, url: cdn }
+}
+
+const imageSize = url => new Promise((resolve, reject) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+  img.onerror = () => reject(new Error('Couldn’t read the image size.'))
+  img.src = url
+})
+
+// op: 'upscale' | 'expand' | 'removebg'. opts: { resolution: '2k'|'4k', aspectRatio }
+export const EDIT_TOOLS = { upscale: 'upscale_image', expand: 'outpaint_image', removebg: 'remove_background' }
+async function editArgs(op, url, opts) {
+  if (op === 'upscale') {
+    const { width, height } = await imageSize(url)
+    return { params: { image_id: await mediaIdFor(url), width, height, resolution: opts.resolution || '4k' } }
+  }
+  if (op === 'expand') return { params: { image_id: await mediaIdFor(url), aspect_ratio: opts.aspectRatio || 'auto' } }
+  if (op === 'removebg') return { params: { media_id: await mediaIdFor(url), media_type: 'image' } }
+  throw new Error(`Unknown edit: ${op}`)
+}
+
+function creditsIn(data) {
+  if (data && typeof data === 'object') {
+    for (const k of ['credits', 'cost', 'total_credits', 'credit_cost', 'price']) if (typeof data[k] === 'number') return data[k]
+    if (data.cost && typeof data.cost === 'object') return creditsIn(data.cost)
+  }
+  const m = (typeof data === 'string' ? data : JSON.stringify(data ?? '')).match(/(\d+(?:\.\d+)?)\s*credits?/i)
+  return m ? Number(m[1]) : null
+}
+
+// Higgsfield's own quote (get_cost). Only Upscale and Expand support it; null otherwise.
+export async function editCost(op, url, opts = {}) {
+  if (op === 'removebg') return null
+  const args = await editArgs(op, url, opts)
+  args.params.get_cost = true
+  return creditsIn(unwrapMCP(await callTool(EDIT_TOOLS[op], args)))
+}
+
+export async function editImage(op, url, opts = {}) {
+  const args = await editArgs(op, url, opts)
+  const input = args.params.image_id || args.params.media_id
+  const result = await callTool(EDIT_TOOLS[op], args)
+  const direct = extractImageUrls(result)
+  if (direct.length) return direct[0]
+  const ids = extractJobIds(result).filter(id => id !== input)
+  if (!ids.length) {
+    const d = unwrapMCP(result)
+    throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'Higgsfield didn’t start the edit.')
+  }
+  const [out] = await pollAllJobs(ids.slice(0, 1), 1, opts.onProgress)
+  return out
+}
+
+// ── Elements: one saved face per influencer ("Consistent face") ──────────────
+// Higgsfield injects the Element's images wherever <<<id>>> appears in a prompt.
+export const ELEMENT_MODELS = new Set(['gpt_image_2', 'gpt_image_2_6', 'nano_banana_2', 'nano_banana_pro', 'seedream_v4_5', 'seedance_2_0'])
+export function withElement(prompt, elementId, model) {
+  if (!elementId || !ELEMENT_MODELS.has(model) || String(prompt).includes(`<<<${elementId}>>>`)) return prompt
+  return `The person in this image is <<<${elementId}>>>; keep this exact face and identity.\n\n${prompt}`
+}
+// The id to send for an influencer, only once Higgsfield has finished the Element.
+export const elementFor = inf => (inf?.hfElement?.status === 'completed' ? inf.hfElement.id : null)
+
+function elementOf(data) {
+  const e = data?.element || data?.data || data
+  const id = e?.id || e?.element_id || (JSON.stringify(data ?? '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i) || [])[0]
+  return { id, status: String(e?.status || '').toLowerCase() || 'processing', name: e?.name || '' }
+}
+
+export async function createFaceElement(imageUrl, name) {
+  await initSession()
+  const { mediaId, url } = await uploadForElement(imageUrl)
+  const data = unwrapMCP(await callTool('manage_reference_elements', { action: 'create', category: 'character', name: String(name || 'influencer').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 32) || undefined, medias: [{ id: mediaId, url, type: 'media_input' }] }))
+  const el = elementOf(data)
+  if (!el.id) throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t create the Element.')
+  return el
+}
+
+export async function getElement(id) {
+  await initSession()
+  return elementOf(unwrapMCP(await callTool('manage_reference_elements', { action: 'get', element_id: id })))
 }

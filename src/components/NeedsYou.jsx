@@ -6,6 +6,7 @@ import { useLocalJSON } from '../utils/localJson'
 import { RUNS_KEY, normalizeRuns } from '../utils/workflowRun'
 import { CHECK_KEY } from '../utils/systemCheck'
 import { freeSlots, fmtSlot } from '../utils/schedule'
+import { weekProgress } from '../utils/goals'
 import { postFor, isPosted, kindLabel } from '../utils/deals'
 import { routeName } from '../utils/connections'
 
@@ -41,7 +42,7 @@ export function useNeedsYou() {
       for (const dl of d.deliverables || []) {
         const post = postFor(dl, posts || [])
         if (isPosted(post)) continue
-        const to = `/brand-deals?deal=${d.id}`
+        const to = `/content?view=deals&deal=${d.id}`
         if (dl.approval === 'changes') rows.push({ key: `dl-${dl.id}`, rank: 1, to, thumb: d.image, title: `${d.brand} · ${kindLabel(dl.kind)}`, sub: `Changes requested${dl.note ? `: “${dl.note}”` : ''}`, badge: 'Changes', tone: 'failed' })
         else if (dl.due) {
           const due = new Date(`${dl.due}T23:59:59`).getTime()
@@ -54,6 +55,15 @@ export function useNeedsYou() {
       if (!inf.postingSchedule) continue
       const free = freeSlots(inf.postingSchedule, posts || [], inf.id, { days: 3 }).filter(s => s.at.getTime() - now < 2 * DAY)
       if (free.length) rows.push({ key: `slots-${inf.id}`, rank: 3, to: '/content?view=queue', thumb: inf.mainImage || inf.image, title: `${inf.name || 'Influencer'} has ${free.length} empty slot${free.length > 1 ? 's' : ''}`, sub: `Next: ${fmtSlot(free[0].at)}`, badge: 'Empty', tone: 'draft' })
+    }
+    // 4b. Behind this week's posting goal with 3 days or fewer left.
+    for (const inf of influencers || []) {
+      if (!inf.postingSchedule) continue
+      const w = weekProgress(inf.postingSchedule, posts || [], inf.id, now)
+      if (!w.met && w.daysLeft <= 3) {
+        const free = freeSlots(inf.postingSchedule, posts || [], inf.id, { days: 7 }).filter(s => s.at.getTime() < w.weekEnd).length
+        rows.push({ key: `goal-${inf.id}`, rank: 2, to: '/content?view=queue', thumb: inf.mainImage || inf.image, title: `${inf.name || 'Influencer'} is behind her weekly goal`, sub: `${w.total} of ${w.goal} this week · ${w.short} more needed · ${free} free slot${free === 1 ? '' : 's'} left`, badge: 'Behind', tone: 'planned' })
+      }
     }
     // 5. Connections that failed their last system check.
     const failed = Object.entries(checks || {}).filter(([, r]) => r?.state === 'fail').map(([id]) => CHECK_NAMES[id] || routeName(id))

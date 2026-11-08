@@ -6,7 +6,7 @@
 // automatically: a Post step waits for you to review, then adds a planned post to
 // Content's queue, where you send it as usual.
 import { readJSON, writeJSON, newId } from './localJson'
-import { generateNImages, generateVideo } from './higgsfieldGenerate'
+import { generateNImages, generateVideo, elementFor } from './higgsfieldGenerate'
 import { runSkill, influencerContext } from './claudeAssist'
 import { skillsFor } from './skills'
 import { DEFAULTS, addToMediaHistory, uploadable, buildStudioPrompt, SESSION } from './studio'
@@ -67,7 +67,7 @@ async function photoStep(step, ctx, onProgress) {
   let url = null
   await deps().generateNImages({
     prompt: [prompt], count: 1, aspectRatio: ctx.setup.ratio || PHOTO.ratio, resolution: PHOTO.resolution, model: PHOTO.model,
-    referenceImage: face, outfitImage: ref, propImages: closeUps,
+    referenceImage: face, outfitImage: ref, propImages: closeUps, elementId: elementFor(inf),
     onProgress, isCancelled: () => cancelled[ctx.runId],
     onResult: u => { url = url || u },
   })

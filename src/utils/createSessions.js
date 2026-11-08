@@ -4,7 +4,7 @@
 // list recent requests and reopen them. Nothing is generated until the plan is run.
 // Photos are made with the same code Studio uses and also land in Content → Media.
 import { readJSON, writeJSON, newId } from './localJson'
-import { generateNImages } from './higgsfieldGenerate'
+import { generateNImages, elementFor } from './higgsfieldGenerate'
 import { getClaudeKey } from './connections'
 import { ASSIST_MODEL, influencerContext } from './claudeAssist'
 import { DEFAULTS, addToMediaHistory, uploadable, buildStudioPrompt, SESSION } from './studio'
@@ -120,7 +120,7 @@ export async function runSession(id, influencer, { onlyShotIds } = {}) {
     await deps().generateNImages({
       prompt: shots.map(sh => buildStudioPrompt({ ...base, shot: sh.text })), count: shots.length,
       aspectRatio: s.plan.ratio, resolution: s.plan.resolution, model: s.plan.model,
-      referenceImage: face, outfitImage: look, propImages: closeUps,
+      referenceImage: face, outfitImage: look, propImages: closeUps, elementId: elementFor(influencer),
       onProgress: p => patchSession(id, { progress: Math.max(2, Math.round(p)) }),
       isCancelled: () => cancelled[id],
       onResult: url => {

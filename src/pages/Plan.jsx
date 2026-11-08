@@ -16,11 +16,11 @@ const VIEWS = [{ id: 'board', label: 'Board' }, { id: 'creators', label: 'Creato
 const tplName = id => PROJECT_TEMPLATES.find(t => t.id === id)?.name || 'Project'
 const shortDate = d => new Date(d).toLocaleDateString([], { month: 'short', day: 'numeric' })
 
-export default function Plan() {
+export default function Plan({ embedded = false }) {
   const [params, setParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const view = VIEWS.some(v => v.id === params.get('view')) ? params.get('view') : 'board'
+  const view = embedded ? 'board' : VIEWS.some(v => v.id === params.get('view')) ? params.get('view') : 'board'
   const [ideas, setIdeas] = useWorkspaceStore('muse_ideas')
   const [projects, setProjects] = useWorkspaceStore('muse_projects')
   const [type, setType] = useState('all')
@@ -28,12 +28,14 @@ export default function Plan() {
   const [focusCapture, setFocusCapture] = useState(false)
   const open = params.get('open')
 
-  // Home composer → new idea
+  // Create → Idea chip: add it once per navigation (effects can run twice in development).
+  const handledIdea = useRef(null)
   useEffect(() => {
     const t = location.state?.newIdea
-    if (t) {
+    if (t && handledIdea.current !== location.key) {
+      handledIdea.current = location.key
       setIdeas(l => [{ id: newId('idea'), title: t.slice(0, 300), notes: '', status: 'inbox', createdAt: Date.now() }, ...l])
-      navigate('/plan', { replace: true, state: {} })
+      navigate(location.pathname + location.search, { replace: true, state: {} })
     }
   }, [location.state?.newIdea]) // eslint-disable-line
 
@@ -46,17 +48,18 @@ export default function Plan() {
   }, [params]) // eslint-disable-line
 
   const setView = v => setParams(v === 'board' ? {} : { view: v })
+  const Wrap = embedded ? EmbeddedWrap : Page
   const openItem = id => setParams(q => { q.set('open', id); return q })
   const closeItem = () => setParams(q => { q.delete('open'); return q })
   const openProject = projects.find(p => p.id === open)
   const openIdea = ideas.find(i => i.id === open)
 
   return (
-    <Page
+    <Wrap
       title="Plan"
       wide
       actions={<>
-        <Seg options={VIEWS} value={view} onChange={setView} label="View" />
+        {!embedded && <Seg options={VIEWS} value={view} onChange={setView} label="View" />}
         {view === 'board' && <>
           <select className="muse-input muse-input-sm" value={type} onChange={e => setType(e.target.value)} aria-label="Filter by project type">
             <option value="all">All types</option>
@@ -96,8 +99,13 @@ export default function Plan() {
           }}
         />
       )}
-    </Page>
+    </Wrap>
   )
+}
+
+// Inside Content → Ideas: the toolbar sits above the board instead of in a page header.
+function EmbeddedWrap({ actions, children }) {
+  return <div className="muse-ideas"><div className="muse-ideas-bar">{actions}</div>{children}</div>
 }
 
 function Board({ ideas, setIdeas, projects, setProjects, type, onOpen, focusCapture, onCaptured }) {
@@ -205,7 +213,8 @@ function IdeaPanel({ idea: i, setIdeas, onClose, onMakeProject, onOpenProject })
         {i.projectId
           ? <button type="button" className="muse-btn muse-btn-filled" onClick={() => onOpenProject(i.projectId)}>Open project</button>
           : <button type="button" className="muse-btn muse-btn-filled" onClick={onMakeProject}>Make project</button>}
-        <Link className="muse-btn muse-btn-tonal" to="/content?compose=1" state={{ prefillCaption: i.title }}>Draft post</Link>
+        <Link className="muse-btn muse-btn-tonal" to="/" state={{ createFor: i.influencerId || undefined, createText: [i.title, i.notes].filter(Boolean).join('. ') }}>Make it in Create</Link>
+        <Link className="muse-btn muse-btn-text" to="/content?compose=1" state={{ prefillCaption: i.title }}>Draft post</Link>
       </div>
     </Panel>
   )

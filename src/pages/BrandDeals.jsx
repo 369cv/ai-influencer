@@ -294,7 +294,7 @@ function DealCard({ deal, generating, progress, onDelete, onOpen, onRename, onGe
   )
 }
 
-export default function BrandDeals() {
+export default function BrandDeals({ embedded = false }) {
   const [deals, setDeals] = useBrandDeals()
   const [showNew, setShowNew] = useState(false)
   const [lightboxDeal, setLightboxDeal] = useState(null)
@@ -383,7 +383,7 @@ export default function BrandDeals() {
   }
 
   return (
-    <div style={{ paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={embedded ? undefined : { paddingTop: 'var(--nav-h)', minHeight: '100vh', background: 'var(--bg)' }}>
       {showNew && <NewDealModal onClose={() => setShowNew(false)} onSave={addDeal} />}
       {openDeal && deals.find(d => d.id === openDeal) && <DealPanel deal={deals.find(d => d.id === openDeal)} onChange={patch => updateDeal(openDeal, patch)} onClose={() => setOpenDeal(null)} />}
 
@@ -395,7 +395,7 @@ export default function BrandDeals() {
         />
       )}
 
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px' }}>
+      <div style={embedded ? undefined : { maxWidth: 960, margin: '0 auto', padding: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.6px' }}>Brand Deals</h1>
