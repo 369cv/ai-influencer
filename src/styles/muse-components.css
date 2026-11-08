@@ -1,0 +1,67 @@
+/* Muse Studio shared components. Tokens only — no raw colors here. */
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.muse-btn {
+  min-height: 44px; padding: 0 var(--space-5); border-radius: var(--radius-pill);
+  font-size: 15px; font-weight: var(--font-weight-semibold);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  transition: background .15s, transform .15s, opacity .15s;
+}
+.muse-btn:disabled { opacity: .5; cursor: default; }
+.muse-btn:not(:disabled):active { transform: scale(.98); }
+.muse-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.muse-btn-filled { background: var(--accent); color: var(--on-accent); }
+.muse-btn-filled:not(:disabled):hover { background: var(--accent-hover); }
+.muse-btn-tonal { background: var(--tonal); color: var(--on-tonal); }
+.muse-btn-tonal:not(:disabled):hover { background: var(--tonal-hover); }
+.muse-btn-text { background: transparent; color: var(--accent); padding: 0 var(--space-3); }
+.muse-btn-text:not(:disabled):hover { background: var(--accent-light); }
+.muse-btn-block { width: 100%; }
+
+/* ── Plan card ───────────────────────────────────────────── */
+@keyframes muse-plan-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.muse-plan {
+  background: var(--surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl); padding: var(--space-5);
+  box-shadow: var(--shadow-md); animation: muse-plan-in .32s ease-out both;
+  color: var(--text-primary);
+}
+.muse-plan-head h3 { font-size: var(--font-size-title); font-weight: var(--font-weight-medium); letter-spacing: -0.01em; }
+.muse-plan-head p { margin-top: var(--space-1); color: var(--text-secondary); font-size: var(--font-size-label); line-height: 1.5; }
+.muse-plan-rows { list-style: none; margin: var(--space-4) 0 0; display: flex; flex-direction: column; gap: 2px; background: var(--accent-light); border-radius: var(--radius-lg); padding: var(--space-2); }
+.muse-plan-row { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-2) var(--space-2); }
+.muse-plan-icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--tonal); color: var(--on-tonal); }
+.muse-plan-row-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 1px; }
+.muse-plan-label { font-size: var(--font-size-caption); color: var(--text-secondary); }
+.muse-plan-value { font-size: var(--font-size-body); font-weight: var(--font-weight-medium); line-height: 1.35; overflow-wrap: anywhere; }
+.muse-plan-hint { font-size: var(--font-size-caption); color: var(--text-tertiary); }
+.muse-plan-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.muse-plan-chip { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+.muse-plan-cost { display: flex; align-items: baseline; justify-content: space-between; margin-top: var(--space-4); padding: 0 var(--space-2); font-size: var(--font-size-label); color: var(--text-secondary); }
+.muse-plan-cost strong { font-size: var(--font-size-title); font-weight: var(--font-weight-medium); color: var(--text-primary); }
+.muse-plan-note { margin-top: var(--space-1); padding: 0 var(--space-2); font-size: var(--font-size-caption); color: var(--text-tertiary); line-height: 1.45; }
+.muse-plan-actions { display: flex; gap: var(--space-2); margin-top: var(--space-5); }
+.muse-plan-actions .muse-btn { flex: 1; }
+
+/* ── Sheet / dialog ──────────────────────────────────────── */
+@keyframes muse-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes muse-sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.muse-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 400; display: grid; place-items: center;
+  padding: var(--space-4); background: var(--scrim); animation: muse-fade .2s ease-out both;
+}
+.muse-sheet { width: 100%; max-width: 440px; max-height: calc(100vh - 32px); overflow: auto; animation: muse-sheet-up .3s ease-out both; }
+.muse-sheet .muse-plan { box-shadow: var(--shadow-lg); animation: none; }
+@media (max-width: 720px) {
+  .muse-sheet-backdrop { place-items: end stretch; padding: 0; }
+  .muse-sheet { max-width: none; max-height: 88vh; }
+  .muse-sheet .muse-plan { border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding-bottom: 0; }
+  .muse-sheet .muse-plan-actions { position: sticky; bottom: 0; margin: var(--space-4) calc(-1 * var(--space-5)) 0; padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border-subtle); }
+  .muse-plan-row { padding: 6px var(--space-2); }
+  .muse-plan-icon { width: 28px; height: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .muse-plan, .muse-sheet, .muse-sheet-backdrop { animation: none !important; }
+  .muse-btn { transition: none; }
+}
