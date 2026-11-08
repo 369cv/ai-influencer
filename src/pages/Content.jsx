@@ -4,6 +4,9 @@ import { useInfluencers, useBrandDeals } from '../store'
 import { useWorkspaceStore } from '../context/workspace'
 import { Page, Seg, Field, Empty, Dialog, SkillAssist } from '../components/ui'
 import Library from './Library'
+import Plan from './Plan'
+import BrandDeals from './BrandDeals'
+import WeeklyIdeas from '../components/WeeklyIdeas'
 import { collectLibrary } from '../utils/library'
 import { PLATFORMS, POST_STATUSES, IG_FORMATS, platformName, validatePost, platformChecks, captionFor, hasOwnCaption, publishPost, cancelPost, failedRoutes, refreshStats, canHaveStats, statsLine } from '../utils/publishing'
 import { downloadImage } from '../utils/imageUtils'
@@ -19,7 +22,7 @@ import { kindLabel } from '../utils/deals'
 // The Queue shows each influencer's time slots (Settings → Social accounts or the
 // influencer profile), with empty slots ready to fill. Social accounts live in Settings.
 
-const VIEWS = [{ id: 'queue', label: 'Queue' }, { id: 'calendar', label: 'Calendar' }, { id: 'media', label: 'Media' }]
+const VIEWS = [{ id: 'queue', label: 'Queue' }, { id: 'ideas', label: 'Ideas' }, { id: 'calendar', label: 'Calendar' }, { id: 'media', label: 'Media' }, { id: 'deals', label: 'Deals' }]
 const platformLogo = id => CONNECTORS.find(c => c.auth === 'social' && c.platform === id)
 const Avatar = ({ inf, size = 22 }) => <span className="muse-q-avatar" style={{ width: size, height: size, backgroundImage: (inf?.mainImage || inf?.image) ? `url(${inf.mainImage || inf.image})` : undefined }} aria-hidden>{!(inf?.mainImage || inf?.image) && (inf?.name || '?').slice(0, 1)}</span>
 const isVideo = u => /\.(mp4|webm|mov)(\?|$)/i.test(u || '')
@@ -54,7 +57,8 @@ export default function Content() {
   }
 
   useEffect(() => {
-    const openId = params.get('open')
+    // Ideas and Deals own their ?open= / ?deal= params.
+    const openId = view === 'ideas' || view === 'deals' ? null : params.get('open')
     if (params.get('compose') === '1') {
       // ?compose=1 stays in the URL until the composer closes, so a direct
       // load (bookmark, extension link) still opens it if the page remounts.
@@ -103,7 +107,7 @@ export default function Content() {
         <button type="button" className="muse-btn muse-btn-filled" onClick={() => newPost()}>New post</button>
       </>}
     >
-      {view !== 'media' && (influencers || []).length > 0 && (
+      {(view === 'queue' || view === 'calendar') && (influencers || []).length > 0 && (
         <div className="muse-q-who" role="group" aria-label="Influencer">
           <button type="button" className={`muse-chip${who === 'all' ? ' on' : ''}`} aria-pressed={who === 'all'} onClick={() => setWho('all')}>All influencers</button>
           {(influencers || []).map(i => {
@@ -120,6 +124,8 @@ export default function Content() {
       {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} onRefreshStats={loadStats} statsState={statsState} />}
       {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => newPost({ scheduledAt: d.toISOString() })} />}
       {view === 'media' && <Library embedded />}
+      {view === 'ideas' && <><div className="muse-ideas-week"><WeeklyIdeas /></div><Plan embedded /></>}
+      {view === 'deals' && <BrandDeals embedded />}
 
       {composing && (
         <Composer

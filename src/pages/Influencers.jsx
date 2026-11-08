@@ -2570,7 +2570,7 @@ function Sec({ children, style }) {
 
 // ─────────────────────────────────────────────
 // Detail tabs with palette-tinted active state
-const DETAIL_TABS = ['Overview','Scripts','Wardrobe','Home','Brand Deals','History']
+const DETAIL_TABS = ['Overview','Scripts','Wardrobe','Home','Brand Deals']
 
 function Tabs({ active, onChange, ac }) {
   const tc = accentText(ac)

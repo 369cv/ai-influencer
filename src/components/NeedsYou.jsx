@@ -41,7 +41,7 @@ export function useNeedsYou() {
       for (const dl of d.deliverables || []) {
         const post = postFor(dl, posts || [])
         if (isPosted(post)) continue
-        const to = `/brand-deals?deal=${d.id}`
+        const to = `/content?view=deals&deal=${d.id}`
         if (dl.approval === 'changes') rows.push({ key: `dl-${dl.id}`, rank: 1, to, thumb: d.image, title: `${d.brand} · ${kindLabel(dl.kind)}`, sub: `Changes requested${dl.note ? `: “${dl.note}”` : ''}`, badge: 'Changes', tone: 'failed' })
         else if (dl.due) {
           const due = new Date(`${dl.due}T23:59:59`).getTime()

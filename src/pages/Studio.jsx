@@ -358,7 +358,7 @@ export default function Studio() {
 function TemplateGrid({ onPick }) {
   return (
     <section className="muse-templates" aria-label="Templates">
-      <div className="muse-section-head"><h2>Start from a template</h2><Link to="/workflows" className="muse-text-btn">Multi-step workflows</Link></div>
+      <div className="muse-section-head"><h2>Start from a template</h2><Link to="/" className="muse-text-btn">Recipes on Create</Link></div>
       <div className="muse-template-grid">
         {STUDIO_TEMPLATES.map(t => (
           <button key={t.id} type="button" className="muse-template" onClick={() => onPick(t)}>

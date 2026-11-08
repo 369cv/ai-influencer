@@ -96,7 +96,7 @@ export const CONNECTORS = [
   ].map(([id, name, logo, platform]) => ({
     id, name, category: 'social', auth: 'social', platform, ...(logo ? { logo } : { asset: 'linkedin' }),
     use: `${name} handles for your influencers, posted through your chosen route.`,
-    usedBy: [{ label: 'Content', to: '/content' }, { label: 'Plan', to: '/plan' }],
+    usedBy: [{ label: 'Content', to: '/content' }, { label: 'Ideas', to: '/content?view=ideas' }],
     can: [['write', 'Publish and schedule posts (through Ayrshare, Zapier, Make, n8n or a webhook)', 'live'], ['read', 'Post stats', 'planned'], ['write', `Direct ${name} sign-in`, 'planned']],
   })),
 
