@@ -9,7 +9,6 @@ import WorkspaceSwitcher from './WorkspaceSwitcher'
 // and html[data-drawer="open"] while the phone-width drawer is open.
 
 const KEY = 'muse_rail_expanded'
-const FEEDBACK_FORM_URL = 'https://forms.gle/p5cBXw4sYaHPdcANA'
 const I = {
   collapse: 'M15 6l-6 6 6 6',
   expand: 'M9 6l6 6-6 6',
@@ -104,9 +103,9 @@ export default function AppSidebar() {
         )}
 
         <div className="muse-rail-foot">
-          <a href={FEEDBACK_FORM_URL} target="_blank" rel="noopener noreferrer" className="muse-rail-item" title="Help & feedback">
-            <Icon d={I.help} /><span className="muse-rail-label">Help &amp; feedback</span>
-          </a>
+          <NavLink to="/help" title="Help" className={({ isActive }) => `muse-rail-item${isActive ? ' active' : ''}`}>
+            <Icon d={I.help} /><span className="muse-rail-label">Help</span>
+          </NavLink>
           <NavLink to="/settings" title="Settings" className={({ isActive }) => `muse-rail-item${isActive ? ' active' : ''}`}>
             <Icon d={I.settings} /><span className="muse-rail-label">Settings</span>
           </NavLink>

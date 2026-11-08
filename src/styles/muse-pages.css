@@ -781,3 +781,37 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-looks-src:hover { box-shadow: var(--shadow-sm); }
 .muse-looks-src small { color: var(--text-secondary); font-size: 12px; line-height: 1.4; }
 @media (max-width: 600px) { .muse-looks-id, .muse-looks-sources { grid-template-columns: 1fr; } }
+
+/* Help Center */
+.muse-help { max-width: 860px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-7); display: flex; flex-direction: column; gap: var(--space-6); }
+.muse-help-hero { text-align: center; display: flex; flex-direction: column; gap: var(--space-3); align-items: center; padding-top: var(--space-5); }
+.muse-help-hero h1 { font-size: 34px; font-weight: var(--font-weight-semibold); letter-spacing: -.02em; }
+.muse-help-search { position: relative; width: 100%; max-width: 620px; }
+.muse-help-search .muse-input { width: 100%; height: 52px; border-radius: 999px; padding: 0 var(--space-5); font-size: 16px; }
+.muse-help-results { position: absolute; left: 0; right: 0; top: 58px; z-index: 5; list-style: none; margin: 0; padding: 6px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); text-align: left; }
+.muse-help-results a, .muse-help-list a { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-radius: var(--radius-lg); color: var(--text-primary); text-decoration: none; }
+.muse-help-results a:hover, .muse-help-list a:hover { background: var(--bg); }
+.muse-help-results small, .muse-help-list small { color: var(--text-secondary); font-size: 13px; }
+.muse-help-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-3); }
+.muse-help-coll { display: flex; flex-direction: column; gap: 6px; padding: var(--space-5); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); color: var(--text-primary); text-decoration: none; transition: box-shadow .15s, transform .15s; }
+.muse-help-coll:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.muse-help-coll b { font-size: 16px; }
+.muse-help-coll small { color: var(--text-secondary); font-size: 13px; line-height: 1.45; flex: 1; }
+.muse-help-coll span { font-size: 12px; }
+.muse-help-list { list-style: none; margin: 0; padding: 6px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); }
+.muse-help-contact { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5); border-radius: var(--radius-xl); background: var(--accent-light); }
+.muse-help-contact p { margin: 4px 0 0; font-size: 14px; }
+.muse-help-crumbs { font-size: 13px; color: var(--text-tertiary); }
+.muse-help-crumbs a { color: var(--accent); text-decoration: none; }
+.muse-help-head h1, .muse-help-article h1 { font-size: 30px; font-weight: var(--font-weight-semibold); letter-spacing: -.02em; }
+.muse-help-head p { margin-top: 6px; }
+.muse-help-article { display: flex; flex-direction: column; gap: var(--space-3); }
+.muse-help-summary { font-size: 17px; color: var(--text-secondary); margin: 0; }
+.muse-help-cta { align-self: flex-start; }
+.muse-help-body { font-size: 15px; line-height: 1.7; color: var(--text-primary); }
+.muse-help-body h2 { font-size: 19px; font-weight: var(--font-weight-semibold); margin: var(--space-5) 0 var(--space-2); }
+.muse-help-body p { margin: 0 0 var(--space-3); }
+.muse-help-body ul, .muse-help-body ol { margin: 0 0 var(--space-3); padding-left: 22px; }
+.muse-help-body li { margin-bottom: 6px; }
+.muse-help-body code { font-size: 13px; padding: 1px 6px; border-radius: 6px; background: var(--bg-tertiary); }
+.muse-help-vote { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); font-size: 14px; }
