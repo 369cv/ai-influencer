@@ -20,7 +20,7 @@ const TABS = [
 export default function MobileTabBar() {
   const { pathname } = useLocation()
   // Hidden on /create: the wizard pins its own Back/Next bar to the bottom.
-  if (pathname === '/welcome' || pathname.startsWith('/auth') || pathname.startsWith('/create') || /^\/workflows\/./.test(pathname)) return null
+  if (pathname === '/welcome' || pathname.startsWith('/auth') || pathname.startsWith('/create') || pathname.startsWith('/import') || /^\/workflows\/./.test(pathname)) return null
   return (
     <nav className="muse-tabbar" aria-label="Primary">
       {TABS.map(t => (
