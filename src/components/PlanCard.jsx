@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
-
 // Plan card — shown before every generation so the user sees what will run and
 // roughly what it costs. Pattern: a tonal card listing the steps, then
 // "Edit plan" (tonal) and "Start" (solid accent).
@@ -72,22 +70,3 @@ export default function PlanCard({ title = 'Here’s the plan', subtitle, rows =
   )
 }
 
-// Modal presentation: a bottom sheet on phones, a centred dialog on desktop.
-export function PlanSheet({ open, onClose, ...cardProps }) {
-  useEffect(() => {
-    if (!open) return
-    const onKey = e => { if (e.key === 'Escape') onClose?.() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
-  return createPortal(
-    <div className="muse-sheet-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose?.() }}>
-      <div className="muse-sheet" role="dialog" aria-modal="true" aria-label="Generation plan">
-        <PlanCard onEdit={onClose} {...cardProps} />
-      </div>
-    </div>,
-    document.body
-  )
-}

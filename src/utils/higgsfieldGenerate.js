@@ -53,8 +53,6 @@ const PENDING_PHOTO_KEY = 'hf_pending_photos_v2'
 // the pending entry is discarded so stale entries never block the Generate button.
 const PHOTO_SESSION_KEY = 'hf_photo_gen_session'
 export function markPhotoGenSession() { try { sessionStorage.setItem(PHOTO_SESSION_KEY, '1') } catch {} }
-export function hasPhotoGenSession()  { try { return !!sessionStorage.getItem(PHOTO_SESSION_KEY) } catch { return false } }
-
 export function savePendingVideo(influencerId, jobIds, count) {
   const list = JSON.parse(localStorage.getItem(PENDING_VIDEO_KEY) || '[]')
   const next = list.filter(j => j.influencerId !== influencerId)
@@ -69,31 +67,12 @@ export function clearPendingVideo(influencerId) {
   ))
 }
 
-export function getPendingVideo(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_VIDEO_KEY) || '[]')
-  return list.find(j => j.influencerId === influencerId) || null
-}
-
 export function savePendingPhoto(influencerId, jobIds) {
   const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
   const next = list.filter(j => j.influencerId !== influencerId)
   next.push({ influencerId, jobIds, startedAt: Date.now() })
   localStorage.setItem(PENDING_PHOTO_KEY, JSON.stringify(next))
 }
-export function clearPendingPhoto(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
-  localStorage.setItem(PENDING_PHOTO_KEY, JSON.stringify(list.filter(j => j.influencerId !== influencerId)))
-}
-export function getPendingPhoto(influencerId) {
-  const list = JSON.parse(localStorage.getItem(PENDING_PHOTO_KEY) || '[]')
-  return list.find(j => j.influencerId === influencerId) || null
-}
-
-export async function resumeVideoJob(jobIds, count, onProgress, onPartialResults, isCancelled) {
-  await initSession()
-  return pollVideoJobs(jobIds, count, onProgress, onPartialResults, isCancelled)
-}
-
 async function mcpPost(body, isRetry = false) {
   // Offline: hold the request until the connection returns instead of failing.
   await whenOnline()
@@ -605,16 +584,6 @@ function extractImageUrls(result) {
   return [...new Set(byCDN)]
 }
 
-function countTerminalJobs(result) {
-  const data = unwrapMCP(result)
-  if (!Array.isArray(data?.results)) return 0
-  return data.results.filter(r => {
-    if (r?.results?.rawUrl || r?.results?.minUrl || r?.result_url) return true
-    const s = (r?.status || r?.job_status || '').toLowerCase()
-    return ['done', 'completed', 'failed', 'error', 'nsfw', 'content_filtered', 'rejected', 'cancelled'].includes(s)
-  }).length
-}
-
 // When the user's style ref note mentions pose or scene/location, replace those text prompt
 // sections with a direct reference to the style image so the text no longer fights the image.
 function applyStyleNoteOverrides(prompts, styleNote, styleImg) {
@@ -880,7 +849,7 @@ export async function generateSingleImage({ prompt, aspectRatio = '16:9', resolu
   }
 }
 
-// ── Photo Studio batch generation ────────────────────────────────────────────
+// ── Batch image generation (Studio, Create, recipes) ────────────────────────────────────────────
 // Uploads refs once, launches all N jobs in parallel, polls together, and streams
 // results via onResult(url) as each image completes.
 export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16', resolution = '4k', model = 'gpt_image_2', referenceImage = null, outfitImage = null, closeUpImage1 = null, closeUpImage2 = null, propImages = [], elementId = null, onProgress, onResult, isCancelled, pendingKey = null }) {
@@ -969,133 +938,6 @@ export async function generateNImages({ prompt, count = 1, aspectRatio = '9:16',
 
   if (deliveredCount > 0) { onProgress?.(100); return }
   throw new Error('Generation timed out — check Higgsfield dashboard')
-}
-
-// ── Pose preview generation ──────────────────────────────────────────────────
-// Previews are stored as `standing_${poseId}` or `sitting_${poseId}` in
-// influencer.posePreviews. Old keys without a prefix are treated as standing
-// for backward compatibility.
-
-const POSE_PREVIEW_DESCS_STANDING = {
-  plandid:         'Body angled 25–30 degrees to the camera, weight shifted to back leg, eyes glancing slightly off to the side — relaxed and candid, caught half a second before noticing the camera.',
-  candid:          'Mid-laugh at the apex — eyes lit up with genuine joy, head tilted slightly back, one hand raised naturally toward the mouth or chest, body animated and relaxed.',
-  'cute-posed':    'Three-quarter turn toward camera, soft warm smile, one hand gently raised near the face or lightly touching the hair, shoulders relaxed and easy, chin slightly tilted down — approachable and poised.',
-  walking:         'Mid-stride, weight naturally transferring from one foot to the other, arms swinging relaxed, hair slightly lifted from movement, gaze forward with calm confidence.',
-  'mid-turn':      'Body turned 45 degrees away from camera, head turning back over the shoulder with a soft beginning smile, hair sweeping slightly from the turn — caught in the middle of the motion.',
-  front:           'Body and head squared directly to the lens, weight shifted onto one hip with the opposite knee slightly bent, arms relaxed at sides, confident direct gaze straight into the camera.',
-  'hip-pop':       'Standing, weight fully on one straight leg, the other knee bent causing the hip to drop on that side. One hand on the lower hip, fingers forward, elbow back. A visible gap of air between both arms and the torso. Full body head to toe.',
-  triangle:        'Standing at 45 degrees to camera. Near arm raised to hip — elbow bent at 90 degrees, hand resting on hip bone, fingers forward, elbow back — creating a clear triangular gap between arm and body. Far arm relaxed. Gaze slightly downward.',
-  'over-shoulder': 'Body turned 50 to 60 degrees away from the camera. Head rotated back over the near shoulder toward the lens — expression of soft surprise, lips gently parted. One hand near the back of the hair, the other mid-swing.',
-  'long-line':     'Posture erect from crown to feet. Back foot carries all weight, front leg extended toward camera with knee slightly bent and foot pointed toward the lens. Hips shifted toward the standing leg. Back shoulder dropped down, creating a diagonal from front foot through dropped shoulder. Fingers fully relaxed.',
-  'hands-pockets': 'Standing at 30 to 45 degrees to camera. Thumbs hooked into front pockets, shoulders dropped, back leg bearing slightly more weight. Head turned toward camera, chin slightly down and forward.',
-  'crossed-arms':  'Standing at 30 degrees to camera. Arms crossed, right forearm resting over left, hands relaxed and not gripping. Elbows at mid-chest height. Chin slightly down and forward, jaw defined. Gaze direct and settled.',
-  lean:            'One shoulder resting against a wall or door frame. Body at 60 to 70 degrees to camera, weight fully on wall-side shoulder. Near knee slightly bent, far leg crossed loosely at the ankle. Chin slightly down, gaze direct or into distance.',
-}
-
-export async function generatePosePreviews(influencer, onPoseComplete, { stance = 'standing' } = {}) {
-  try {
-    await initSession()
-    const gender = influencer.gender === 'Male' ? 'man' : 'woman'
-    const physDesc = (influencer.physicalDesc || '').trim()
-    const subjectLine = physDesc ? `${gender}, ${physDesc}` : gender
-    const baseParams = {
-      model: 'gpt_image_2',
-      aspect_ratio: '9:16',
-      quality: 'high',
-      resolution: '4k',
-      count: 1,
-    }
-    const POSE_IDS = Object.keys(POSE_PREVIEW_DESCS_STANDING)
-    const stancePrefix = stance
-
-    const launched = await Promise.all(POSE_IDS.map(async (poseId) => {
-      const stancedId = `${stancePrefix}_${poseId}`
-      try {
-        let medias = []
-
-        if (stance === 'sitting') {
-          // Use the standing preview as a pose reference so the body matches
-          const standingUrl = influencer.posePreviews?.[`standing_${poseId}`]
-            || influencer.posePreviews?.[poseId]
-          // Always include the identity reference images
-          for (const img of [influencer.mainImage, influencer.characterSheetImage].filter(Boolean)) {
-            if (medias.length >= 2) break
-            try {
-              const value = (typeof img === 'string' && img.startsWith('data:'))
-                ? await uploadRefImage(img) : img
-              medias.push({ value, role: 'image' })
-            } catch (e) { console.warn('[HF] pose preview ref upload failed:', e.message) }
-          }
-          if (standingUrl && medias.length < 3) {
-            medias.push({ value: standingUrl, role: 'image' })
-          }
-          const poseDesc = POSE_PREVIEW_DESCS_STANDING[poseId]
-          const prompt = `${subjectLine}. Pure white seamless studio backdrop. Clean flat even studio lighting, no shadows on background. The subject is seated on a white stool or low chair, chest-up framing, closer to camera. Same pose energy as: ${poseDesc} — adapted to a seated position. Photorealistic, 4K.`
-          const params = { ...baseParams, prompt }
-          if (medias.length) params.medias = medias
-          const result = await callTool('generate_image', { params })
-          const directUrls = extractImageUrls(result)
-          if (directUrls.length > 0) return { stancedId, jobId: null, url: directUrls[0] }
-          const ids = extractJobIds(result)
-          return { stancedId, jobId: ids[0] || null, url: null }
-        } else {
-          // Standing: upload identity refs, generate full-body preview
-          for (const img of [influencer.mainImage, influencer.characterSheetImage].filter(Boolean)) {
-            if (medias.length >= 2) break
-            try {
-              const value = (typeof img === 'string' && img.startsWith('data:'))
-                ? await uploadRefImage(img) : img
-              medias.push({ value, role: 'image' })
-            } catch (e) { console.warn('[HF] pose preview ref upload failed:', e.message) }
-          }
-          const prompt = `${subjectLine}. Pure white seamless studio backdrop. Clean flat even studio lighting, no shadows on background, no lighting equipment visible. Full body visible head to toe, standing. ${POSE_PREVIEW_DESCS_STANDING[poseId]} Photorealistic, 4K.`
-          const params = { ...baseParams, prompt }
-          if (medias.length) params.medias = medias
-          const result = await callTool('generate_image', { params })
-          const directUrls = extractImageUrls(result)
-          if (directUrls.length > 0) return { stancedId, jobId: null, url: directUrls[0] }
-          const ids = extractJobIds(result)
-          return { stancedId, jobId: ids[0] || null, url: null }
-        }
-      } catch (e) {
-        console.warn(`[HF] pose preview launch failed (${stancedId}):`, e.message)
-        return { stancedId, jobId: null, url: null }
-      }
-    }))
-    for (const { stancedId, url } of launched) {
-      if (url) onPoseComplete(stancedId, url)
-    }
-    const pending = launched.filter(r => r.jobId)
-    if (!pending.length) return
-    const jobIds = pending.map(r => r.jobId)
-    const delivered = new Set()
-    for (let i = 0; i < 120; i++) {
-      if (i > 0) await new Promise(r => setTimeout(r, 2500))
-      try {
-        const displays = await Promise.all(jobIds.map(id => callTool('job_display', { id })))
-        const mergedResults = displays.flatMap(d => { const data = unwrapMCP(d); return Array.isArray(data?.results) ? data.results : [] })
-        const display = { results: mergedResults }
-        const data = unwrapMCP(display)
-        if (!Array.isArray(data?.results)) continue
-        for (const r of data.results) {
-          const rId = r?.id || r?.job_id
-          const url = r?.results?.rawUrl || r?.results?.minUrl || r?.result_url
-          if (!url || !rId) continue
-          const match = pending.find(p => p.jobId === rId)
-          if (match && !delivered.has(match.stancedId)) {
-            delivered.add(match.stancedId)
-            onPoseComplete(match.stancedId, url)
-          }
-        }
-        if (delivered.size >= pending.length) break
-        if (countTerminalJobs(display) >= jobIds.length) break
-      } catch (e) {
-        console.warn('[HF] pose preview poll error:', e.message)
-      }
-    }
-  } catch (e) {
-    console.warn('[HF] generatePosePreviews failed:', e.message)
-  }
 }
 
 // System check: proves the Higgsfield sign-in works without spending credits

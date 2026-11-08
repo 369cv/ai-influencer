@@ -30,7 +30,8 @@ account (OAuth, PKCE).
 | `src/utils/higgsfieldGenerate.js` | MCP-style image/video generation, polling, media uploads |
 | `src/utils/systemPrompt.js` | Prompt templates — poses, wardrobe library, vibe palettes, Soul vs GPT Image 2 variants |
 | `src/pages/Create.jsx` | Multi-step influencer creation wizard |
-| `src/pages/Influencers.jsx` | Influencer profile + Content Studio + Video Studio (very large — known structural debt) |
+| `src/pages/Influencers.jsx` | Influencer profile: image slots, Overview (looks, voice, schedule, insights), Wardrobe and Brand Deals tabs (large — structural debt) |
+| `src/pages/Studio.jsx`, `src/pages/TalkingVideo.jsx` | Photo and video generation; talking videos (ElevenLabs voice + Seedance lip-sync). The old in-profile photo/video studios were removed |
 | `api/hf/[...path].js` | Edge function that proxies all Higgsfield MCP traffic and forwards SSE streams |
 | `api/claude.js` | Anthropic API proxy — caller supplies their own `x-api-key` |
 | `src/utils/network.js` | Online/offline state + in-memory wait queue; Higgsfield calls `await whenOnline()` |
@@ -58,7 +59,7 @@ account (OAuth, PKCE).
 - Don't trust the comment in `modelBaseParams` saying resolution and
   quality conflict for `gpt_image_2` — they don't, the working code
   intentionally passes both.
-- Don't refactor `Influencers.jsx` casually. It's 4,700+ lines and the
+- Don't refactor `Influencers.jsx` casually. It's ~2,500 lines and the
   state is tangled; any split needs its own dedicated session with
   in-browser verification of every flow.
 
