@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useInfluencers } from '../store'
 import { Seg } from '../components/ui'
 import { isHFConnected, startHiggsfieldOAuthPopup } from '../utils/higgsfieldAuth'
-import { generateNImages, generateVideo } from '../utils/higgsfieldGenerate'
+import { generateNImages, generateVideo, elementFor } from '../utils/higgsfieldGenerate'
 import { downloadImage } from '../utils/imageUtils'
 import { hasClaude, runSkill, influencerContext } from '../utils/claudeAssist'
 import { skillsFor } from '../utils/skills'
@@ -193,7 +193,7 @@ export default function Studio() {
         await generateNImages({
           prompt: prompts, count, aspectRatio: settings.ratio, resolution: settings.resolution, model: settings.model,
           // Upload order = @image tags in buildStudioPrompt: face, references, close-ups.
-          referenceImage: face, outfitImage: refs[0] || null, propImages: [...refs.slice(1), ...closeUps],
+          referenceImage: face, outfitImage: refs[0] || null, propImages: [...refs.slice(1), ...closeUps], elementId: elementFor(who),
           onProgress, isCancelled,
           onResult: url => {
             updateJob(id, j => ({ urls: [...new Set([...(j.urls || []), url])] }))

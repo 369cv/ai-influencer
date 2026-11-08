@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { getHFToken } from '../utils/higgsfieldAuth'
+import { createFaceElement, getElement } from '../utils/higgsfieldGenerate'
 import { useInfluencers } from '../store'
 import { collectLibrary } from '../utils/library'
 import { compressImage } from '../utils/imageUtils'
@@ -123,6 +125,7 @@ export default function InfluencerLooks({ influencer, onUpdate }) {
             : <span className="muse-muted" style={{ fontSize: 13 }}>Not made yet. Make it in the Character sheet section of this page.</span>}
           <small className="muse-muted">Every look and video holds this face.</small>
         </div>
+        <ConsistentFace influencer={influencer} main={main} onUpdate={onUpdate} />
         <div className="muse-looks-idcard">
           <span style={label}>Voice</span>
           <b style={{ fontSize: 14 }}>{vp?.voiceId ? (vp.voiceName || 'ElevenLabs voice') : 'No voice yet'}</b>
@@ -131,5 +134,45 @@ export default function InfluencerLooks({ influencer, onUpdate }) {
       </div>
       {adding && <AddLooks influencer={influencer} onClose={() => setAdding(false)} />}
     </section>
+  )
+}
+
+// Consistent face: a Higgsfield Element made from her main photo. Once Higgsfield
+// finishes it, every photo made in Create, Studio and recipes sends it automatically.
+const READY = 'completed'
+const FAILED = new Set(['failed', 'kling_failed', 'nsfw'])
+function ConsistentFace({ influencer, main, onUpdate }) {
+  const el = influencer.hfElement || null
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const signedIn = !!getHFToken()
+  const stale = el && main && el.from !== main
+  // While Higgsfield is still processing, check again every 10 seconds.
+  useEffect(() => {
+    if (!el?.id || el.status === READY || FAILED.has(el.status) || !signedIn) return
+    const t = setInterval(async () => {
+      try { const x = await getElement(el.id); if (x.status !== el.status) onUpdate({ hfElement: { ...el, status: x.status } }) } catch {}
+    }, 10000)
+    return () => clearInterval(t)
+  }, [el?.id, el?.status, signedIn]) // eslint-disable-line react-hooks/exhaustive-deps
+  async function make() {
+    setBusy(true); setError('')
+    try { const x = await createFaceElement(main, influencer.name); onUpdate({ hfElement: { id: x.id, status: x.status, name: x.name, from: main, createdAt: Date.now() } }) }
+    catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+  const state = !el ? 'none' : el.status === READY ? 'ready' : FAILED.has(el.status) ? 'failed' : 'working'
+  return (
+    <div className="muse-looks-idcard">
+      <span style={label}>Consistent face</span>
+      <b style={{ fontSize: 14 }}>{state === 'ready' ? 'On' : state === 'working' ? 'Higgsfield is preparing it…' : state === 'failed' ? `Higgsfield couldn’t use this photo (${el.status})` : 'Off'}</b>
+      <small className="muse-muted">
+        {state === 'ready' ? `A Higgsfield Element${el.name ? ` (${el.name})` : ''} from her main photo, sent with every photo.${stale ? ' Her main photo has changed since.' : ''}`
+          : 'Save her face as a Higgsfield Element so every photo keeps it.'}
+      </small>
+      {error && <small className="muse-error">{error}</small>}
+      {!signedIn ? <Link to="/settings?section=connections" className="muse-text-btn">Connect Higgsfield</Link>
+        : !main ? <small className="muse-muted">Add a main photo first.</small>
+        : (state === 'none' || state === 'failed' || stale) && <button type="button" className="muse-btn muse-btn-tonal" disabled={busy} onClick={make}>{busy ? 'Saving…' : state === 'none' ? 'Turn on' : 'Make it again'}</button>}
+    </div>
   )
 }
