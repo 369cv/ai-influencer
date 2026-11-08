@@ -46,3 +46,26 @@ test('ayrshare: a failed cancel reports the provider message', async () => {
   assert.equal(r.json.ok, false)
   assert.equal(r.json.error, 'Post not found')
 })
+
+test('ayrshare: stats map each network onto views/reach/likes/comments/shares/saves', async () => {
+  const calls = mockFetch(() => ({ status: 200, body: {
+    status: 'partial',
+    instagram: { id: '1', postUrl: 'https://www.instagram.com/p/x/', analytics: { likeCount: 12, commentsCount: 2, reachCount: 300, savedCount: 9, viewsCount: 500, sharesCount: 1 } },
+    twitter: { id: '2', analytics: { likeCount: 4, replyCount: 1, retweetCount: 3, impressionCount: 90 } },
+    errors: [{ platform: 'tiktok', message: 'Analytics not ready' }],
+  } }))
+  const r = await handlePublish({ ...ayr, stats: { ids: ['ayr1'] } })
+  assert.equal(calls[0].method, 'POST')
+  assert.match(calls[0].url, /\/api\/analytics\/post$/)
+  assert.deepEqual(calls[0].body, { id: 'ayr1' })
+  const p = r.json.posts.ayr1
+  assert.deepEqual(p.platforms.instagram, { views: 500, reach: 300, likes: 12, comments: 2, shares: 1, saves: 9, url: 'https://www.instagram.com/p/x/' })
+  assert.deepEqual(p.platforms.twitter, { views: 90, likes: 4, comments: 1, shares: 3 })
+  assert.equal(p.error, 'tiktok: Analytics not ready')
+})
+
+test('stats are refused for webhook routes', async () => {
+  mockFetch()
+  const r = await handlePublish({ provider: 'webhook', credentials: { webhookUrl: 'https://example.com/h' }, stats: { ids: ['ayr1'] } })
+  assert.equal(r.json.ok, false)
+})

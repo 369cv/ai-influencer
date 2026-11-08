@@ -16,6 +16,7 @@ import PhotoStudioPanel from './PhotoStudio'
 import { exportPersonaBible } from '../utils/personaBible'
 import PersonaVoice from '../components/PersonaVoice'
 import PostingSchedule from '../components/PostingSchedule'
+import InfluencerInsights from '../components/InfluencerInsights'
 import ProfileActions from '../components/ProfileActions'
 import WardrobeDrawer from '../components/WardrobeDrawer'
 
@@ -6318,6 +6319,7 @@ export default function Influencers() {
             {activeTab==='Overview' && <DescriptionForm influencer={influencer} onUpdate={upd}/>}
             {activeTab==='Overview' && <div style={{marginTop:16}}><PersonaVoice key={influencer.id} influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
             {activeTab==='Overview' && <div style={{marginTop:16}} id="posting-schedule"><PostingSchedule key={influencer.id} influencer={influencer} onUpdate={patch=>upd(influencer.id,patch)}/></div>}
+            {activeTab==='Overview' && <div style={{marginTop:16}} id="insights"><InfluencerInsights key={influencer.id} influencer={influencer}/></div>}
             {activeTab==='Scripts' && (
               <ScriptsSection
                 scripts={influencer.scripts??[]}

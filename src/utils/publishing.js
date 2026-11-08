@@ -171,3 +171,45 @@ export async function testPublishing(routeId) {
   if (!isRouteConnected(routeId, cfg)) throw new Error('Add the details first.')
   return callPublish({ ...routeRequest(routeId, cfg), test: true })
 }
+
+// ---- Stats (Ayrshare only; webhook routes can't report back) ----
+export const STAT_KEYS = ['views', 'reach', 'likes', 'comments', 'shares', 'saves']
+export const statsIdsOf = post => (post.routeResults || []).filter(r => r.ok && r.route === 'ayrshare' && r.providerId).flatMap(r => String(r.providerId).split(',').filter(Boolean))
+export const canHaveStats = post => statsIdsOf(post).length > 0
+
+export function sumStats(byPlatform = {}) {
+  const t = {}
+  for (const s of Object.values(byPlatform)) for (const k of STAT_KEYS) if (typeof s[k] === 'number') t[k] = (t[k] || 0) + s[k]
+  return t
+}
+export const fmtNum = n => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e4 ? `${Math.round(n / 1e3)}k` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(n))
+
+// Reads current stats for sent posts. Resolves { [postId]: { at, byPlatform, totals, error } }.
+export async function refreshStats(posts) {
+  const cfg = getPublishing()
+  if (!isRouteConnected('ayrshare', cfg)) throw new Error('Stats come from Ayrshare. Connect it in Settings → Connections.')
+  const owner = {}
+  for (const p of posts) for (const id of statsIdsOf(p)) owner[id] = p.id
+  const ids = Object.keys(owner)
+  const out = {}
+  const at = Date.now()
+  for (let i = 0; i < ids.length; i += 20) {
+    const chunk = ids.slice(i, i + 20)
+    const data = await callPublish({ ...routeRequest('ayrshare', cfg), stats: { ids: chunk }, post: { via: 'ayrshare' } })
+    for (const id of chunk) {
+      const r = data.posts?.[id] || {}
+      const cur = (out[owner[id]] ||= { at, byPlatform: {}, errors: [] })
+      Object.assign(cur.byPlatform, r.platforms || {})
+      if (r.error) cur.errors.push(r.error)
+    }
+  }
+  for (const s of Object.values(out)) { s.totals = sumStats(s.byPlatform); s.error = s.errors.join(' · ') || undefined; delete s.errors }
+  return out
+}
+
+// One line for a post: "12.4k views · 520 likes · 31 comments".
+export function statsLine(totals = {}) {
+  const parts = [['views', 'views'], ['likes', 'likes'], ['comments', 'comments'], ['saves', 'saves'], ['shares', 'shares']]
+    .filter(([k]) => typeof totals[k] === 'number').map(([k, l]) => `${fmtNum(totals[k])} ${l}`)
+  return parts.join(' · ')
+}

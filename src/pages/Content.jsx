@@ -5,7 +5,7 @@ import { useWorkspaceStore } from '../context/workspace'
 import { Page, Seg, Field, Empty, Dialog, SkillAssist } from '../components/ui'
 import Library from './Library'
 import { collectLibrary } from '../utils/library'
-import { PLATFORMS, POST_STATUSES, IG_FORMATS, platformName, validatePost, platformChecks, captionFor, hasOwnCaption, publishPost, cancelPost, failedRoutes } from '../utils/publishing'
+import { PLATFORMS, POST_STATUSES, IG_FORMATS, platformName, validatePost, platformChecks, captionFor, hasOwnCaption, publishPost, cancelPost, failedRoutes, refreshStats, canHaveStats, statsLine } from '../utils/publishing'
 import { downloadImage } from '../utils/imageUtils'
 import { isPublishingConnected, routeForAccount, routeName } from '../utils/connections'
 import { CONNECTORS } from '../utils/connectors'
@@ -41,6 +41,16 @@ export default function Content() {
   const [who, setWho] = useState('all')
   const [composing, setComposing] = useState(null)
   const [retrying, setRetrying] = useState('')
+  const [statsState, setStatsState] = useState({ busy: false, error: '', at: 0 })
+  // Sent → Refresh stats: one read per Ayrshare post, saved on the post.
+  async function loadStats(list) {
+    setStatsState(s => ({ ...s, busy: true, error: '' }))
+    try {
+      const byId = await refreshStats(list)
+      setPosts(l => l.map(x => byId[x.id] ? { ...x, stats: byId[x.id] } : x))
+      setStatsState({ busy: false, error: '', at: Date.now() })
+    } catch (e) { setStatsState(s => ({ ...s, busy: false, error: e.message })) }
+  }
 
   useEffect(() => {
     const openId = params.get('open')
@@ -101,7 +111,7 @@ export default function Content() {
           })}
         </div>
       )}
-      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} />}
+      {view === 'queue' && <Queue posts={shown} influencers={shownInfluencers} accounts={accounts} onOpen={setComposing} onNewAt={(i, at) => newPost({ influencerId: i.id, scheduledAt: at.toISOString() })} onNew={() => newPost()} onRetry={retry} retrying={retrying} onRefreshStats={loadStats} statsState={statsState} />}
       {view === 'calendar' && <Calendar posts={shown} onOpen={setComposing} onNewOn={d => newPost({ scheduledAt: d.toISOString() })} />}
       {view === 'media' && <Library embedded />}
 
@@ -138,7 +148,7 @@ const dayLabel = d => {
 }
 const BADGE = { planned: 'Planned · not sent', approved: 'Approved · not sent', scheduled: 'Scheduled', posted: 'Posted', failed: 'Failed', draft: 'Draft' }
 
-function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying }) {
+function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, retrying, onRefreshStats, statsState }) {
   const [tab, setTab] = useState('queue')
   const now = Date.now()
   const byTab = useMemo(() => { const m = { queue: [], drafts: [], sent: [], failed: [] }; for (const p of posts) m[tabOf(p, now)].push(p); return m }, [posts]) // eslint-disable-line
@@ -168,6 +178,12 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
           const n = byTab.queue.filter(p => new Date(p.scheduledAt) <= wk).length
           return <span className="muse-q-goal">{n} of {i.postingSchedule.weeklyGoal || 1} queued this week</span>
         })()}
+        {tab === 'sent' && byTab.sent.some(canHaveStats) && (
+          <span className="muse-q-goal muse-q-stats-ctl">
+            {statsState.error ? <span className="muse-error">{statsState.error}</span> : statsState.at ? <span>Stats updated {when(new Date(statsState.at).toISOString())}</span> : null}
+            <button type="button" className="muse-btn muse-btn-text" disabled={statsState.busy} onClick={() => onRefreshStats(byTab.sent.filter(canHaveStats))}>{statsState.busy ? 'Reading stats…' : 'Refresh stats'}</button>
+          </span>
+        )}
       </div>
 
       {rows.length === 0 && (
@@ -217,6 +233,13 @@ function Queue({ posts, influencers, accounts, onOpen, onNewAt, onNew, onRetry, 
                       {routes.length > 0 && <span>· via {routes.map(routeName).join(', ')}</span>}
                     </small>
                     {failed && p.error && <small className="muse-error">{p.error}</small>}
+                    {tab === 'sent' && (
+                      p.stats && statsLine(p.stats.totals)
+                        ? <small className="muse-q-stats">{statsLine(p.stats.totals)}</small>
+                        : p.stats?.error ? <small className="muse-muted">{p.stats.error}</small>
+                        : !canHaveStats(p) && routes.length > 0 ? <small className="muse-muted">No stats: {routes.map(routeName).join(', ')} can’t report back</small>
+                        : null
+                    )}
                   </span>
                 </button>
                 <span className={`muse-badge ${p.status || 'draft'}`}>{BADGE[p.status || 'draft']}</span>

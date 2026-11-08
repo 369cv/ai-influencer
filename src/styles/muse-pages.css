@@ -672,3 +672,5 @@ a.muse-conn-row { text-decoration: none; }
 .muse-cs-checks .muse-sc-dot { width: 8px; height: 8px; align-self: center; }
 .muse-cs-sched { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .muse-cs-sched-actions { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.muse-q-stats { color: var(--text-primary) !important; font-weight: var(--font-weight-medium); }
+.muse-q-stats-ctl { display: inline-flex; align-items: center; gap: var(--space-3); margin-left: auto; flex-wrap: wrap; }
