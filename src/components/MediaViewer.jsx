@@ -7,6 +7,7 @@ import { MODEL_LABELS } from '../utils/creditEstimate'
 import { getHFToken } from '../utils/higgsfieldAuth'
 import { hfToolNames, editCost, editImage, editOptions, EDIT_TOOLS } from '../utils/higgsfieldGenerate'
 import { useInfluencers } from '../store'
+import { ReframeSheet, ViralityPanel } from './VideoTools'
 
 // Full-screen viewer for Library items: swipe or arrow keys to move,
 // Esc to close, and per-item actions along the bottom.
@@ -223,6 +224,8 @@ export default function MediaViewer({ items, index, onIndex, onClose, onModify, 
     isPhoto && { key: 'modify', label: 'Use as reference', icon: P.modify, run: () => onModify(item) },
     isPhoto && { key: 'video', label: 'Make video', icon: P.video, run: () => onMakeVideo(item) },
     isPhoto && { key: 'edit', label: 'Edit', icon: P.edit, run: () => setSheet(x => x === 'edit' ? null : 'edit') },
+    !isPhoto && { key: 'reframe', label: 'Reframe', icon: P.edit, run: () => setSheet(x => x === 'reframe' ? null : 'reframe') },
+    !isPhoto && { key: 'virality', label: 'Virality', icon: P.similar, run: () => setSheet(x => x === 'virality' ? null : 'virality') },
     isPhoto && { key: 'similar', label: 'More like this', icon: P.similar, run: () => onMoreLikeThis(item) },
     { key: 'details', label: 'Details', icon: P.details, run: () => setSheet(x => x === 'details' ? null : 'details') },
     { key: 'download', label: 'Download', icon: P.download, run: () => downloadImage(item.url, fname) },
@@ -253,11 +256,13 @@ export default function MediaViewer({ items, index, onIndex, onClose, onModify, 
 
       {postOpen && <PostSheet item={item} onClose={() => setSheet(null)} />}
       {sheet === 'edit' && isPhoto && <EditSheet key={item.url} item={item} />}
+      {sheet === 'reframe' && !isPhoto && <ReframeSheet key={item.url} item={item} />}
+      {sheet === 'virality' && !isPhoto && <div className="muse-viewer-post" role="dialog" aria-label="Virality"><h3>Virality</h3><p>Higgsfield’s read on hook, attention and retention before you post. Uses your Higgsfield credits.</p><ViralityPanel url={item.url} /></div>}
       {sheet === 'details' && <DetailsSheet item={item} date={date} onRecreate={onRecreate} />}
 
       <nav className="muse-viewer-actions" aria-label="Actions">
         {actions.map(a => (
-          <button key={a.key} type="button" className={`muse-viewer-action${a.key === sheet ? ' on' : ''}`} aria-pressed={a.key === 'post' || a.key === 'details' || a.key === 'edit' ? a.key === sheet : undefined} onClick={a.run}>
+          <button key={a.key} type="button" className={`muse-viewer-action${a.key === sheet ? ' on' : ''}`} aria-pressed={['post', 'details', 'edit', 'reframe', 'virality'].includes(a.key) ? a.key === sheet : undefined} onClick={a.run}>
             <span className="muse-viewer-action-icon"><Icon d={a.icon} /></span>
             <span>{a.label}</span>
           </button>

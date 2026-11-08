@@ -18,7 +18,7 @@ function postState(post) {
   return { label: post.scheduledAt ? `Planned · ${fmtWhen(post.scheduledAt)}` : 'Draft', tone: '' }
 }
 
-function Deliverable({ d, n, post, onChange, onRemove, onCreatePost, onOpenPost, onStudio }) {
+function Deliverable({ d, n, post, onChange, onRemove, onCreatePost, onOpenPost, onStudio, onMake }) {
   const [noting, setNoting] = useState(false)
   const [note, setNote] = useState(d.note || '')
   const ps = postState(post)
@@ -41,7 +41,7 @@ function Deliverable({ d, n, post, onChange, onRemove, onCreatePost, onOpenPost,
           {post ? <><strong>{post.caption?.split('\n')[0]?.slice(0, 70) || 'No caption yet'}</strong><small>{ps.label}</small></> : <small>{ps.label}</small>}
         </span>
         {post ? <button type="button" className="muse-btn muse-btn-tonal" onClick={onOpenPost}>Open post</button>
-          : <button type="button" className="muse-btn muse-btn-tonal" onClick={onCreatePost}>Create post</button>}
+          : <><button type="button" className="muse-btn muse-btn-text" onClick={onMake} title={d.kind === 'reel' || d.kind === 'story' ? 'Talking video with her, about this brand' : 'Photoshoot in Create, about this brand'}>{d.kind === 'reel' || d.kind === 'story' ? 'Make the video' : 'Make the photos'}</button><button type="button" className="muse-btn muse-btn-tonal" onClick={onCreatePost}>Create post</button></>}
       </div>
       <div className="muse-dl-row">
         <span className={`muse-badge ${d.approval === 'approved' ? 'posted' : d.approval === 'changes' ? 'failed' : d.approval === 'sent' ? 'approved' : 'draft'}`}>{APPROVAL[d.approval || 'none']}</span>
@@ -130,6 +130,11 @@ export default function DealPanel({ deal, onChange, onClose }) {
               onChange={patch => updateD(d.id, patch)}
               onRemove={() => setList(list.filter(x => x.id !== d.id))}
               onCreatePost={() => createPost(d)}
+              onMake={() => {
+                const brief = `${kindLabel(d.kind)} for ${deal.brand}${d.note ? `. Change requested: ${d.note}` : ''}`
+                if (d.kind === 'reel' || d.kind === 'story') navigate('/talk', { state: { influencerId: deal.influencerId, topic: `${deal.brand}: why I use it` } })
+                else navigate('/', { state: { createFor: deal.influencerId || undefined, createText: `${brief}. Her with the ${deal.brand} product, natural and on-brand.` } })
+              }}
               onOpenPost={() => navigate(`/content?view=queue&open=${postFor(d, posts).id}`)}
               onStudio={() => navigate('/studio', { state: { influencerId: deal.influencerId, prefillPrompt: d.note ? `${kindLabel(d.kind)} for ${deal.brand}. Change requested: ${d.note}` : undefined } })}
             />
