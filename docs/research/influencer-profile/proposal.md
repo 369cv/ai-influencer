@@ -171,3 +171,52 @@ Not copied:
 2. Retire the profile's own Photos/Videos generators in favour of Studio (after the parity check)?
 3. Earn: is manual deal entry OK until a payments connector exists?
 4. Order: phase 1 first (quick, safe), then 2–4?
+
+---
+
+# v2: minimal options, system light and dark, the whole picture
+
+Boards in `v2/`, each showing before · after light · after dark:
+
+| Board | What it shows |
+|---|---|
+| `board-0.png` | How Home, Influencers, Content, Studio, Plan and Settings connect: every link goes to an existing or planned page |
+| `board-1.png` | Home → "Today": Needs you (failures, empty slots, setup) and a this-week bar per influencer |
+| `board-2.png` | Influencers, three options: **A** portrait grid · **B** list · **C** switcher with no index page |
+| `board-3.png` | Profile, three layouts: **A** single column · **B** portrait rail · **C** one scroll with side index |
+| `board-4.png` | Profile tabs in layout A: Persona · Content · Schedule · Earn |
+| `board-5.png` | New influencer: Describe (one sentence, Claude fills the form) → Identity pack → Voice → Accounts & schedule → First week |
+| `board-6.png` | Content Queue restyled to match, in both themes |
+| `board-7.png` | Settings → Appearance: System (default) / Light / Dark |
+
+## What changed from v1
+- **Less chrome.**
+  - Hairline rows instead of cards.
+  - Setup is one line with the next step, not a card.
+  - Earn deals are grouped rows, not kanban columns.
+  - Persona is label / content / Edit rows.
+- **Choices instead of one design:** 3 influencer-list options and 3 profile layouts. My picks:
+  - list: **A** (grid), with a Grid/List toggle for agencies;
+  - profile: **A** (single column).
+- **Dark mode.**
+  - Uses the dark tokens already in `src/design/tokens.json`.
+  - `src/context/theme.jsx` currently forces light. The plan is an **Appearance** setting with **System** as the default, which follows `prefers-color-scheme` and switches live.
+  - Before turning dark on, replace hard-coded colours in `Influencers.jsx` and older pages with tokens.
+  - Give black brand logos (TikTok, X, Threads…) a lighter tile in dark.
+- **Home ties it together:** "Needs you" and "This week" read the same data as the profiles, the queue and setup, so there's no separate checklist to maintain.
+
+## Updated phases
+| Phase | Ships |
+|---|---|
+| 1 | Profile header (Create ▾ + ⋯, removing Open in Studio / Export persona) · emoji → icons/words · avatar fallback · tokens for hard-coded colours |
+| 2 | Appearance setting (System / Light / Dark) + dark pass on every page |
+| 3 | Influencers gallery (chosen option) + `/influencers/:id` + one tab row (chosen layout) |
+| 4 | Persona, Content and Schedule tabs; profile Photos/Videos generators retired after the Studio parity check |
+| 5 | Setup line + identity-pack chain + new Create journey |
+| 6 | Earn tab + Home "Needs you / This week" |
+
+## Decisions needed (v2)
+1. Influencers list: **A**, **B**, **C**, or A with a List toggle?
+2. Profile layout: **A**, **B** or **C**?
+3. Ship dark mode (phase 2) before the profile restructure, or after?
+4. Confirm: remove the Open in Studio / Export persona row (replaced by Create ▾ and ⋯).
