@@ -53,7 +53,7 @@ export function writeJobs(list) {
 }
 export const SESSION = `${Date.now().toString(36)}`
 
-// Results also go to the Photo Studio history so Content → Media shows them.
+// Results also go to the shared photo history ('photo_studio_history') so Content → Media shows them.
 // `recipe` is the exact Studio settings that produced this item, so the
 // viewer can show them and "Recreate" can reopen Studio with them.
 export const RECIPE_KEYS = ['mode', 'prompt', 'motion', 'model', 'ratio', 'resolution', 'seconds', 'count', 'influencerId', 'refs']

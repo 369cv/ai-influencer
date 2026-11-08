@@ -46,7 +46,7 @@ export const TEMPLATES = [
     featured: true,
     setup: {},
     steps: [
-      { kind: 'photo',   app: 'higgsfield', title: 'Generate a photo',          detail: 'Photo Studio, using the influencer’s saved look' },
+      { kind: 'photo',   app: 'higgsfield', title: 'Generate a photo',          detail: 'Studio, using the influencer’s saved look' },
       { kind: 'caption', app: 'claude',     title: 'Write caption and script',  detail: 'In the influencer’s voice, 1–2 sentences' },
       { kind: 'voice',   app: 'elevenlabs', title: 'Record the voiceover',      detail: 'Text to speech from the script' },
       { kind: 'talking', app: 'heygen',     title: 'Make a talking clip',       detail: 'Lip-synced to the voiceover, 9:16' },
@@ -72,7 +72,7 @@ export const TEMPLATES = [
     trigger: 'deal',
     setup: { deal: true, scene: true, defaultScene: 'Holding the product toward the camera, bright home setting, natural daylight' },
     steps: [
-      { kind: 'photo',   app: 'higgsfield', title: 'Shoot with the product', detail: 'Photo Studio, product as a prop' },
+      { kind: 'photo',   app: 'higgsfield', title: 'Shoot with the product', detail: 'Studio, product as a prop' },
       { kind: 'caption', app: 'claude',     title: 'Write a sponsored caption', detail: 'Includes #ad and the brand handle' },
       { kind: 'save',    app: 'muse',       title: 'Save to Library',        detail: 'For review before posting' },
     ],
