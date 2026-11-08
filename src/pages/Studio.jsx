@@ -77,12 +77,13 @@ export default function Studio() {
       navigate(location.pathname, { replace: true, state: {} })
       return
     }
-    if (st.influencerId || st.ref || st.template || mode) {
+    if (st.influencerId || st.ref || st.template || st.prefillPrompt || mode) {
       setS(x => {
         let next = mode && mode !== x.mode ? { ...blankSettings(mode), influencerId: x.influencerId } : { ...x }
         if (st.influencerId) next.influencerId = st.influencerId
         if (st.ref) next.refs = [...new Set([st.ref, ...next.refs])].slice(0, 4)
         if (st.motion && (mode || next.mode) === 'video') next.prompt = st.motion
+        if (st.prefillPrompt) next.prompt = st.prefillPrompt
         return next
       })
       if (st.template) applyTemplate(STUDIO_TEMPLATES.find(t => t.id === st.template))

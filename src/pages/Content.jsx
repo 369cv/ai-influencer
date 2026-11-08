@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { useInfluencers } from '../store'
+import { useInfluencers, useBrandDeals } from '../store'
 import { useWorkspaceStore } from '../context/workspace'
 import { Page, Seg, Field, Empty, Dialog, SkillAssist } from '../components/ui'
 import Library from './Library'
@@ -13,6 +13,7 @@ import ConnectorLogo from '../components/ConnectorLogo'
 import { freeSlots, nextFreeSlot, isSlotTime, fmtSlot, fmtTime } from '../utils/schedule'
 import { influencerContext } from '../utils/claudeAssist'
 import { newId } from '../utils/localJson'
+import { kindLabel } from '../utils/deals'
 
 // Content: posts with three views (Queue · Calendar · Media), filtered by influencer.
 // The Queue shows each influencer's time slots (Settings → Social accounts or the
@@ -57,7 +58,12 @@ export default function Content() {
     if (params.get('compose') === '1') {
       // ?compose=1 stays in the URL until the composer closes, so a direct
       // load (bookmark, extension link) still opens it if the page remounts.
-      setComposing(c => c || { caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null })
+      setComposing(c => c || {
+        caption: location.state?.prefillCaption || '', mediaUrls: location.state?.prefillMedia ? [location.state.prefillMedia] : [], influencerId: location.state?.influencerId || null,
+        // Brand deal → Create post: the post is linked back to its deliverable.
+        ...(location.state?.deliverableId ? { dealId: location.state.dealId, deliverableId: location.state.deliverableId } : {}),
+        ...(location.state?.igFormat ? { igFormat: location.state.igFormat } : {}),
+      })
     } else if (openId) {
       const p = posts.find(x => x.id === openId)
       if (p) setComposing(p)
@@ -307,6 +313,7 @@ function Calendar({ posts, onOpen, onNewOn }) {
 function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, onDelete }) {
   const [influencers] = useInfluencers()
   const library = useMemo(() => collectLibrary(influencers || []), [influencers])
+  const [deals] = useBrandDeals()
   const [p, setP] = useState(() => ({ caption: '', mediaUrls: [], accountIds: [], status: 'draft', ...initial }))
   const [picking, setPicking] = useState(false)
   const [urlText, setUrlText] = useState('')
@@ -443,6 +450,11 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
           )}
           {editing && <p className="muse-notice">Editing a scheduled post. Saving cancels it on {sentRoutes.join(', ')} and sends the new version{sentRoutes.some(r => r !== 'Ayrshare') ? '; automations receive muse.post.cancelled, then muse.post with the same postId' : ''}. <button type="button" className="muse-btn muse-btn-text" onClick={() => { setEditing(false); setP(x => ({ ...initial, ...posts.find(y => y.id === x.id) })); setError('') }}>Discard changes</button></p>}
           {notice && <p className="muse-notice" role="status">{notice}</p>}
+          {p.dealId && (() => {
+            const deal = (deals || []).find(d => d.id === p.dealId)
+            const dl = deal?.deliverables?.find(d => d.id === p.deliverableId)
+            return deal ? <p className="muse-notice"><span>Brand deal · <strong>{deal.brand}</strong>{dl ? ` · ${kindLabel(dl.kind)}` : ''}{dl?.approval === 'changes' && dl.note ? ` · changes requested: “${dl.note}”` : dl?.approval === 'approved' ? ' · approved' : ''}</span><Link to="/brand-deals">Deal</Link></p> : null
+          })()}
 
           <div className="muse-cs-as">
             <span className="muse-field-label">Posting as</span>
