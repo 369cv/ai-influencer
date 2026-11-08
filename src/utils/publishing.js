@@ -213,3 +213,19 @@ export function statsLine(totals = {}) {
     .filter(([k]) => typeof totals[k] === 'number').map(([k, l]) => `${fmtNum(totals[k])} ${totals[k] === 1 ? l.slice(0, -1) : l}`)
   return parts.join(' · ')
 }
+
+// Comments inbox (Ayrshare): read the comments on a sent post, and reply to one.
+export async function loadComments(post) {
+  const cfg = getPublishing()
+  if (!isRouteConnected('ayrshare', cfg)) throw new Error('Comments come from Ayrshare. Connect it in Settings → Connections.')
+  const all = []
+  for (const id of statsIdsOf(post)) {
+    const data = await callPublish({ ...routeRequest('ayrshare', cfg), comments: { id }, post: { via: 'ayrshare' } })
+    all.push(...(data.comments || []))
+  }
+  return all
+}
+export async function replyToComment(comment, text) {
+  const cfg = getPublishing()
+  return callPublish({ ...routeRequest('ayrshare', cfg), reply: { commentId: comment.id, platform: comment.platform, comment: text }, post: { via: 'ayrshare' } })
+}

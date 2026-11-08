@@ -2570,7 +2570,8 @@ function Sec({ children, style }) {
 
 // ─────────────────────────────────────────────
 // Detail tabs with palette-tinted active state
-const DETAIL_TABS = ['Overview','Scripts','Wardrobe','Home','Brand Deals']
+// Scripts → Talking video (saved scripts are offered there); Home → Looks (Bring home rooms into Looks).
+const DETAIL_TABS = ['Overview','Wardrobe','Brand Deals']
 
 function Tabs({ active, onChange, ac }) {
   const tc = accentText(ac)
@@ -5896,7 +5897,7 @@ export default function Influencers() {
     hasNavigatedToScripts.current = true
     setStudioTab('influencer')
     localStorage.setItem('inf_studio_tab','influencer')
-    setActiveTab('Scripts')
+    setActiveTab('Overview')
     setScriptsHighlightId(scriptId)
     setTimeout(() => tabSecRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 120)
   }
@@ -6173,7 +6174,7 @@ export default function Influencers() {
                 <span className="muse-muted">{studioTab==='photo' ? 'Advanced photo studio' : 'Advanced video studio'}</span>
               </div>
             )}
-            <div style={{marginLeft:'auto',alignSelf:'flex-start'}}><ProfileActions influencer={influencer} onExport={()=>exportPersonaBible(influencer)} onDelete={()=>del(influencer.id)} onAdvanced={t=>{ setStudioTab(t); localStorage.setItem('inf_studio_tab', t); setTimeout(() => mainPaneRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}/></div>
+            <div style={{marginLeft:'auto',alignSelf:'flex-start'}}><ProfileActions influencer={influencer} onExport={()=>exportPersonaBible(influencer)} onDelete={()=>del(influencer.id)}/></div>
           </div>
 
 

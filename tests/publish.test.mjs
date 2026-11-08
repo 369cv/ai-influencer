@@ -69,3 +69,20 @@ test('stats are refused for webhook routes', async () => {
   const r = await handlePublish({ provider: 'webhook', credentials: { webhookUrl: 'https://example.com/h' }, stats: { ids: ['ayr1'] } })
   assert.equal(r.json.ok, false)
 })
+
+test('ayrshare comments: read one post and flatten by platform', async () => {
+  const calls = mockFetch(() => ({ status: 200, body: { instagram: [{ comment: 'Love this', commentId: 'c1', created: '2026-11-07T10:00:00Z', username: 'ana', likeCount: 3 }], tiktok: [{ comment: 'Where is it from?', commentId: 'c2', created: '2026-11-08T10:00:00Z', displayName: 'Bo', owner: false }], status: 'success' } }))
+  const out = await handlePublish({ ...ayr, comments: { id: 'ayr123' } })
+  assert.equal(calls[0].url, 'https://api.ayrshare.com/api/comments/ayr123')
+  assert.deepEqual(out.json.comments.map(c => [c.id, c.platform, c.author]), [['c2', 'tiktok', 'Bo'], ['c1', 'instagram', 'ana']])
+})
+
+test('ayrshare reply: posts to the reply endpoint with the platform comment id', async () => {
+  const calls = mockFetch(() => ({ status: 200, body: { status: 'success', instagram: { status: 'success', commentId: 'r9' } } }))
+  const out = await handlePublish({ ...ayr, reply: { commentId: '17890000', platform: 'instagram', comment: 'Thank you!' } })
+  assert.equal(calls[0].url, 'https://api.ayrshare.com/api/comments/reply/17890000')
+  assert.deepEqual(calls[0].body, { comment: 'Thank you!', platforms: ['instagram'], searchPlatformId: true })
+  assert.equal(out.json.commentId, 'r9')
+  assert.equal((await handlePublish({ ...ayr, reply: { commentId: 'x', platform: 'instagram', comment: '' } })).status, 400)
+  assert.equal((await handlePublish({ provider: 'webhook', credentials: {}, reply: { commentId: '17890000', platform: 'instagram', comment: 'Hi' } })).status, 400)
+})
