@@ -1,6 +1,6 @@
 # Remaining gaps: proposal
 
-Status: **G8, G1, G2, G3 and G5 are built** (see Build status below); the rest are proposals. This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
+Status: **G8, G1, G2, G3, G5 and G4 (approval pack) are built** (see Build status below); the rest are proposals. This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
 - **Exists:** works today.
 - **Change:** exists, gets reworked.
 - **New:** to build.
@@ -29,7 +29,7 @@ Status: **G8, G1, G2, G3 and G5 are built** (see Build status below); the rest a
 | G5 Workflow runs | Built | Workflows: set up a run (influencer, scene, start photo, deal or reference), cost shown on Run, live steps, Stop, review before anything is queued, run history. Talking clip stays planning-only (voice and lip-sync steps not built) |
 | G6 Saved keys usable | Needs your pick of providers | |
 | G7 MCP sign-in | Needs your pick of services | |
-| G4 Brand approval | Blocked on F7 deliverables | Brand deals have no deliverables yet |
+| G4 Brand approval | Built (pack); share link not yet | Brand deals → Deliverables: influencer, fee, status, deliverables linked to Content posts, Download approval pack (one HTML file), record Approved / Changes requested; changes open Studio with the note. A live share link still needs a shared store |
 
 ## How they connect
 
