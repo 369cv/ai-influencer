@@ -9,13 +9,15 @@ import {
   revisePlan, runSession, stopSession, deleteSession,
 } from '../utils/createSessions'
 import { newId } from '../utils/localJson'
+import { addLooks } from './InfluencerLooks'
 
 // Create → one request: the plan (free, editable, cost on the button), then the results.
 const STATUS = { plan: 'Plan · free to change', running: 'Making it…', done: 'Ready', failed: 'Failed', stopped: 'Stopped' }
 
 export default function CreatePlan({ id, onClose }) {
   const navigate = useNavigate()
-  const [influencers] = useInfluencers()
+  const [influencers, setInfluencers] = useInfluencers()
+  const [saved, setSaved] = useState(false)
   const [raw] = useLocalJSON(SESSIONS_KEY, [])
   const s = normalizeSessions(raw).find(x => x.id === id)
   const [change, setChange] = useState('')
@@ -72,6 +74,12 @@ export default function CreatePlan({ id, onClose }) {
             : inf?.name || s.influencerName}</dd>
           <dt>Scene</dt>
           <dd>{editable ? <textarea className="muse-input" rows={2} value={plan.scene} onChange={e => setPlan({ scene: e.target.value })} aria-label="Scene" /> : plan.scene}</dd>
+          {(inf?.looks || []).length > 0 && <>
+            <dt>Look</dt>
+            <dd className="muse-chip-row">{editable
+              ? [{ id: '', name: 'None', url: '' }, ...inf.looks].map(l => <button key={l.id || 'none'} type="button" className={`muse-chip${(plan.lookUrl || '') === l.url ? ' on' : ''}`} aria-pressed={(plan.lookUrl || '') === l.url} onClick={() => setPlan({ lookUrl: l.url || undefined })}>{l.url && <span className="muse-create-av" style={{ width: 18, height: 18, backgroundImage: `url(${l.url})` }} />}{l.name}</button>)
+              : (inf.looks.find(l => l.url === plan.lookUrl)?.name || 'None')}</dd>
+          </>}
           <dt>Format</dt>
           <dd className="muse-chip-row">{editable
             ? RATIOS.map(r => <button key={r} type="button" className={`muse-chip${plan.ratio === r ? ' on' : ''}`} aria-pressed={plan.ratio === r} onClick={() => setPlan({ ratio: r })}>{r}</button>)
@@ -115,6 +123,7 @@ export default function CreatePlan({ id, onClose }) {
           ) : anyResult && !editable ? (
             <>
               <span className="muse-flow-bar-note">{picked.length ? `${picked.length} selected` : 'Tap photos to choose which to post.'} Also saved to Content → Media.</span>
+              {inf && <button type="button" className="muse-btn muse-btn-text" disabled={!picked.length || saved} onClick={() => { addLooks(setInfluencers, inf.id, picked); setSaved(true) }} title={picked.length ? '' : 'Select photos first'}>{saved ? 'Saved as looks' : `Save as look${picked.length > 1 ? 's' : ''}`}</button>}
               <button type="button" className="muse-btn muse-btn-text" onClick={() => navigate('/studio?mode=video', { state: { influencerId: s.influencerId, ref: picked[0] || results.find(r => r.url)?.url, mode: 'video' } })}>Animate in Studio</button>
               <button type="button" className="muse-btn muse-btn-filled" onClick={queue}>Post{picked.length > 1 ? ` (${picked.length})` : ''}</button>
             </>

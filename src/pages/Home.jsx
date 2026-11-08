@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom'
 import { useInfluencers } from '../store'
 import { useWorkspaceStore } from '../context/workspace'
 import { collectLibrary } from '../utils/library'
@@ -43,6 +43,17 @@ export default function Home() {
   const [rawSessions] = useLocalJSON(SESSIONS_KEY, [])
   const sessions = normalizeSessions(rawSessions)
   const boxRef = useRef(null)
+  // Profile "Create with her" / Add looks → Describe: preselect her and prefill the box.
+  const location = useLocation()
+  useEffect(() => {
+    const st = location.state || {}
+    if (!st.createFor && !st.createText) return
+    if (st.createFor) { setWho(st.createFor); try { localStorage.setItem('muse_create_who', st.createFor) } catch {} }
+    setTarget('photoshoot')
+    if (st.createText) setText(st.createText)
+    setTimeout(() => boxRef.current?.focus(), 0)
+    navigate(location.pathname + location.search, { replace: true, state: {} })
+  }, [location.key]) // eslint-disable-line
   // Sidebar "New" lands here with ?new=1: focus the box.
   useEffect(() => { if (params.get('new')) { boxRef.current?.focus(); setParams(q => { q.delete('new'); return q }, { replace: true }) } }, [params]) // eslint-disable-line
   const [text, setText] = useState('')

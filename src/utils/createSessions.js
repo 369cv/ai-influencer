@@ -112,13 +112,15 @@ export async function runSession(id, influencer, { onlyShotIds } = {}) {
   patchSession(id, x => ({ status: 'running', sessionId: SESSION, error: '', progress: 2, running: shots.map(sh => sh.id), results: onlyShotIds ? x.results : {} }))
   const face = influencer?.mainImage ? uploadable(influencer.mainImage) : null
   const closeUps = [influencer?.closeUpImage1, influencer?.closeUpImage2].filter(Boolean).map(uploadable)
-  const base = { prompt: s.plan.scene, influencer, refCount: 0, hasFace: !!face, closeUps: closeUps.length }
+  // A saved look (outfit / setting) goes in as the reference image after the face.
+  const look = s.plan.lookUrl ? uploadable(s.plan.lookUrl) : null
+  const base = { prompt: s.plan.scene, influencer, refCount: look ? 1 : 0, hasFace: !!face, closeUps: closeUps.length }
   let i = 0
   try {
     await deps().generateNImages({
       prompt: shots.map(sh => buildStudioPrompt({ ...base, shot: sh.text })), count: shots.length,
       aspectRatio: s.plan.ratio, resolution: s.plan.resolution, model: s.plan.model,
-      referenceImage: face, outfitImage: null, propImages: closeUps,
+      referenceImage: face, outfitImage: look, propImages: closeUps,
       onProgress: p => patchSession(id, { progress: Math.max(2, Math.round(p)) }),
       isCancelled: () => cancelled[id],
       onResult: url => {

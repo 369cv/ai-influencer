@@ -761,3 +761,23 @@ input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--acce
 .muse-cp-foot .muse-flow-bar-note { flex: 1 1 260px; }
 .muse-cp-empty { text-align: center; padding: var(--space-7) var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); align-items: center; }
 @media (max-width: 600px) { .muse-cp-kv { grid-template-columns: 1fr; gap: 4px; } .muse-cp-kv dt { margin-top: 6px; } }
+
+/* Influencer → Looks */
+.muse-looks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); }
+.muse-lk { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.muse-lk-img { display: block; aspect-ratio: 4 / 5; border-radius: var(--radius-lg); background: var(--bg-tertiary) center 20% / cover; }
+.muse-lk figcaption { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.muse-lk-name { flex: 1; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: var(--text-primary); cursor: text; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muse-lk-x { background: none; border: 0; color: var(--text-tertiary); cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+.muse-lk-x:hover { color: var(--color-status-danger); }
+.muse-lk-add { aspect-ratio: 4 / 5; border: 1px dashed var(--border); border-radius: var(--radius-lg); background: none; color: var(--text-secondary); font: inherit; font-size: 22px; align-items: center; justify-content: center; cursor: pointer; }
+.muse-lk-add span { font-size: 13px; }
+.muse-looks-id { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-3); }
+.muse-looks-idcard { display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+.muse-looks-sheet-img { display: block; height: 96px; border-radius: var(--radius-md); background: var(--bg-tertiary) center / cover; }
+.muse-looks-sheet { max-width: 640px; }
+.muse-looks-sources { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.muse-looks-src { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-primary); font: inherit; cursor: pointer; }
+.muse-looks-src:hover { box-shadow: var(--shadow-sm); }
+.muse-looks-src small { color: var(--text-secondary); font-size: 12px; line-height: 1.4; }
+@media (max-width: 600px) { .muse-looks-id, .muse-looks-sources { grid-template-columns: 1fr; } }
