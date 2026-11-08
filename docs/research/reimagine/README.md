@@ -9,7 +9,11 @@ Status: **proposal, not built.** Nothing in the app changes until we agree on th
   - the workflow dropdown;
   - per-workflow placeholders and chips;
   - the "Add media" sheet.
-- **HeyGen.** Taken from screenshots you shared: Home, Avatar (My Avatars, Voices), Brand Systems, App Library, Projects, Integrations and New Brand System. A second recording walks through a brand kit's four tabs: Brand Spec (colours and fonts with live previews), Assets, Logos and Motion.
+- **HeyGen.** Taken from screenshots you shared: Home, Avatar (My Avatars, Voices), Brand Systems, App Library, Projects, Integrations and New Brand System. A second recording walks through a brand kit's four tabs: Brand Spec (colours and fonts with live previews), Assets, Logos and Motion. A third covers avatars and voices:
+  - the My Avatars list view (a looks strip with a + tile and +N);
+  - an avatar's page (voice chip, favourite, looks grid);
+  - Voices (Create, Design, Import; My voices and the library, each tagged Voice Clone or Voice Design);
+  - Public Avatars.
 - **Muse today.** Taken from the Create screen and the code as merged after #30.
 
 Mockups are ours, in Muse's style, light and dark. Photos come from the app's own seed influencers in `public/`. Every tool shown on a card exists today, unless a note says it's new.
@@ -37,6 +41,7 @@ Mockups are ours, in Muse's style, light and dark. Photos come from the app's ow
 | `board-5.png` | **Content as Projects:** everything made, grouped by day, with type, status and credits; Queue and calendar, Ideas, Inbox and Deals sit in the side column; folders per influencer |
 | `board-6.png` | **Brand identity, one kit per influencer:** Brand spec (colour roles, fonts, previews using her own content), Voice and words (tone, always/never, call to action, pronunciation), Assets, Motion. A kit starts from her profile, from a link, or from a style |
 | `board-7.png` | **Integrations:** a grid of the real connector catalog, with an honest status on every card (Connected, Not connected, Key saved, Coming) and System check next to it |
+| `board-8.png` | **Influencers as avatars:** identity = face, looks, voice and brand kit. The list view shows her looks strip; her page leads with looks (Looks, Identity, Schedule & insights, Deals) and has hover actions; Voices has its own page with type tags and Assign |
 
 ### How it maps onto what exists
 
@@ -54,6 +59,8 @@ Mockups are ours, in Muse's style, light and dark. Photos come from the app's ow
 | Projects | Media, Create sessions, posts | Group by job (a photoshoot is one card); folders |
 | Usage in the rail | ElevenLabs characters (built) | Higgsfield has no balance API, so its costs stay on each button. No invented number |
 | Brand kits | Influencer fields: vibe words, niche, backstory, clothing style, an empty `palette` | **New:** kit editor, previews, applying the kit (see below) |
+| Influencer page around looks | Profile with Looks card, face sheet, Consistent face, Voice, schedule, insights, Wardrobe and Brand Deals tabs | Rebuild the page as four tabs led by Looks. **Large change to `Influencers.jsx`**: its own session, with every flow checked |
+| Voices page | Voice library, Design, Remix and Assign, all inside each profile | One Voices page listing every voice, its type and who uses it. **New:** clone from a recording, with consent |
 | Integrations page | Settings › Connections (catalog, statuses, “what it does” list), System check | Move it into Apps; card grid; fix stale lines (ElevenLabs voiceovers are live, not planned) |
 
 ### Also fixed along the way
@@ -82,6 +89,21 @@ One kit per influencer, stored on her record (local-first), and exportable as **
 1. Burning styled captions and a watermark into the video file. Today captions play as a separate track and download as `.srt`. This needs either in-browser video encoding or a Higgsfield step.
 2. Reading a link. This needs a server-side page reader; today's proxy reads images only.
 
+## Influencers as avatars: how it works
+
+- **One identity.** Each influencer is her face (main photo, face sheet, Consistent face), her looks, her voice and her brand kit. HeyGen treats an avatar the same way.
+- **The list view** shows each influencer's looks as a strip: a + tile to add looks, then her latest looks, then "+N". The grid view (board 3) shows her main photo and two looks.
+- **Her page leads with her looks:**
+  - The tabs are Looks, Identity, Schedule & insights, and Deals.
+  - Looks can be filtered: All, Outfits, Settings, From shoots.
+  - Hovering a look offers Use in Create, Talking video, Animate and Set as main.
+  - The header has chips for her voice and her brand kit, plus Create with her, which opens the Home box with her selected.
+- **Voices is one page** for every ElevenLabs voice:
+  - each voice is tagged Designed, Remix or Library, and shows who uses it;
+  - Assign gives a voice to an influencer;
+  - Clone from a recording is new and asks for the speaker's consent.
+- **Skipped on purpose:** HeyGen's Public Avatars. Every influencer in Muse is one you made, and nothing is pre-filled.
+
 ## Integrations: how it works
 
 - **Where it lives:** Apps › Integrations replaces Settings › Connections.
@@ -102,11 +124,13 @@ One kit per influencer, stored on her record (local-first), and exportable as **
 7. **Look:** keep Muse's lavender, light and dark, as shown, rather than HeyGen's dark-only or Muzecast's warm orange?
 8. **Integrations:** move Connections into Apps › Integrations, as a card grid with honest statuses?
 9. **Unused keys:** for services with a key saved but no feature (HeyGen, Runway, Kling and others), wire one of them up next, or hide them until they do something?
+10. **Influencer page:** rebuild it around her looks (board 8), as its own `Influencers.jsx` session? And add Clone from a recording to Voices?
 
 ## Suggested phases (after agreement)
 
 1. **Box and Home:** dropdown, per-workflow chips, the "Add media" sheet, workflow cards, setup steps, and the placeholder fix.
-2. **Navigation:** icon rail; the Apps library with Integrations; the Influencers gallery and Voices.
+2. **Navigation:** icon rail; the Apps library with Integrations; the Influencers gallery and list view, and the Voices page.
 3. **Brand identity:** kit editor and previews; build a kit from her profile; apply it in the composer, scripts, replies and deal packs; pronunciation for ElevenLabs. Then captions burned into the video and import from a link.
-4. **Content as Projects:** grouping and folders.
-5. **Remake a reel.**
+4. **Influencer page around looks** (its own session, with every flow checked).
+5. **Content as Projects:** grouping and folders.
+6. **Remake a reel.**
