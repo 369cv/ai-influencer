@@ -94,7 +94,7 @@ function saveCreationParams(influencerId, params) {
 const inputCls = 'create-input'
 const inputStyle = {
   width: '100%', padding: '13px 16px', borderRadius: 12,
-  border: `1.5px solid ${L.border}`, background: L.surfaceAlt,
+  border: `1.5px solid ${L.border}`, background: L.surface, // white field on the light canvas = readable
   fontSize: 15, color: L.text, boxSizing: 'border-box',
   outline: 'none', fontFamily: 'inherit',
   transition: 'border-color 0.15s, box-shadow 0.15s',
@@ -349,7 +349,7 @@ function Step3({ data, set }) {
           onChange={e => set('backstory', e.target.value)}
           placeholder="Their background, what drives them, what makes them unique…"
           rows={5}
-          style={{ ...taStyle, background: L.surfaceAlt, marginBottom: 0 }}
+          style={{ ...taStyle, marginBottom: 0 }}
         />
       </div>
 
@@ -1320,15 +1320,6 @@ export default function Create() {
     setStep(s => s + 1)
   }
 
-  async function connectFromBanner() {
-    try {
-      await startHiggsfieldOAuthPopup()
-      setHfConnected(true)
-    } catch (e) {
-      if (e.message !== 'cancelled') alert('Failed to connect: ' + e.message)
-    }
-  }
-
   function resetAll() {
     setStep(1)
     setData({ name: '', gender: '', age: '', niches: [], nicheCustom: '', backstory: '', personality: 50, ethnicity: '', skinTone: '', hairColor: '', hairLength: 'Long', hairTexture: 'Straight', eyeColor: '', build: '', uniqueFeatures: '', vibeWords: [], faceRef: null, styleRef: null, faceRefNote: '', styleRefNote: '' })
@@ -1415,68 +1406,7 @@ export default function Create() {
       <div className={`muse-wizard-body${isLook ? ' wide' : ''}`}>
         <WizardProgress current={step} />
 
-        {!hfConnected && stepId !== 'generate' && (
-          <div style={{
-            marginBottom: 32, borderRadius: 14, padding: '1.5px',
-            background: '#C9FF00',
-            animation: 'hf-float 3s ease-in-out infinite',
-            boxShadow: '0 4px 24px rgba(201,255,0,0.25)',
-          }}>
-            <div style={{
-              borderRadius: 13, padding: '11px 14px',
-              background: 'color-mix(in srgb, var(--bg) 92%, #C9FF00 8%)',
-              backdropFilter: 'blur(12px)',
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <img src="/hf-icon.png" alt="" style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, boxShadow: '0 2px 8px rgba(201,255,0,0.5)', display: 'block' }} />
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Connect to Higgsfield</span>
-              <button onClick={connectFromBanner} style={{
-                flexShrink: 0, padding: '7px 14px', borderRadius: 8,
-                background: '#C9FF00',
-                color: '#0A0A0A', fontSize: 12, fontWeight: 800, border: 'none', cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(201,255,0,0.4)',
-                whiteSpace: 'nowrap', transition: 'opacity 0.15s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
-              >Connect →</button>
-            </div>
-          </div>
-        )}
-
-        {/* Claude API key nudge — same card DNA as HF, visually secondary */}
-        {stepId === 'name' && !localStorage.getItem('claude_api_key') && (
-          <div style={{
-            marginBottom: 32, borderRadius: 14, padding: '1.5px',
-            background: 'rgba(245,158,11,0.45)',
-          }}>
-            <div style={{
-              borderRadius: 13, padding: '11px 14px',
-              background: 'color-mix(in srgb, var(--bg) 94%, #F59E0B 6%)',
-              backdropFilter: 'blur(12px)',
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-              </div>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Connect Claude for smarter prompts</span>
-              <button onClick={() => navigate('/settings')} style={{
-                flexShrink: 0, padding: '7px 14px', borderRadius: 8,
-                background: 'transparent',
-                color: '#D97706', fontSize: 12, fontWeight: 800,
-                border: '1.5px solid rgba(245,158,11,0.4)',
-                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.12)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-              >Connect →</button>
-            </div>
-          </div>
-        )}
+        {/* Connections (Higgsfield, Claude, BYO keys, MCP) live in Settings → Connections, not in onboarding. */}
 
         <div key={stepId} className="muse-step">
         {stepId === 'name' && <Step1 data={data} set={set} onGenderChange={handleGenderChange} ageErrorPulse={ageErrorPulse} />}

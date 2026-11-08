@@ -7,7 +7,7 @@ import { collectLibrary, readPhotoHistory, handoffToPhotoStudio, handoffToVideoS
 // Library: every generated photo and video in one media grid.
 const KINDS = [{ id: 'all', label: 'All' }, { id: 'photo', label: 'Photos' }, { id: 'video', label: 'Videos' }]
 
-export default function Library() {
+export default function Library({ embedded = false }) {
   const navigate = useNavigate()
   const [influencers] = useInfluencers()
   const [photoHistory, setPhotoHistory] = useState(readPhotoHistory)
@@ -33,13 +33,13 @@ export default function Library() {
   const go = to => { setOpen(null); navigate(to.pathname, { state: to.state }) }
 
   return (
-    <div className="muse-page">
-      <header className="muse-page-head">
+    <div className={embedded ? 'muse-embed' : 'muse-page'}>
+      {!embedded && <header className="muse-page-head">
         <div>
           <h1>Library</h1>
           <p>{all.length ? `${all.length} photos and videos across ${people.length} ${people.length === 1 ? 'influencer' : 'influencers'}` : 'Everything you generate lands here.'}</p>
         </div>
-      </header>
+      </header>}
 
       {all.length > 0 && (
         <div className="muse-filter-row" role="toolbar" aria-label="Filters">

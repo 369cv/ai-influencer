@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { downloadImage } from '../utils/imageUtils'
+import { isPublishingConnected } from '../utils/connections'
 
 // Full-screen viewer for Library items: swipe or arrow keys to move,
 // Esc to close, and per-item actions along the bottom.
@@ -20,28 +22,34 @@ const Icon = ({ d, size = 20 }) => (
 )
 
 function PostSheet({ item, onClose }) {
+  const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const canShare = typeof navigator !== 'undefined' && !!navigator.share
+  const connected = isPublishingConnected()
   async function share() {
     try { await navigator.share({ title: `${item.influencerName} · Muse Studio`, url: item.url }) } catch {}
   }
   async function copy() {
     try { await navigator.clipboard.writeText(item.url); setCopied(true); setTimeout(() => setCopied(false), 1600) } catch {}
   }
+  function compose() {
+    onClose()
+    navigate('/content?compose=1', { state: { prefillMedia: item.url, influencerId: item.influencerId } })
+  }
   return (
     <div className="muse-viewer-post" role="dialog" aria-label="Post">
       <h3>Post</h3>
-      <p>Direct posting needs a connected account. These connections aren’t set up yet.</p>
-      <ul className="muse-connect-list">
-        {['TikTok', 'Instagram', 'YouTube Shorts'].map(n => (
-          <li key={n}><span>{n}</span><button type="button" className="muse-btn muse-btn-tonal" disabled title="Coming with integrations">Connect</button></li>
-        ))}
-      </ul>
+      <p>{connected
+        ? 'Write the caption, pick the accounts, then post now or schedule it.'
+        : 'Add it to your content queue now. To post directly, connect a posting service in Settings → Connections.'}</p>
+      <div className="muse-plan-actions">
+        <button type="button" className="muse-btn muse-btn-filled" onClick={compose}>{connected ? 'Compose post' : 'Add to queue'}</button>
+      </div>
       <div className="muse-plan-actions">
         <button type="button" className="muse-btn muse-btn-tonal" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
         {canShare
-          ? <button type="button" className="muse-btn muse-btn-filled" onClick={share}>Share…</button>
-          : <button type="button" className="muse-btn muse-btn-filled" onClick={onClose}>Done</button>}
+          ? <button type="button" className="muse-btn muse-btn-tonal" onClick={share}>Share…</button>
+          : <button type="button" className="muse-btn muse-btn-tonal" onClick={onClose}>Done</button>}
       </div>
     </div>
   )
