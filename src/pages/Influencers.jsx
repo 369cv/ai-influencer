@@ -6167,30 +6167,13 @@ export default function Influencers() {
                 onMouseLeave={e=>{e.currentTarget.style.background='var(--surface)'}}
               >›</button>
             )}
-            <div style={{display:'flex',gap:4,padding:4,borderRadius:14,background:'var(--bg-tertiary)',border:'1px solid var(--border-subtle)',alignSelf:'flex-start'}}>
-              <button onClick={()=>{ setStudioTab('influencer'); localStorage.setItem('inf_studio_tab','influencer') }} style={{
-                padding:'9px 22px',borderRadius:10,fontSize:13,fontWeight:600,border:'none',
-                background: studioTab==='influencer' ? 'var(--surface)' : 'transparent',
-                color: studioTab==='influencer' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                boxShadow: studioTab==='influencer' ? '0 1px 6px rgba(0,0,0,0.10), 0 0 0 1px var(--border-subtle)' : 'none',
-                transition:'all 0.18s',
-              }}>Profile</button>
-              <button onClick={()=>{ setStudioTab('photo'); localStorage.setItem('inf_studio_tab','photo') }} style={{
-                padding:'9px 22px',borderRadius:10,fontSize:13,fontWeight:600,border:'none',
-                background: studioTab==='photo' ? 'var(--surface)' : 'transparent',
-                color: studioTab==='photo' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                boxShadow: studioTab==='photo' ? '0 1px 6px rgba(0,0,0,0.10), 0 0 0 1px var(--border-subtle)' : 'none',
-                transition:'all 0.18s',
-              }}>Photos</button>
-              <button onClick={()=>{ setStudioTab('content'); localStorage.setItem('inf_studio_tab','content') }} style={{
-                padding:'9px 22px',borderRadius:10,fontSize:13,fontWeight:600,border:'none',
-                background: studioTab==='content' ? 'var(--color-brand-gradient)' : 'transparent',
-                color: studioTab==='content' ? '#fff' : 'var(--text-tertiary)',
-                boxShadow: studioTab==='content' ? '0 2px 14px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
-                transition:'all 0.18s',
-              }}>Videos</button>
-            </div>
-            <div style={{marginLeft:'auto',alignSelf:'flex-start'}}><ProfileActions influencer={influencer} onExport={()=>exportPersonaBible(influencer)} onDelete={()=>del(influencer.id)}/></div>
+            {studioTab !== 'influencer' && (
+              <div className="muse-adv-bar">
+                <button type="button" className="muse-btn muse-btn-text" onClick={()=>{ setStudioTab('influencer'); localStorage.setItem('inf_studio_tab','influencer') }}>← Back to profile</button>
+                <span className="muse-muted">{studioTab==='photo' ? 'Advanced photo studio' : 'Advanced video studio'}</span>
+              </div>
+            )}
+            <div style={{marginLeft:'auto',alignSelf:'flex-start'}}><ProfileActions influencer={influencer} onExport={()=>exportPersonaBible(influencer)} onDelete={()=>del(influencer.id)} onAdvanced={t=>{ setStudioTab(t); localStorage.setItem('inf_studio_tab', t); setTimeout(() => mainPaneRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}/></div>
           </div>
 
 
