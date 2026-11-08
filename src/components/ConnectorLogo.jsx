@@ -39,7 +39,7 @@ export default function ConnectorLogo({ c, slug, asset, size = 40 }) {
   }
   if (assetUrl) return <span style={white} aria-hidden><img src={assetUrl} alt="" width={Math.round(size * 0.62)} height={Math.round(size * 0.62)} style={{ objectFit: 'contain' }} /></span>
   if (logo) {
-    const bg = logo.hex === '000000' ? '#111111' : `#${logo.hex}`
+    const bg = logo.hex === '000000' ? 'var(--logo-black, #111111)' : `#${logo.hex}`
     return <span style={{ ...tile, background: bg }} aria-hidden><Glyph logo={logo} size={Math.round(size * 0.56)} fill={isLight(logo.hex) ? '#111111' : '#ffffff'} /></span>
   }
   if (c?.image) return <span style={{ ...(c.tile ? { ...tile, background: c.tile } : white) }} aria-hidden><img src={c.image} alt="" width={Math.round(size * 0.66)} height={Math.round(size * 0.66)} style={{ objectFit: 'contain' }} /></span>

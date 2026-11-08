@@ -6,6 +6,7 @@ import { useInfluencers } from '../store'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { startHiggsfieldOAuthPopup, disconnectHF, isHFConnected } from '../utils/higgsfieldAuth'
 import { useWorkspace } from '../context/workspace'
+import { useTheme } from '../context/theme'
 import { useLocalJSON, newId } from '../utils/localJson'
 import {
   CLAUDE_KEY, API_KEYS_KEY, MCP_KEY, PUBLISHING_KEY,
@@ -24,6 +25,7 @@ import { Page, Field, Dialog, Seg } from '../components/ui'
 
 const SECTIONS = [
   { id: 'workspace', label: 'Workspace' },
+  { id: 'appearance', label: 'Appearance' },
   { id: 'connections', label: 'Connections' },
   { id: 'accounts', label: 'Social accounts' },
   { id: 'skills', label: 'Skills' },
@@ -71,6 +73,7 @@ export default function Settings() {
         </nav>
         <div className="muse-settings-body">
           {section === 'workspace' && <WorkspaceSection />}
+          {section === 'appearance' && <AppearanceSection />}
           {section === 'connections' && <ConnectionsSection connectedParam={new URLSearchParams(location.search).get('connected') === '1'} />}
           {section === 'accounts' && <Section id="accounts" title="Social accounts" sub="Where each influencer posts, per workspace."><SocialAccounts /><ScheduleList /></Section>}
           {section === 'skills' && <SkillsSection />}
@@ -103,6 +106,29 @@ function ScheduleList() {
         </Dialog>
       )}
     </div>
+  )
+}
+
+// Appearance: System (follows the device), Light or Dark. Saved per browser.
+const THEME_OPTIONS = [
+  { id: 'system', label: 'System', hint: 'Follows your device' },
+  { id: 'light', label: 'Light', hint: 'Always light' },
+  { id: 'dark', label: 'Dark', hint: 'Always dark' },
+]
+function AppearanceSection() {
+  const { pref, setPref, theme } = useTheme()
+  return (
+    <Section id="appearance" title="Appearance" sub={`System follows your device and switches automatically. Showing ${theme} now.`}>
+      <div className="muse-theme-grid" role="radiogroup" aria-label="Appearance">
+        {THEME_OPTIONS.map(o => (
+          <button key={o.id} type="button" role="radio" aria-checked={pref === o.id} className={`muse-theme-opt${pref === o.id ? ' on' : ''}`} onClick={() => setPref(o.id)}>
+            <span className={`muse-theme-swatch ${o.id}`} aria-hidden><i /><i /></span>
+            <strong>{o.label}</strong>
+            <small>{o.hint}</small>
+          </button>
+        ))}
+      </div>
+    </Section>
   )
 }
 

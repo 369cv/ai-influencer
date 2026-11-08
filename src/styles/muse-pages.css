@@ -563,7 +563,7 @@ a.muse-conn-row { text-decoration: none; }
 .muse-q-tabs button { background: none; border: 0; padding: 10px 0; font: inherit; font-size: 15px; font-weight: 500; color: var(--text-tertiary); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
 .muse-q-tabs button.on { color: var(--text-primary); border-bottom-color: var(--accent); }
 .muse-q-tabs button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); border-radius: 6px; }
-.muse-q-tabs i { font-style: normal; font-size: 12px; background: var(--surface-container, #E9EAF0); border-radius: 999px; padding: 1px 8px; margin-left: 6px; color: var(--text-secondary); }
+.muse-q-tabs i { font-style: normal; font-size: 12px; background: var(--bg-tertiary); border-radius: 999px; padding: 1px 8px; margin-left: 6px; color: var(--text-secondary); }
 .muse-q-tabs button.warn i { background: color-mix(in srgb, var(--color-status-danger) 14%, var(--surface)); color: color-mix(in srgb, var(--color-status-danger) 80%, var(--text-primary)); }
 .muse-q-goal { margin-left: auto; font-size: 13px; color: var(--text-tertiary); white-space: nowrap; }
 .muse-q-day { font-size: 15px; font-weight: var(--font-weight-semibold); margin: var(--space-4) 0 var(--space-2); }
@@ -623,3 +623,20 @@ a.muse-conn-row { text-decoration: none; }
 .muse-pa-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font: inherit; font-size: 14px; color: var(--text-primary); background: none; border: 0; text-align: left; cursor: pointer; }
 .muse-pa-menu button:hover, .muse-pa-menu button:focus-visible { background: var(--surface-hover); outline: none; }
 .muse-pa-menu button.danger { color: var(--color-status-danger); }
+
+/* Black brand marks (TikTok, X, OpenAI…) need a lighter tile on dark backgrounds */
+[data-theme="dark"] { --logo-black: #3A3A42; }
+
+/* Settings → Appearance */
+.muse-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 200px)); gap: var(--space-4); }
+.muse-theme-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 0; background: none; border: 0; font: inherit; color: var(--text-primary); cursor: pointer; text-align: left; }
+.muse-theme-opt strong { font-size: 15px; font-weight: var(--font-weight-semibold); margin-top: 8px; }
+.muse-theme-opt small { font-size: 13px; color: var(--text-tertiary); }
+.muse-theme-swatch { width: 100%; height: 110px; border-radius: var(--radius-lg); border: 2px solid var(--border); display: flex; overflow: hidden; }
+.muse-theme-swatch i { flex: 1; }
+.muse-theme-swatch.light i, .muse-theme-swatch.system i:first-child { background: #F8F9FC; }
+.muse-theme-swatch.dark i, .muse-theme-swatch.system i:last-child { background: #111114; }
+.muse-theme-swatch.light i + i, .muse-theme-swatch.dark i + i { display: none; }
+.muse-theme-opt.on .muse-theme-swatch { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
+.muse-theme-opt:focus-visible .muse-theme-swatch { box-shadow: 0 0 0 3px var(--focus-ring); }
+@media (max-width: 600px) { .muse-theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); } .muse-theme-swatch { height: 72px; } }
