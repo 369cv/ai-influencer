@@ -19,7 +19,6 @@ import Import from './pages/Import'
 import Content from './pages/Content'
 import Plan from './pages/Plan'
 import Studio from './pages/Studio'
-import NewMenu from './components/NewMenu'
 import AuthCallback from './pages/AuthCallback'
 
 export default function App() {
@@ -59,7 +58,6 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <NewMenu />
       <Analytics />
     </BrowserRouter>
     </WorkspaceProvider>

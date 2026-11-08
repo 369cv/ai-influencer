@@ -716,3 +716,48 @@ a.muse-conn-row { text-decoration: none; }
 .muse-dl-note .muse-input { flex: 1; }
 .muse-deal-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
 @media (max-width: 600px) { .muse-deal-fields { grid-template-columns: 1fr 1fr; } .muse-deal-fields .muse-field:first-child { grid-column: 1 / -1; } }
+
+/* Create box (Home) */
+.muse-create-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.muse-create-pill { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 14px; background: var(--bg-tertiary); cursor: pointer; }
+.muse-create-pill select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.muse-create-pill:focus-within { box-shadow: 0 0 0 3px var(--focus-ring); }
+.muse-create-av { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-tertiary) center 20% / cover; flex-shrink: 0; }
+.muse-create-pilltext { display: flex; flex-direction: column; line-height: 1.15; font-size: 13px; padding-left: 4px; }
+.muse-create-pilltext small { font-size: 11px; color: var(--text-tertiary); }
+.muse-create-hint { flex: 1; text-align: right; font-size: 12px; color: var(--text-tertiary); padding-right: 6px; }
+.muse-create-jobs { margin: var(--space-4) auto 0; justify-content: center; flex-wrap: wrap; }
+.muse-create-joblink { padding: 7px 12px; font-size: 14px; color: var(--text-secondary); text-decoration: none; border-radius: 999px; }
+.muse-create-joblink:hover { color: var(--text-primary); }
+.muse-create-recent { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: var(--space-4); max-width: 760px; }
+
+/* Create → plan and results */
+.muse-cp { max-width: 980px; margin: 0 auto; padding: var(--space-5) var(--space-4) var(--space-7); }
+.muse-cp-head { display: flex; justify-content: space-between; align-items: center; }
+.muse-cp-request { color: var(--text-secondary); font-size: 14px; margin: var(--space-2) 0 var(--space-4); }
+.muse-cp-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); box-shadow: var(--shadow-sm); }
+.muse-cp-title { font-size: 22px; font-weight: var(--font-weight-semibold); border: 0; background: none; color: var(--text-primary); padding: 0; font-family: inherit; width: 100%; }
+input.muse-cp-title:focus { outline: none; box-shadow: inset 0 -2px 0 var(--accent); }
+.muse-cp-kv { display: grid; grid-template-columns: 110px 1fr; gap: 10px 14px; margin: 0; font-size: 14px; align-items: center; }
+.muse-cp-kv dt { color: var(--text-tertiary); }
+.muse-cp-kv dd { margin: 0; }
+.muse-cp-kv select.muse-input { max-width: 280px; }
+.muse-cp-shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-3); }
+.muse-cp-shot { display: flex; flex-direction: column; gap: 6px; }
+.muse-cp-frame { border-radius: var(--radius-lg); background: var(--bg-tertiary); overflow: hidden; display: grid; place-items: center; position: relative; aspect-ratio: 9 / 16; }
+.muse-cp-frame.r4x5 { aspect-ratio: 4 / 5; } .muse-cp-frame.r1x1 { aspect-ratio: 1; } .muse-cp-frame.r16x9 { aspect-ratio: 16 / 9; }
+.muse-cp-frame.on { box-shadow: 0 0 0 3px var(--accent); }
+.muse-cp-img { position: absolute; inset: 0; border: 0; padding: 0; background: center / cover; cursor: pointer; }
+.muse-cp-num { font-size: 28px; font-weight: 600; color: var(--text-tertiary); }
+.muse-cp-wait { font-size: 13px; color: var(--text-secondary); animation: muse-sc-pulse 1.2s ease-in-out infinite; }
+.muse-cp-shottext { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.muse-cp-shot textarea { font-size: 13px; resize: vertical; }
+.muse-cp-shotact { display: flex; gap: 4px; min-height: 24px; }
+.muse-cp-shotact .muse-btn { padding: 2px 4px; font-size: 13px; }
+.muse-cp-add { border: 1px dashed var(--border); border-radius: var(--radius-lg); background: none; color: var(--text-secondary); font: inherit; font-size: 14px; min-height: 120px; cursor: pointer; }
+.muse-cp-ask { display: flex; gap: var(--space-2); }
+.muse-cp-ask .muse-input { flex: 1; }
+.muse-cp-foot { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
+.muse-cp-foot .muse-flow-bar-note { flex: 1 1 260px; }
+.muse-cp-empty { text-align: center; padding: var(--space-7) var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); align-items: center; }
+@media (max-width: 600px) { .muse-cp-kv { grid-template-columns: 1fr; gap: 4px; } .muse-cp-kv dt { margin-top: 6px; } }
