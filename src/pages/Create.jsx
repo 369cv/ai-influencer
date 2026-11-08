@@ -139,7 +139,7 @@ function Step1({ data, set, onGenderChange, ageErrorPulse }) {
                 boxShadow: on ? L.card : 'none',
                 transition: 'all 0.18s',
               }}>
-                <span style={{ fontSize: 20, opacity: on ? 1 : 0.3, transition: 'opacity 0.15s' }}>{icon}</span>
+                {icon && <span style={{ fontSize: 20, opacity: on ? 1 : 0.3, transition: 'opacity 0.15s' }}>{icon}</span>}
                 {g}
               </button>
             )

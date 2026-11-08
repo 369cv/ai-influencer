@@ -299,7 +299,7 @@ function HeroBanner({ influencer, pct, onUpdate }) {
               <span style={{
                 fontSize:12,fontWeight:600,color:gc,
                 background:`${gc}14`,padding:'3px 10px',borderRadius:20,
-              }}>{GM[influencer.gender]?.icon} {influencer.gender}</span>
+              }}>{influencer.gender}</span>
             )}
             {influencer.niche&&influencer.niche!=='Other'&&(
               <span style={{fontSize:12,color:'var(--text-secondary)',background:'var(--bg-tertiary)',padding:'3px 10px',borderRadius:20}}>
@@ -934,7 +934,7 @@ function GenderButtons({ value, onChange }) {
             transition:'all 0.15s',display:'flex',alignItems:'center',gap:4,
             cursor:'pointer',whiteSpace:'nowrap',
           }}>
-            <span style={{fontSize:11}}>{m.icon}</span>
+            {m.icon && <span style={{fontSize:11}}>{m.icon}</span>}
             <span>{g}</span>
           </button>
         )

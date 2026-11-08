@@ -939,7 +939,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
               <img key={rightPreviewUrl} src={rightPreviewUrl} alt={posePreviewUrl ? pose : locInfo.label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'locFadeIn 0.25s ease' }} />
               {rightMode === 'location' && (
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent,rgba(0,0,0,0.65))', padding: '28px 12px 12px', zIndex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 5 }}>{locInfo.icon} {locInfo.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 5 }}>{locInfo.icon ? `${locInfo.icon} ` : ''}{locInfo.label}</div>
                   <div style={{ display: 'inline-block', padding: '3px 9px', borderRadius: 980, fontSize: 10, fontWeight: 600, background: timeVis.badgeBg, color: '#fff', backdropFilter: 'blur(6px)' }}>{timeVis.badge}</div>
                 </div>
               )}
@@ -961,7 +961,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: 36, lineHeight: 1, marginBottom: 8 }}>{locInfo.icon}</div>
+                    {locInfo.icon && <div style={{ fontSize: 36, lineHeight: 1, marginBottom: 8 }}>{locInfo.icon}</div>}
                     <div style={{ fontSize: 14, fontWeight: 700, color: locVis.textColor, letterSpacing: '-0.2px', marginBottom: 9 }}>{locInfo.label}</div>
                     <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: 980, fontSize: 11, fontWeight: 600, background: timeVis.badgeBg, color: locVis.textColor, backdropFilter: 'blur(6px)' }}>{timeVis.badge}</div>
                   </>
@@ -996,7 +996,7 @@ export default function PhotoStudioPanel({ influencer, onGoToWardrobe, onUseAsSt
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
           {LOCATIONS.map(l => (
             <button key={l.id} onClick={() => { setLocation(l.id); setRightMode('location') }} style={chipStyle(location === l.id)}>
-              {l.icon} {l.label}
+              {l.icon ? `${l.icon} ` : ''}{l.label}
             </button>
           ))}
         </div>
