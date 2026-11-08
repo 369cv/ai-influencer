@@ -1,5 +1,6 @@
 import { getHFToken, refreshHFToken, disconnectHF } from './higgsfieldAuth'
 import { whenOnline, isOnline } from './network'
+import { readScores } from './viralityScores.js'
 
 const MCP_URL = '/api/hf/mcp'
 const PENDING_KEY = 'hf_pending_gens'
@@ -1143,14 +1144,22 @@ export function editOptions(name) {
 }
 
 const _editIds = new Map()
-async function mediaIdFor(url) {
+// Reads a file the browser can see: directly first (most CDNs allow it), then through
+// the app's proxy, which only serves allowlisted hosts.
+async function readMedia(url) {
+  if (!/^https?:/.test(url || '')) return (await fetch(url)).blob()
+  try { const d = await fetch(url, { mode: 'cors' }); if (d.ok) return d.blob() } catch {}
+  const p = await fetch(proxied(url))
+  if (!p.ok) throw new Error(p.status === 403 ? 'This file’s host isn’t one Muse can read. Download it and add it from your device.' : `Couldn’t read the file (${p.status}).`)
+  return p.blob()
+}
+async function mediaIdFor(url, type = 'image') {
   if (_editIds.has(url)) return _editIds.get(url)
   await whenOnline()
-  const res = await fetch(proxied(url))
-  if (!res.ok) throw new Error(`Couldn’t read the image (${res.status}).`)
-  const blob = await res.blob()
-  const contentType = blob.type || 'image/png'
-  const up = unwrapMCP(await callTool('media_upload', { method: 'upload_url', filename: `edit_${Date.now()}.${contentType.includes('png') ? 'png' : 'jpeg'}`, content_type: contentType }))
+  const blob = await readMedia(url)
+  const contentType = blob.type || (type === 'video' ? 'video/mp4' : 'image/png')
+  const ext = type === 'video' ? (contentType.includes('webm') ? 'webm' : contentType.includes('quicktime') ? 'mov' : 'mp4') : contentType.includes('png') ? 'png' : 'jpeg'
+  const up = unwrapMCP(await callTool('media_upload', { method: 'upload_url', filename: `edit_${Date.now()}.${ext}`, content_type: contentType }))
   const f0 = up?.uploads?.[0] ?? up?.files?.[0] ?? up?.data?.[0]
   let uploadUrl = up?.upload_url || up?.url || f0?.upload_url || f0?.url
   let mediaId = up?.media_id || up?.id || f0?.media_id || f0?.id
@@ -1162,7 +1171,7 @@ async function mediaIdFor(url) {
   if (!uploadUrl || !mediaId) throw new Error('Higgsfield didn’t return an upload address.')
   const put = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } })
   if (!put.ok) throw new Error(`Upload failed (${put.status}).`)
-  const confirmed = unwrapMCP(await callTool('media_confirm', { media_id: mediaId, type: 'image' }))
+  const confirmed = unwrapMCP(await callTool('media_confirm', { media_id: mediaId, type }))
   const cdn = confirmed?.url || confirmed?.media_url || confirmed?.rawUrl || confirmed?.cdn_url
     || (typeof confirmed === 'string' ? (confirmed.match(/https:\/\/[^\s"'\\]+/) || [])[0] : null)
   _editIds.set(url, mediaId)
@@ -1269,3 +1278,52 @@ export async function getElement(id) {
   await initSession()
   return elementOf(unwrapMCP(await callTool('manage_reference_elements', { action: 'get', element_id: id })))
 }
+
+// ── Video tools: Reframe and Virality Predictor ──────────────────────────────
+export const videoDuration = url => new Promise((resolve, reject) => {
+  const v = document.createElement('video')
+  v.preload = 'metadata'
+  v.onloadedmetadata = () => resolve(v.duration)
+  v.onerror = () => reject(new Error('Couldn’t read the video length.'))
+  v.src = url
+})
+
+// Higgsfield's quote for a reframe (needs the length and an output resolution).
+export async function reframeCost({ seconds, resolution = '1080p' }) {
+  await initSession()
+  return creditsIn(unwrapMCP(await callTool('reframe', { params: { get_cost: true, duration_seconds: Math.max(1, Math.min(60, Math.ceil(seconds))), resolution } })))
+}
+
+export async function reframeVideo(url, { aspectRatio, resolution = '1080p', seconds, onProgress, isCancelled }) {
+  await initSession()
+  const id = await mediaIdFor(url, 'video')
+  const result = await callTool('reframe', { params: { medias: [{ role: 'video', value: id }], aspect_ratio: aspectRatio, resolution, duration_seconds: Math.max(1, Math.min(60, Math.ceil(seconds))) } })
+  const direct = extractVideoUrls(result)
+  if (direct.length) return direct[0]
+  const ids = extractJobIds(result).filter(j => j !== id)
+  if (!ids.length) { const d = unwrapMCP(result); throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'Higgsfield didn’t start the reframe.') }
+  const { urls } = await pollVideoJobs(ids.slice(0, 1), 1, onProgress, null, isCancelled)
+  return urls[0]
+}
+
+// Virality Predictor: starts an analysis of a video and waits for it. Returns whatever
+// scores Higgsfield reports ({ scores: [{ key, value }], summary, url }), never made up.
+export async function predictVirality(url, { onProgress, isCancelled } = {}) {
+  await initSession()
+  const id = await mediaIdFor(url, 'video')
+  const started = await callTool('virality_predictor', { action: 'create', params: { model: 'virality_predictor', medias: [{ role: 'video', id }] } })
+  let data = unwrapMCP(started)
+  const jobs = extractJobIds(started).filter(j => j !== id)
+  for (let round = 0; round < 90 && jobs.length; round++) {
+    if (isCancelled?.()) throw new Error('CANCELLED')
+    const st = unwrapMCP(await callTool('job_status', { jobId: jobs[0] }))
+    const status = String(st?.status || st?.results?.[0]?.status || '').toLowerCase()
+    onProgress?.(Math.min(95, 10 + round * 3))
+    if (['completed', 'done'].includes(status)) { data = st; break }
+    if (['failed', 'error', 'cancelled', 'rejected', 'nsfw'].includes(status)) throw new Error(`Higgsfield couldn’t analyse this video (${status}).`)
+    await new Promise(r => setTimeout(r, 4000))
+  }
+  onProgress?.(100)
+  return readScores(data)
+}
+

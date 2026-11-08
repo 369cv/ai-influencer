@@ -17,6 +17,8 @@ import { freeSlots, nextFreeSlot, isSlotTime, fmtSlot, fmtTime } from '../utils/
 import { influencerContext, hasClaude, runSkill } from '../utils/claudeAssist'
 import { bestTimes, isBestTime } from '../utils/goals'
 import GoalBar from '../components/GoalBar'
+import BulkImport from '../components/BulkImport'
+import { ViralityPanel } from '../components/VideoTools'
 import { newId } from '../utils/localJson'
 import { kindLabel } from '../utils/deals'
 
@@ -46,6 +48,7 @@ export default function Content() {
   const [accounts] = useWorkspaceStore('muse_accounts')
   const [who, setWho] = useState('all')
   const [composing, setComposing] = useState(null)
+  const [importing, setImporting] = useState(false)
   const [retrying, setRetrying] = useState('')
   const [statsState, setStatsState] = useState({ busy: false, error: '', at: 0 })
   // Sent → Refresh stats: one read per Ayrshare post, saved on the post.
@@ -106,6 +109,7 @@ export default function Content() {
       wide
       actions={<>
         <Seg options={VIEWS} value={view} onChange={setView} label="View" />
+        <button type="button" className="muse-btn muse-btn-text" onClick={() => setImporting(true)}>Import CSV</button>
         <button type="button" className="muse-btn muse-btn-filled" onClick={() => newPost()}>New post</button>
       </>}
     >
@@ -129,6 +133,7 @@ export default function Content() {
       {view === 'ideas' && <><div className="muse-ideas-week"><WeeklyIdeas /></div><Plan embedded /></>}
       {view === 'deals' && <BrandDeals embedded />}
 
+      {importing && <BulkImport influencers={influencers || []} accounts={accounts} onImport={list => { setPosts(l => [...list, ...l]); setView('queue') }} onClose={() => setImporting(false)} />}
       {composing && (
         <Composer
           key={composing._k || composing.id || 'new'}
@@ -568,6 +573,7 @@ function Composer({ initial, accounts, posts = [], onClose, onSave, onPersist, o
             ))}
             <button type="button" className="muse-thumb lg muse-thumb-add" onClick={() => setPicking(v => !v)}>{picking ? 'Close' : 'From Media'}</button>
           </div>
+          {p.mediaUrls.some(isVideo) && !locked && <ViralityPanel url={p.mediaUrls.find(isVideo)} compact />}
           {picking && (
             <div className="muse-picker">
               {libFor.length === 0 ? <p className="muse-muted">No generated media{inf ? ` for ${inf.name}` : ''} yet.</p> : (
