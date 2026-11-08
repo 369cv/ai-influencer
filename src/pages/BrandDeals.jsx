@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useBrandDeals, useInfluencers, generateId } from '../store'
 import { compressImage, downloadImage } from '../utils/imageUtils'
 import { generateSingleImage } from '../utils/higgsfieldGenerate'
@@ -300,6 +301,13 @@ export default function BrandDeals() {
   const [generating, setGenerating] = useState({})   // { [id]: bool }
   const [genProgress, setGenProgress] = useState({}) // { [id]: 0–100 }
   const [openDeal, setOpenDeal] = useState(null)
+  // ?deal=<id> (from Home → Needs you) opens that deal's deliverables.
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    const id = params.get('deal')
+    if (id && deals.some(d => d.id === id)) setOpenDeal(id)
+    if (id) setParams(q => { q.delete('deal'); return q }, { replace: true })
+  }, [params]) // eslint-disable-line react-hooks/exhaustive-deps
   const [posts] = useWorkspaceStore('muse_posts')
   const [influencers] = useInfluencers()
   const updateDeal = (id, patch) => setDeals(prev => prev.map(d => (d.id === id ? { ...d, ...patch } : d)))
