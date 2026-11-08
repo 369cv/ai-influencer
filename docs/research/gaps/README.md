@@ -1,6 +1,6 @@
 # Remaining gaps: proposal
 
-Status: **G8, G1, G2 and G3 are built** (see Build status below); the rest are proposals. This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
+Status: **G8, G1, G2, G3 and G5 are built** (see Build status below); the rest are proposals. This set completes the earlier boards in `docs/research/flows/` (F1–F8) and `docs/research/influencer-profile/v2/`. Each board shows the steps in light (top row) and dark (bottom row). Every step is tagged:
 - **Exists:** works today.
 - **Change:** exists, gets reworked.
 - **New:** to build.
@@ -26,7 +26,7 @@ Status: **G8, G1, G2 and G3 are built** (see Build status below); the rest are p
 | G1 Captions per platform | Built | Composer: caption tabs, limits, Instagram Post/Reel/Story, first comment, per-platform checks |
 | G2 Edit and cancel | Built | Composer on a scheduled post: Edit (cancel, then re-send) and Cancel post. Ayrshare `DELETE /api/post`; webhooks get `muse.post.cancelled` with `postId` |
 | G3 Analytics | Built | Content → Sent (Refresh stats) and the profile's Insights card. Ayrshare `POST /api/analytics/post` |
-| G5 Workflow runs | Next | Spends credits; needs per-step inputs (influencer, scene) |
+| G5 Workflow runs | Built | Workflows: set up a run (influencer, scene, start photo, deal or reference), cost shown on Run, live steps, Stop, review before anything is queued, run history. Talking clip stays planning-only (voice and lip-sync steps not built) |
 | G6 Saved keys usable | Needs your pick of providers | |
 | G7 MCP sign-in | Needs your pick of services | |
 | G4 Brand approval | Blocked on F7 deliverables | Brand deals have no deliverables yet |

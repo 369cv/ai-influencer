@@ -674,3 +674,25 @@ a.muse-conn-row { text-decoration: none; }
 .muse-cs-sched-actions { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .muse-q-stats { color: var(--text-primary) !important; font-weight: var(--font-weight-medium); }
 .muse-q-stats-ctl { display: inline-flex; align-items: center; gap: var(--space-3); margin-left: auto; flex-wrap: wrap; }
+
+/* Workflows: setup, live runs, review */
+.muse-wf-setup, .muse-wf-review { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-5); padding: var(--space-5); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); }
+.muse-wf-setup .muse-field, .muse-wf-review .muse-field { display: flex; flex-direction: column; gap: 6px; }
+.muse-wf-run-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.muse-wf-prog { height: 4px; border-radius: var(--radius-pill); background: var(--bg-tertiary); overflow: hidden; margin-top: 6px; }
+.muse-wf-prog i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.muse-wf-out { margin-top: 6px; font-size: 13px; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; }
+.muse-wf-thumb { width: 48px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--bg-tertiary); }
+.muse-wf-mini { width: 32px; height: 40px; object-fit: cover; border-radius: 6px; }
+.muse-flow-step.is-running .muse-flow-dot { border-color: var(--accent); color: var(--accent); }
+.muse-flow-step.is-done .muse-flow-dot { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.muse-flow-step.is-failed .muse-flow-dot { border-color: var(--color-status-danger); color: var(--color-status-danger); }
+.muse-flow-step.is-skipped .muse-flow-card, .muse-flow-step.is-stopped .muse-flow-card { opacity: .55; }
+.muse-status.failed { background: color-mix(in srgb, var(--color-status-danger) 12%, var(--surface)); color: var(--color-status-danger); }
+.muse-wf-runhead { margin-bottom: var(--space-3); }
+.muse-wf-runhead.bad { border-color: color-mix(in srgb, var(--color-status-danger) 40%, var(--border-subtle)); }
+.muse-wf-review-body { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-start; }
+.muse-wf-review-media { width: 200px; max-width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: var(--radius-lg); background: var(--bg-tertiary); }
+.muse-wf-review-side { flex: 1 1 260px; display: flex; flex-direction: column; gap: var(--space-3); }
+.muse-wf-runs { margin-top: var(--space-6); }
+.muse-flow-text .muse-flow-detail { font-size: var(--font-size-label); color: var(--text-secondary); }
