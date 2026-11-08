@@ -8,6 +8,7 @@ import { platformName } from '../utils/publishing'
 import { STUDIO_TEMPLATES, readJobs } from '../utils/studio'
 import { isHFConnected } from '../utils/higgsfieldAuth'
 import WeeklyIdeas from '../components/WeeklyIdeas'
+import NeedsYou from '../components/NeedsYou'
 
 // Home: one composer and one "Pick up where you left off" list.
 // The picker inside the composer decides where a typed prompt goes.
@@ -139,6 +140,8 @@ export default function Home() {
           </ol>
         </section>
       )}
+
+      <NeedsYou />
 
       <WeeklyIdeas />
 
