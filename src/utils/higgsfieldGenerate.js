@@ -1327,3 +1327,31 @@ export async function predictVirality(url, { onProgress, isCancelled } = {}) {
   return readScores(data)
 }
 
+
+// ── AI Influencer: design a new character from traits (quote first) ──────────
+// ai_influencer_prepare returns the exact params and a price without generating;
+// ai_influencer_generate runs those params unchanged, capped at the quoted price.
+export async function prepareInfluencer({ brief, gender }) {
+  await hfToolNames()
+  const { props, required, wrapped } = hfToolFields('ai_influencer_prepare')
+  const known = { brief, tier: 'normal', selection: {}, medias: [], randomize: false, ...(props.gender ? { gender } : {}) }
+  const missing = [...required].filter(k => !(k in known))
+  if (missing.length) throw new Error(`Higgsfield’s AI Influencer now needs ${missing.join(', ')}, which Muse can’t fill in yet.`)
+  const args = Object.fromEntries(Object.keys(known).filter(k => props[k] || required.has(k)).map(k => [k, known[k]]))
+  if (!('brief' in args)) args.brief = brief
+  const data = unwrapMCP(await callTool('ai_influencer_prepare', wrapped ? { params: args } : args))
+  const params = data?.params || data?.prepared?.params || data?.generate_params || null
+  if (!params || typeof params !== 'object') throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t return a design.')
+  const price = typeof data?.price === 'number' ? data.price : creditsIn(data?.price ?? data?.cost ?? data)
+  const free = Number(data?.free_gens_remaining ?? data?.free_generations_remaining ?? 0) || 0
+  return { params, price, free, summary: typeof data?.summary === 'string' ? data.summary : (typeof data?.design === 'string' ? data.design : '') }
+}
+
+export async function generateInfluencer({ params, maxCredits, useFree = false, onProgress, isCancelled }) {
+  const result = await callTool('ai_influencer_generate', { params, max_credits: useFree ? 0 : maxCredits, ...(useFree ? { use_free_gens: true } : {}) })
+  const data = unwrapMCP(result)
+  const ids = [...new Set([data?.job_id, ...(data?.job_ids || [])].filter(Boolean))]
+  const jobIds = ids.length ? ids : extractJobIds(result)
+  if (!jobIds.length) throw new Error((typeof data === 'string' ? data : data?.error || data?.message) || 'Higgsfield didn’t start the character sheet.')
+  return pollAllJobs(jobIds, jobIds.length, onProgress, 8, isCancelled)
+}

@@ -155,6 +155,7 @@ export default function Home() {
             <button key={x.id} type="button" role="radio" aria-checked={target === x.id} className={target === x.id ? 'on' : ''} onClick={() => pick(x.id)}>{x.label}</button>
           ))}
           <Link to="/talk" state={{ influencerId: who || undefined }} className="muse-create-joblink">Talking video</Link>
+          <Link to="/design" className="muse-create-joblink">New influencer from traits</Link>
           <Link to="/studio?mode=video" className="muse-create-joblink">Video in Studio</Link>
         </div>
         <div className="muse-create-recipes" aria-label="Recipes">
